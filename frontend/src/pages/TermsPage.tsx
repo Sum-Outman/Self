@@ -1,0 +1,308 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { FileText, ArrowLeft } from 'lucide-react';
+
+const TermsPage: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* 头部 */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-600 rounded-xl mr-4">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Self AGI 服务条款
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  最后更新: 2026年3月11日
+                </p>
+              </div>
+            </div>
+            
+            <Link
+              to="/"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              返回首页
+            </Link>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <p className="text-gray-600 dark:text-gray-400">
+              请仔细阅读以下服务条款。使用 Self AGI 服务即表示您同意遵守这些条款。
+            </p>
+          </div>
+        </div>
+
+        {/* 主要内容 */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+          <div className="prose prose-lg dark:prose-invert max-w-none">
+            {/* 简介 */}
+            <section className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                1. 简介
+              </h2>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                Self AGI（以下简称"本服务"）是一个自主通用人工智能系统，由我们的团队开发并提供服务。本服务条款（以下简称"条款"）规定了您使用本服务的条件。
+              </p>
+              <p className="text-gray-700 dark:text-gray-300">
+                通过访问或使用本服务，您同意受这些条款的约束。如果您不同意这些条款的任何部分，请不要使用本服务。
+              </p>
+            </section>
+
+            {/* 账户条款 */}
+            <section className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                2. 账户条款
+              </h2>
+              
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  2.1 账户注册
+                </h3>
+                <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+                  <li>您必须提供真实、准确、完整和最新的注册信息</li>
+                  <li>您必须年满18岁或有法定监护人同意</li>
+                  <li>您负责维护账户密码的机密性</li>
+                  <li>您对账户下发生的所有活动负责</li>
+                </ul>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  2.2 账户安全
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 mb-2">
+                  您有责任：
+                </p>
+                <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+                  <li>立即通知我们任何未经授权的账户使用</li>
+                  <li>确保在每次会话结束时退出账户</li>
+                  <li>使用强密码并定期更改</li>
+                  <li>启用双因素认证以提高安全性</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  2.3 账户终止
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300">
+                  我们保留因违反这些条款或其他合理原因随时终止或暂停您账户的权利，恕不另行通知。
+                </p>
+              </div>
+            </section>
+
+            {/* 服务使用 */}
+            <section className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                3. 服务使用
+              </h2>
+              
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  3.1 许可授予
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300">
+                  根据这些条款，我们授予您有限的、非独占的、不可转让的、可撤销的许可，以访问和使用本服务仅供个人或内部业务用途。
+                </p>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  3.2 使用限制
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 mb-2">
+                  您同意不：
+                </p>
+                <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+                  <li>以任何非法目的使用本服务</li>
+                  <li>侵犯他人的知识产权</li>
+                  <li>上传或传输病毒或任何恶意代码</li>
+                  <li>干扰或破坏本服务的完整性或性能</li>
+                  <li>尝试未经授权访问本服务或相关系统</li>
+                  <li>使用本服务创建竞争性产品</li>
+                  <li>将本服务用于自动化决策影响个人权利</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  3.3 AGI系统特性
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300">
+                  Self AGI 是一个自主通用人工智能系统，具有学习和演化能力。您理解并同意：
+                </p>
+                <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300 mt-2">
+                  <li>系统可能基于交互内容进行学习和演化</li>
+                  <li>系统输出不应被视为专业建议</li>
+                  <li>您对基于系统输出所做的决策负全部责任</li>
+                  <li>系统可能提供不准确或不完整的信息</li>
+                </ul>
+              </div>
+            </section>
+
+            {/* 知识产权 */}
+            <section className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                4. 知识产权
+              </h2>
+              
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  4.1 服务知识产权
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300">
+                  Self AGI 服务及其原始内容、特性和功能归我们所有，受国际版权、商标、专利、商业秘密和其他知识产权法保护。
+                </p>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  4.2 用户内容
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 mb-2">
+                  对于您通过本服务提交、发布或显示的内容，您保留所有权。但是，通过提交内容，您授予我们全球性、免版税的许可，以使用、复制、修改、公开执行、公开展示和分发该内容。
+                </p>
+                <p className="text-gray-700 dark:text-gray-300">
+                  您声明并保证您拥有必要权利授予此许可，并且您的内容不侵犯任何第三方权利。
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  4.3 AGI生成内容
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300">
+                  由 Self AGI 系统生成的内容（基于您的输入和系统训练）的知识产权归属将根据具体使用情况确定。一般来说，您对基于您输入生成的输出内容拥有使用权，但该权利可能受特定限制。
+                </p>
+              </div>
+            </section>
+
+            {/* 隐私 */}
+            <section className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                5. 隐私
+              </h2>
+              <p className="text-gray-700 dark:text-gray-300">
+                您的隐私对我们非常重要。我们的隐私政策解释了我们会如何收集、使用和保护您的个人信息。使用本服务即表示您同意按照我们的隐私政策收集和使用信息。
+              </p>
+              <div className="mt-4 p-4 bg-gray-700 dark:bg-gray-900/20 rounded-lg">
+                <p className="text-gray-900 dark:text-gray-400">
+                  <Link to="/privacy" className="font-medium underline hover:text-gray-900 dark:hover:text-gray-500">
+                    查看完整的隐私政策
+                  </Link>
+                </p>
+              </div>
+            </section>
+
+            {/* 免责声明 */}
+            <section className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                6. 免责声明
+              </h2>
+              
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  6.1 "按原样"提供
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300">
+                  本服务按"按原样"和"按可用"的基础提供，不提供任何形式的明示或暗示保证，包括但不限于适销性、特定用途适用性和不侵权的保证。
+                </p>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  6.2 AGI系统特殊性
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 mb-2">
+                  鉴于 Self AGI 系统的自主性和演化特性：
+                </p>
+                <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+                  <li>我们不保证系统输出的准确性、完整性或及时性</li>
+                  <li>系统可能产生意外或不可预测的输出</li>
+                  <li>系统学习和演化可能导致行为变化</li>
+                  <li>您使用系统输出风险自负</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  6.3 责任限制
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300">
+                  在任何情况下，我们均不对任何间接性、偶然性、特殊性、惩罚性或后果性损害负责，包括但不限于利润损失、数据损失或其他无形损失，无论我们是否已被告知此类损害的可能性。
+                </p>
+              </div>
+            </section>
+
+            {/* 管辖法律 */}
+            <section className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                7. 管辖法律
+              </h2>
+              <p className="text-gray-700 dark:text-gray-300">
+                这些条款应按照中华人民共和国法律解释和管辖，不考虑其法律冲突规定。
+              </p>
+              <p className="text-gray-700 dark:text-gray-300 mt-2">
+                我们未能执行这些条款的任何权利或规定，不构成对该权利或规定的放弃。
+              </p>
+            </section>
+
+            {/* 条款变更 */}
+            <section className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                8. 条款变更
+              </h2>
+              <p className="text-gray-700 dark:text-gray-300">
+                我们保留随时修改这些条款的权利。我们将通过在本页面发布新条款来通知您任何更改。更改在此页面上发布后立即生效。
+              </p>
+              <p className="text-gray-700 dark:text-gray-300 mt-2">
+                继续使用本服务即表示您接受修改后的条款。如果您不同意新条款，请停止使用本服务。
+              </p>
+            </section>
+
+            {/* 联系我们 */}
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                9. 联系我们
+              </h2>
+              <p className="text-gray-700 dark:text-gray-300">
+                如果您对这些服务条款有任何疑问，请通过以下方式联系我们：
+              </p>
+              <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <p className="text-gray-700 dark:text-gray-300">
+                  <strong>邮箱:</strong> silencecrowtom@qq.com
+                </p>
+                <p className="text-gray-700 dark:text-gray-300 mt-2">
+                  <strong>最后更新:</strong> 2026年3月11日
+                </p>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        {/* 底部导航 */}
+        <div className="mt-8 flex justify-between items-center">
+          <Link
+            to="/privacy"
+            className="inline-flex items-center text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          >
+            隐私政策 →
+          </Link>
+          
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            <p>© {new Date().getFullYear()} Self AGI. 版权所有.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TermsPage;

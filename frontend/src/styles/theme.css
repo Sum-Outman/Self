@@ -1,0 +1,409 @@
+/**
+ * 主题系统CSS变量
+ * 提供完整的明暗模式切换支持
+ */
+
+:root {
+  /* ====== 颜色系统 ====== */
+  
+  /* 基础颜色 - 纯黑白灰 */
+  --color-primary: var(--color-gray-600);
+  --color-primary-light: var(--color-gray-400);
+  --color-primary-dark: var(--color-gray-800);
+  --color-primary-transparent: rgba(107, 114, 128, 0.1);
+  
+  --color-secondary: var(--color-gray-500);
+  --color-secondary-light: var(--color-gray-400);
+  --color-secondary-dark: var(--color-gray-600);
+  --color-secondary-transparent: rgba(100, 116, 139, 0.1);
+  
+  --color-accent: var(--color-gray-700);
+  --color-accent-light: var(--color-gray-500);
+  --color-accent-dark: var(--color-gray-800);
+  
+  /* 状态颜色 - 使用不同灰度表示 */
+  --color-success: var(--color-gray-600);
+  --color-warning: var(--color-gray-500);
+  --color-error: var(--color-gray-800);
+  --color-info: var(--color-gray-400);
+  
+  /* 中性颜色 */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+  --color-gray-300: #cbd5e1;
+  --color-gray-400: #94a3b8;
+  --color-gray-500: #64748b;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1e293b;
+  --color-gray-900: #0f172a;
+  
+  /* 文本颜色 */
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-600);
+  --color-text-tertiary: var(--color-gray-400);
+  --color-text-disabled: var(--color-gray-300);
+  --color-text-inverse: var(--color-white);
+  
+  /* 背景颜色 */
+  --color-background-primary: var(--color-white);
+  --color-background-secondary: var(--color-gray-50);
+  --color-background-tertiary: var(--color-gray-100);
+  --color-background-overlay: rgba(0, 0, 0, 0.5);
+  --color-background-modal: var(--color-white);
+  --color-background-tooltip: var(--color-gray-900);
+  
+  /* 边框颜色 */
+  --color-border-primary: var(--color-gray-200);
+  --color-border-secondary: var(--color-gray-300);
+  --color-border-focus: var(--color-primary);
+  --color-border-error: var(--color-error);
+  
+  /* 阴影 */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+  --shadow-outline: 0 0 0 3px rgba(107, 114, 128, 0.5);
+  
+  /* ====== 布局系统 ====== */
+  
+  /* 间距 */
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-20: 5rem;
+  --spacing-24: 6rem;
+  --spacing-32: 8rem;
+  
+  /* 圆角 */
+  --radius-none: 0;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-full: 9999px;
+  
+  /* 边框宽度 */
+  --border-width-0: 0;
+  --border-width-1: 1px;
+  --border-width-2: 2px;
+  --border-width-4: 4px;
+  --border-width-8: 8px;
+  
+  /* ====== 排版系统 ====== */
+  
+  /* 字体大小 */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
+  --font-size-6xl: 3.75rem;
+  
+  /* 字重 */
+  --font-weight-thin: 100;
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-black: 900;
+  
+  /* 行高 */
+  --line-height-none: 1;
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 2;
+  
+  /* 字母间距 */
+  --letter-spacing-tighter: -0.05em;
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
+  --letter-spacing-widest: 0.1em;
+  
+  /* ====== 动画和过渡 ====== */
+  
+  /* 过渡时长 */
+  --transition-duration-fast: 150ms;
+  --transition-duration-normal: 250ms;
+  --transition-duration-slow: 350ms;
+  --transition-duration-slower: 500ms;
+  
+  /* 缓动函数 */
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 动画延迟 */
+  --animation-delay-0: 0s;
+  --animation-delay-100: 0.1s;
+  --animation-delay-200: 0.2s;
+  --animation-delay-300: 0.3s;
+  --animation-delay-500: 0.5s;
+  --animation-delay-700: 0.7s;
+  --animation-delay-1000: 1s;
+  
+  /* ====== 透明度 ====== */
+  --opacity-0: 0;
+  --opacity-5: 0.05;
+  --opacity-10: 0.1;
+  --opacity-20: 0.2;
+  --opacity-25: 0.25;
+  --opacity-30: 0.3;
+  --opacity-40: 0.4;
+  --opacity-50: 0.5;
+  --opacity-60: 0.6;
+  --opacity-70: 0.7;
+  --opacity-75: 0.75;
+  --opacity-80: 0.8;
+  --opacity-90: 0.9;
+  --opacity-95: 0.95;
+  --opacity-100: 1;
+  
+  /* ====== 功能标志 ====== */
+  --enable-animations: 1;
+  --enable-color-contrast: 1;
+  --enable-reduced-motion: 0;
+  --enable-high-contrast: 0;
+  --enable-dyslexia-font: 0;
+  --enable-color-blind-mode: 0;
+}
+
+/* ====== 暗色主题覆盖 ====== */
+.dark {
+  /* 基础颜色 - 纯黑白灰 */
+  --color-primary: var(--color-gray-400);
+  --color-primary-light: var(--color-gray-300);
+  --color-primary-dark: var(--color-gray-600);
+  --color-primary-transparent: rgba(148, 163, 184, 0.1);
+  
+  --color-secondary: var(--color-gray-400);
+  --color-secondary-light: var(--color-gray-300);
+  --color-secondary-dark: var(--color-gray-500);
+  --color-secondary-transparent: rgba(148, 163, 184, 0.1);
+  
+  --color-accent: var(--color-gray-500);
+  --color-accent-light: var(--color-gray-400);
+  --color-accent-dark: var(--color-gray-600);
+  
+  /* 文本颜色 */
+  --color-text-primary: var(--color-gray-100);
+  --color-text-secondary: var(--color-gray-400);
+  --color-text-tertiary: var(--color-gray-500);
+  --color-text-disabled: var(--color-gray-600);
+  --color-text-inverse: var(--color-gray-900);
+  
+  /* 背景颜色 */
+  --color-background-primary: var(--color-gray-900);
+  --color-background-secondary: var(--color-gray-800);
+  --color-background-tertiary: var(--color-gray-700);
+  --color-background-overlay: rgba(0, 0, 0, 0.7);
+  --color-background-modal: var(--color-gray-800);
+  --color-background-tooltip: var(--color-gray-700);
+  
+  /* 边框颜色 */
+  --color-border-primary: var(--color-gray-700);
+  --color-border-secondary: var(--color-gray-600);
+  --color-border-focus: var(--color-primary-light);
+  --color-border-error: var(--color-error);
+  
+  /* 阴影 */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+  --shadow-outline: 0 0 0 3px rgba(148, 163, 184, 0.5);
+}
+
+/* ====== 高对比度模式 ====== */
+.high-contrast {
+  --color-text-primary: #000000;
+  --color-text-secondary: #333333;
+  --color-text-inverse: #ffffff;
+  --color-background-primary: #ffffff;
+  --color-border-primary: #000000;
+  --color-border-focus: #ff0000;
+  
+  /* 增加对比度 */
+  --enable-color-contrast: 1;
+  --enable-high-contrast: 1;
+}
+
+.dark.high-contrast {
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #cccccc;
+  --color-text-inverse: #000000;
+  --color-background-primary: #000000;
+  --color-border-primary: #ffffff;
+}
+
+/* ====== 减少动画模式 ====== */
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ====== 色盲友好模式 ====== */
+.color-blind-mode {
+  /* 使用高对比度颜色 */
+  --color-primary: #0072b2;
+  --color-secondary: #e69f00;
+  --color-accent: #009e73;
+  --color-success: #009e73;
+  --color-warning: #e69f00;
+  --color-error: #d55e00;
+  --color-info: #0072b2;
+  
+  /* 启用颜色盲模式标志 */
+  --enable-color-blind-mode: 1;
+}
+
+/* ====== 阅读障碍友好模式 ====== */
+.dyslexia-font {
+  font-family: "OpenDyslexic", "Comic Sans MS", "Arial", sans-serif;
+  letter-spacing: var(--letter-spacing-wide);
+  line-height: var(--line-height-relaxed);
+  
+  /* 启用阅读障碍字体标志 */
+  --enable-dyslexia-font: 1;
+}
+
+/* ====== 主题过渡动画 ====== */
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition-property: color, background-color, border-color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: var(--ease-in-out);
+  transition-duration: var(--transition-duration-normal);
+}
+
+/* ====== 工具类 ====== */
+
+/* 主题切换动画 */
+@keyframes theme-switch-fade {
+  from {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.theme-switch-animation {
+  animation: theme-switch-fade var(--transition-duration-normal) var(--ease-out);
+}
+
+/* 主题指示器 */
+.theme-indicator-light::before {
+  content: "☀️";
+  margin-right: var(--spacing-2);
+}
+
+.theme-indicator-dark::before {
+  content: "🌙";
+  margin-right: var(--spacing-2);
+}
+
+.theme-indicator-auto::before {
+  content: "⚙️";
+  margin-right: var(--spacing-2);
+}
+
+/* 主题调试 */
+.debug-theme {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: var(--spacing-3);
+  background: var(--color-background-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  z-index: 9999;
+  box-shadow: var(--shadow-md);
+}
+
+.debug-theme::before {
+  content: "主题变量";
+  display: block;
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-2);
+}
+
+/* ====== 响应式主题变量 ====== */
+
+/* 移动端优化 */
+@media (max-width: 640px) {
+  :root {
+    --font-size-base: 0.9375rem;
+    --spacing-unit: 0.25rem;
+  }
+}
+
+/* 平板优化 */
+@media (min-width: 641px) and (max-width: 1024px) {
+  :root {
+    --font-size-base: 1rem;
+    --spacing-unit: 0.5rem;
+  }
+}
+
+/* 桌面端优化 */
+@media (min-width: 1025px) {
+  :root {
+    --font-size-base: 1.0625rem;
+    --spacing-unit: 1rem;
+  }
+}
+
+/* ====== 打印样式 ====== */
+@media print {
+  :root, .dark {
+    --color-text-primary: #000000;
+    --color-text-secondary: #333333;
+    --color-background-primary: #ffffff;
+    --color-border-primary: #cccccc;
+    
+    /* 禁用动画和阴影 */
+    --enable-animations: 0;
+    box-shadow: none !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}

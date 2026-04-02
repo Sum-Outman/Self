@@ -1,0 +1,246 @@
+# 强化学习训练数据样例 (JSONL格式)
+# 支持多种强化学习任务类型
+# 每行是一个独立的JSON对象，表示一个强化学习轨迹或经验样本
+# 文件编码: UTF-8
+
+{
+  "episode_id": "rl_001",
+  "task_type": "text_understanding",
+  "steps": [
+    {
+      "step": 0,
+      "state": {
+        "context": "用户问：'什么是人工智能？'",
+        "conversation_history": [],
+        "knowledge_context": ["人工智能定义", "机器学习基础"]
+      },
+      "action": {
+        "response": "人工智能是计算机科学的一个分支，致力于创建能够执行通常需要人类智能的任务的系统。",
+        "confidence": 0.92,
+        "sources": ["知识库条目#AI001"]
+      },
+      "reward": 0.8,
+      "next_state": {
+        "context": "用户问：'什么是人工智能？'",
+        "conversation_history": ["用户: 什么是人工智能？", "AI: 人工智能是计算机科学的一个分支..."],
+        "knowledge_context": ["人工智能定义", "机器学习基础", "深度学习"]
+      },
+      "done": false
+    },
+    {
+      "step": 1,
+      "state": {
+        "context": "用户追问：'人工智能有哪些主要类型？'",
+        "conversation_history": ["用户: 什么是人工智能？", "AI: 人工智能是计算机科学的一个分支..."],
+        "knowledge_context": ["人工智能定义", "机器学习基础", "深度学习"]
+      },
+      "action": {
+        "response": "人工智能主要有三种类型：弱人工智能（专门领域）、强人工智能（通用智能）和超人工智能（超越人类）。",
+        "confidence": 0.88,
+        "sources": ["知识库条目#AI002", "教科书第3章"]
+      },
+      "reward": 0.9,
+      "next_state": {
+        "context": "用户追问：'人工智能有哪些主要类型？'",
+        "conversation_history": ["用户: 什么是人工智能？", "AI: 人工智能是计算机科学的一个分支...", "用户: 人工智能有哪些主要类型？", "AI: 人工智能主要有三种类型..."],
+        "knowledge_context": ["人工智能定义", "机器学习基础", "深度学习", "AI分类"]
+      },
+      "done": true
+    }
+  ],
+  "total_reward": 1.7,
+  "metadata": {
+    "creation_date": "2026-01-10",
+    "task_difficulty": "中等",
+    "max_steps": 2,
+    "algorithm": "PPO",
+    "environment": "对话模拟环境"
+  }
+}
+
+{
+  "episode_id": "rl_002",
+  "task_type": "planning",
+  "steps": [
+    {
+      "step": 0,
+      "state": {
+        "goal": "准备一顿健康的晚餐",
+        "resources": ["厨房", "食材: 鸡肉、蔬菜、米饭", "厨具: 锅、刀、砧板"],
+        "constraints": ["时间: 60分钟", "预算: 50元", "饮食限制: 低盐"]
+      },
+      "action": {
+        "plan": ["1. 洗米煮饭 (15分钟)", "2. 切鸡肉和蔬菜 (10分钟)", "3. 炒菜 (15分钟)", "4. 摆盘 (5分钟)"],
+        "resource_allocation": {
+          "时间分配": {"煮饭": 15, "准备": 10, "烹饪": 15, "摆盘": 5},
+          "预算分配": {"食材": 40, "调料": 10}
+        }
+      },
+      "reward": 0.7,
+      "next_state": {
+        "goal": "准备一顿健康的晚餐",
+        "resources": ["厨房", "食材: 鸡肉、蔬菜、米饭", "厨具: 锅、刀、砧板"],
+        "constraints": ["时间: 60分钟", "预算: 50元", "饮食限制: 低盐"],
+        "current_step": 1
+      },
+      "done": false
+    },
+    {
+      "step": 1,
+      "state": {
+        "goal": "准备一顿健康的晚餐",
+        "resources": ["厨房", "食材: 鸡肉、蔬菜、米饭", "厨具: 锅、刀、砧板"],
+        "constraints": ["时间: 60分钟", "预算: 50元", "饮食限制: 低盐"],
+        "current_step": 1
+      },
+      "action": {
+        "execution": "开始煮饭，设置计时器15分钟",
+        "adjustment": "发现米饭量需要调整"
+      },
+      "reward": 0.6,
+      "next_state": {
+        "goal": "准备一顿健康的晚餐",
+        "resources": ["厨房", "食材: 鸡肉、蔬菜、米饭", "厨具: 锅、刀、砧板"],
+        "constraints": ["时间: 45分钟剩余", "预算: 40元剩余", "饮食限制: 低盐"],
+        "current_step": 2
+      },
+      "done": false
+    },
+    {
+      "step": 2,
+      "state": {
+        "goal": "准备一顿健康的晚餐",
+        "resources": ["厨房", "食材: 鸡肉、蔬菜、米饭", "厨具: 锅、刀、砧板"],
+        "constraints": ["时间: 45分钟剩余", "预算: 40元剩余", "饮食限制: 低盐"],
+        "current_step": 2
+      },
+      "action": {
+        "execution": "切好鸡肉和蔬菜",
+        "quality_check": "切块大小均匀"
+      },
+      "reward": 0.8,
+      "next_state": {
+        "goal": "准备一顿健康的晚餐",
+        "resources": ["厨房", "食材: 切好的鸡肉和蔬菜、米饭烹饪中", "厨具: 锅、刀、砧板"],
+        "constraints": ["时间: 35分钟剩余", "预算: 40元剩余", "饮食限制: 低盐"],
+        "current_step": 3
+      },
+      "done": false
+    },
+    {
+      "step": 3,
+      "state": {
+        "goal": "准备一顿健康的晚餐",
+        "resources": ["厨房", "食材: 切好的鸡肉和蔬菜、米饭烹饪中", "厨具: 锅、刀、砧板"],
+        "constraints": ["时间: 35分钟剩余", "预算: 40元剩余", "饮食限制: 低盐"],
+        "current_step": 3
+      },
+      "action": {
+        "execution": "炒菜完成，控制盐量",
+        "final_check": "味道适中，符合低盐要求"
+      },
+      "reward": 0.9,
+      "next_state": {
+        "goal": "准备一顿健康的晚餐",
+        "resources": ["厨房", "食材: 完成的菜肴", "厨具: 锅、刀、砧板"],
+        "constraints": ["时间: 20分钟剩余", "预算: 35元剩余", "饮食限制: 低盐达标"],
+        "current_step": 4
+      },
+      "done": true
+    }
+  ],
+  "total_reward": 3.0,
+  "metadata": {
+    "creation_date": "2026-01-11",
+    "task_difficulty": "困难",
+    "max_steps": 4,
+    "algorithm": "A2C",
+    "environment": "家庭任务规划环境"
+  }
+}
+
+{
+  "episode_id": "rl_003",
+  "task_type": "multimodal_processing",
+  "steps": [
+    {
+      "step": 0,
+      "state": {
+        "modalities": ["image", "text"],
+        "image_description": "一张包含狗和猫的图片",
+        "text_query": "描述图片中的动物"
+      },
+      "action": {
+        "response": "图片中有一只棕色的狗和一只白色的猫在草地上玩耍。",
+        "modality_fusion": true,
+        "confidence_scores": {"image_understanding": 0.85, "text_generation": 0.90}
+      },
+      "reward": 0.85,
+      "next_state": {
+        "modalities": ["image", "text"],
+        "image_description": "一张包含狗和猫的图片",
+        "text_query": "描述图片中的动物",
+        "previous_response": "图片中有一只棕色的狗和一只白色的猫在草地上玩耍。"
+      },
+      "done": false
+    },
+    {
+      "step": 1,
+      "state": {
+        "modalities": ["image", "text"],
+        "image_description": "一张包含狗和猫的图片",
+        "text_query": "描述图片中的动物",
+        "previous_response": "图片中有一只棕色的狗和一只白色的猫在草地上玩耍。"
+      },
+      "action": {
+        "response": "狗正在追逐一个球，猫在观察。背景是绿色的草地和蓝色的天空。",
+        "modality_fusion": true,
+        "confidence_scores": {"image_understanding": 0.88, "text_generation": 0.87}
+      },
+      "reward": 0.88,
+      "next_state": {
+        "modalities": ["image", "text"],
+        "image_description": "一张包含狗和猫的图片",
+        "text_query": "描述图片中的动物",
+        "previous_response": "狗正在追逐一个球，猫在观察。背景是绿色的草地和蓝色的天空。"
+      },
+      "done": true
+    }
+  ],
+  "total_reward": 1.73,
+  "metadata": {
+    "creation_date": "2026-01-12",
+    "task_difficulty": "简单",
+    "max_steps": 2,
+    "algorithm": "DQN",
+    "environment": "多模态理解环境"
+  }
+}
+
+# 字段说明:
+# - episode_id: 轨迹唯一标识符
+# - task_type: 任务类型 (text_understanding, multimodal_processing, planning, reasoning, robot_control等)
+# - steps: 轨迹步骤列表，每个步骤包含:
+#   - step: 步骤编号
+#   - state: 状态描述，根据任务类型不同而不同
+#   - action: 采取的动作，根据任务类型不同而不同
+#   - reward: 即时奖励值 (通常范围[-1, 1]或[0, 1])
+#   - next_state: 下一状态描述
+#   - done: 是否结束 (true/false)
+# - total_reward: 轨迹总奖励
+# - metadata: 元数据信息
+#   - creation_date: 创建日期
+#   - task_difficulty: 任务难度 (简单/中等/困难)
+#   - max_steps: 最大步骤数
+#   - algorithm: 使用的强化学习算法
+#   - environment: 训练环境名称
+
+# 任务类型详细说明:
+# 1. text_understanding (文本理解): 状态包含上下文、对话历史、知识上下文；动作为生成的响应
+# 2. planning (规划): 状态包含目标、资源、约束；动作为计划或执行动作
+# 3. multimodal_processing (多模态处理): 状态包含模态信息、查询；动作为多模态响应
+# 4. reasoning (推理): 状态包含问题、已知事实；动作为推理步骤或结论
+# 5. robot_control (机器人控制): 状态包含传感器读数、目标位置；动作为控制指令
+# 6. self_correction (自我改正): 状态包含错误检测结果；动作为改正措施
+# 7. knowledge_acquisition (知识获取): 状态包含信息缺口；动作为知识查询或学习
+# 8. autonomous_evolution (自主演化): 状态包含系统性能评估；动作为架构或参数调整

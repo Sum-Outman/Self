@@ -1,0 +1,22 @@
+# 单模态文本分类训练数据样例 (JSONL格式)
+# 每行是一个独立的JSON对象，表示一个训练样本
+# 文件编码: UTF-8
+
+{"item_id": "text_001", "data_source": "synthetic", "text": "今天天气晴朗，适合外出散步。", "label": 0, "label_name": "日常生活", "metadata": {"length": 12, "language": "zh", "creation_date": "2026-01-01"}}
+{"item_id": "text_002", "data_source": "synthetic", "text": "人工智能技术的发展正在改变我们的生活和工作方式。", "label": 1, "label_name": "科技", "metadata": {"length": 18, "language": "zh", "creation_date": "2026-01-01"}}
+{"item_id": "text_003", "data_source": "synthetic", "text": "股票市场今天大幅上涨，投资者信心增强。", "label": 2, "label_name": "金融", "metadata": {"length": 13, "language": "zh", "creation_date": "2026-01-01"}}
+{"item_id": "text_004", "data_source": "synthetic", "text": "研究表明，适当的运动有助于改善心理健康。", "label": 3, "label_name": "健康", "metadata": {"length": 14, "language": "zh", "creation_date": "2026-01-01"}}
+{"item_id": "text_005", "data_source": "synthetic", "text": "这部电影获得了多个国际电影节的大奖。", "label": 4, "label_name": "娱乐", "metadata": {"length": 12, "language": "zh", "creation_date": "2026-01-01"}}
+{"item_id": "text_006", "data_source": "synthetic", "text": "政府宣布新的环保政策，旨在减少碳排放。", "label": 5, "label_name": "政治", "metadata": {"length": 13, "language": "zh", "creation_date": "2026-01-01"}}
+{"item_id": "text_007", "data_source": "synthetic", "text": "科学家发现了新的行星，可能存在生命的迹象。", "label": 6, "label_name": "科学", "metadata": {"length": 13, "language": "zh", "creation_date": "2026-01-01"}}
+{"item_id": "text_008", "data_source": "synthetic", "text": "这家餐厅的菜品口味独特，服务也非常周到。", "label": 7, "label_name": "美食", "metadata": {"length": 12, "language": "zh", "creation_date": "2026-01-01"}}
+{"item_id": "text_009", "data_source": "synthetic", "text": "足球队在决赛中表现出色，赢得了冠军奖杯。", "label": 8, "label_name": "体育", "metadata": {"length": 12, "language": "zh", "creation_date": "2026-01-01"}}
+{"item_id": "text_010", "data_source": "synthetic", "text": "艺术展览展示了当代艺术家的最新创作成果。", "label": 9, "label_name": "艺术", "metadata": {"length": 12, "language": "zh", "creation_date": "2026-01-01"}}
+
+# 字段说明:
+# - item_id: 样本唯一标识符
+# - data_source: 数据源类型 (synthetic: 合成数据, real_image_text: 真实图像-文本对等)
+# - text: 原始文本内容
+# - label: 类别标签 (整数)
+# - label_name: 类别名称 (可读字符串)
+# - metadata: 元数据信息，可包含文本长度、语言、创建日期等

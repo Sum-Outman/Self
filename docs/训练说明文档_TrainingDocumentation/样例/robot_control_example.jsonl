@@ -1,0 +1,393 @@
+# 机器人控制训练数据样例 (JSONL格式)
+# 基于HumanoidRobotControlEnv环境
+# 每行是一个独立的JSON对象，表示一个机器人控制轨迹或经验样本
+# 文件编码: UTF-8
+
+{
+  "episode_id": "robot_001",
+  "task_type": "walking",
+  "robot_type": "humanoid",
+  "sim_backend": "pybullet",
+  "steps": [
+    {
+      "step": 0,
+      "timestamp": 0.0,
+      "observation": {
+        "joint_positions": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "joint_velocities": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "base_position": [0.0, 0.0, 1.0],
+        "base_orientation": [1.0, 0.0, 0.0, 0.0],
+        "base_linear_velocity": [0.0, 0.0, 0.0],
+        "base_angular_velocity": [0.0, 0.0, 0.0]
+      },
+      "action": {
+        "joint_targets": [0.1, 0.0, 0.0, -0.1, 0.0, 0.0, 0.1, 0.0, 0.0, -0.1, 0.0, 0.0],
+        "control_mode": "position",
+        "stiffness": [800, 800, 800, 800, 800, 800, 800, 800, 800, 800, 800, 800],
+        "damping": [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
+      },
+      "reward": 0.1,
+      "next_observation": {
+        "joint_positions": [0.08, 0.01, 0.02, -0.09, -0.01, 0.01, 0.09, 0.01, 0.02, -0.08, -0.01, 0.01],
+        "joint_velocities": [0.5, 0.1, 0.2, -0.5, -0.1, 0.1, 0.5, 0.1, 0.2, -0.5, -0.1, 0.1],
+        "base_position": [0.0, 0.01, 1.0],
+        "base_orientation": [0.99, 0.01, 0.01, 0.01],
+        "base_linear_velocity": [0.0, 0.02, 0.0],
+        "base_angular_velocity": [0.01, 0.0, 0.0]
+      },
+      "done": false,
+      "info": {
+        "distance_to_target": 5.0,
+        "energy_consumption": 0.5,
+        "stability": 0.9,
+        "contact_forces": {"left_foot": 150, "right_foot": 155}
+      }
+    },
+    {
+      "step": 1,
+      "timestamp": 0.033,
+      "observation": {
+        "joint_positions": [0.08, 0.01, 0.02, -0.09, -0.01, 0.01, 0.09, 0.01, 0.02, -0.08, -0.01, 0.01],
+        "joint_velocities": [0.5, 0.1, 0.2, -0.5, -0.1, 0.1, 0.5, 0.1, 0.2, -0.5, -0.1, 0.1],
+        "base_position": [0.0, 0.01, 1.0],
+        "base_orientation": [0.99, 0.01, 0.01, 0.01],
+        "base_linear_velocity": [0.0, 0.02, 0.0],
+        "base_angular_velocity": [0.01, 0.0, 0.0]
+      },
+      "action": {
+        "joint_targets": [0.15, 0.0, 0.0, -0.15, 0.0, 0.0, 0.15, 0.0, 0.0, -0.15, 0.0, 0.0],
+        "control_mode": "position",
+        "stiffness": [800, 800, 800, 800, 800, 800, 800, 800, 800, 800, 800, 800],
+        "damping": [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
+      },
+      "reward": 0.15,
+      "next_observation": {
+        "joint_positions": [0.13, 0.02, 0.03, -0.14, -0.02, 0.02, 0.14, 0.02, 0.03, -0.13, -0.02, 0.02],
+        "joint_velocities": [0.8, 0.15, 0.25, -0.8, -0.15, 0.15, 0.8, 0.15, 0.25, -0.8, -0.15, 0.15],
+        "base_position": [0.0, 0.03, 0.99],
+        "base_orientation": [0.98, 0.02, 0.02, 0.02],
+        "base_linear_velocity": [0.0, 0.05, -0.01],
+        "base_angular_velocity": [0.02, 0.0, 0.0]
+      },
+      "done": false,
+      "info": {
+        "distance_to_target": 4.8,
+        "energy_consumption": 1.2,
+        "stability": 0.85,
+        "contact_forces": {"left_foot": 145, "right_foot": 160}
+      }
+    },
+    {
+      "step": 2,
+      "timestamp": 0.066,
+      "observation": {
+        "joint_positions": [0.13, 0.02, 0.03, -0.14, -0.02, 0.02, 0.14, 0.02, 0.03, -0.13, -0.02, 0.02],
+        "joint_velocities": [0.8, 0.15, 0.25, -0.8, -0.15, 0.15, 0.8, 0.15, 0.25, -0.8, -0.15, 0.15],
+        "base_position": [0.0, 0.03, 0.99],
+        "base_orientation": [0.98, 0.02, 0.02, 0.02],
+        "base_linear_velocity": [0.0, 0.05, -0.01],
+        "base_angular_velocity": [0.02, 0.0, 0.0]
+      },
+      "action": {
+        "joint_targets": [0.2, 0.0, 0.0, -0.2, 0.0, 0.0, 0.2, 0.0, 0.0, -0.2, 0.0, 0.0],
+        "control_mode": "position",
+        "stiffness": [800, 800, 800, 800, 800, 800, 800, 800, 800, 800, 800, 800],
+        "damping": [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
+      },
+      "reward": 0.2,
+      "next_observation": {
+        "joint_positions": [0.18, 0.03, 0.04, -0.19, -0.03, 0.03, 0.19, 0.03, 0.04, -0.18, -0.03, 0.03],
+        "joint_velocities": [1.0, 0.2, 0.3, -1.0, -0.2, 0.2, 1.0, 0.2, 0.3, -1.0, -0.2, 0.2],
+        "base_position": [0.0, 0.06, 0.98],
+        "base_orientation": [0.97, 0.03, 0.03, 0.03],
+        "base_linear_velocity": [0.0, 0.08, -0.02],
+        "base_angular_velocity": [0.03, 0.0, 0.0]
+      },
+      "done": false,
+      "info": {
+        "distance_to_target": 4.5,
+        "energy_consumption": 2.0,
+        "stability": 0.8,
+        "contact_forces": {"left_foot": 140, "right_foot": 165}
+      }
+    }
+  ],
+  "total_reward": 0.45,
+  "goal": {
+    "target_position": [0.0, 5.0, 1.0],
+    "target_orientation": [1.0, 0.0, 0.0, 0.0],
+    "task_description": "向前行走5米"
+  },
+  "metadata": {
+    "creation_date": "2026-01-15",
+    "simulation_time": 0.1,
+    "control_frequency": 30,
+    "algorithm": "PPO",
+    "robot_model": "humanoid_v2",
+    "sensor_configuration": ["IMU", "joint_encoders", "force_sensors"]
+  }
+}
+
+{
+  "episode_id": "robot_002",
+  "task_type": "object_manipulation",
+  "robot_type": "humanoid",
+  "sim_backend": "pybullet",
+  "steps": [
+    {
+      "step": 0,
+      "timestamp": 0.0,
+      "observation": {
+        "joint_positions": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "joint_velocities": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "base_position": [0.0, 0.0, 1.0],
+        "base_orientation": [1.0, 0.0, 0.0, 0.0],
+        "object_position": [0.5, 0.0, 0.8],
+        "object_orientation": [1.0, 0.0, 0.0, 0.0],
+        "gripper_state": 0.0,
+        "force_torque_sensor": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      },
+      "action": {
+        "joint_targets": [0.2, 0.1, 0.0, -0.1, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "gripper_command": 0.3,
+        "control_mode": "impedance",
+        "stiffness": [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000],
+        "damping": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100]
+      },
+      "reward": 0.05,
+      "next_observation": {
+        "joint_positions": [0.18, 0.09, 0.01, -0.09, 0.01, 0.01, 0.28, 0.01, 0.01, 0.01, 0.01, 0.01],
+        "joint_velocities": [0.6, 0.3, 0.1, -0.3, 0.1, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1],
+        "base_position": [0.0, 0.0, 1.0],
+        "base_orientation": [0.99, 0.01, 0.0, 0.0],
+        "object_position": [0.5, 0.0, 0.8],
+        "object_orientation": [1.0, 0.0, 0.0, 0.0],
+        "gripper_state": 0.25,
+        "force_torque_sensor": [0.1, 0.0, 0.0, 0.0, 0.0, 0.0]
+      },
+      "done": false,
+      "info": {
+        "distance_to_object": 0.7,
+        "gripper_closure": 0.25,
+        "object_grasped": false,
+        "collision_detected": false
+      }
+    },
+    {
+      "step": 1,
+      "timestamp": 0.033,
+      "observation": {
+        "joint_positions": [0.18, 0.09, 0.01, -0.09, 0.01, 0.01, 0.28, 0.01, 0.01, 0.01, 0.01, 0.01],
+        "joint_velocities": [0.6, 0.3, 0.1, -0.3, 0.1, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1],
+        "base_position": [0.0, 0.0, 1.0],
+        "base_orientation": [0.99, 0.01, 0.0, 0.0],
+        "object_position": [0.5, 0.0, 0.8],
+        "object_orientation": [1.0, 0.0, 0.0, 0.0],
+        "gripper_state": 0.25,
+        "force_torque_sensor": [0.1, 0.0, 0.0, 0.0, 0.0, 0.0]
+      },
+      "action": {
+        "joint_targets": [0.3, 0.15, 0.05, -0.05, 0.0, 0.0, 0.4, 0.05, 0.0, 0.0, 0.0, 0.0],
+        "gripper_command": 0.5,
+        "control_mode": "impedance",
+        "stiffness": [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000],
+        "damping": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100]
+      },
+      "reward": 0.1,
+      "next_observation": {
+        "joint_positions": [0.28, 0.14, 0.04, -0.04, 0.02, 0.02, 0.38, 0.04, 0.02, 0.02, 0.02, 0.02],
+        "joint_velocities": [0.8, 0.4, 0.2, -0.2, 0.15, 0.15, 1.0, 0.2, 0.15, 0.15, 0.15, 0.15],
+        "base_position": [0.0, 0.0, 1.0],
+        "base_orientation": [0.98, 0.02, 0.0, 0.0],
+        "object_position": [0.48, 0.01, 0.79],
+        "object_orientation": [0.99, 0.01, 0.0, 0.0],
+        "gripper_state": 0.45,
+        "force_torque_sensor": [0.5, 0.1, 0.0, 0.0, 0.0, 0.0]
+      },
+      "done": false,
+      "info": {
+        "distance_to_object": 0.6,
+        "gripper_closure": 0.45,
+        "object_grasped": false,
+        "collision_detected": false
+      }
+    },
+    {
+      "step": 2,
+      "timestamp": 0.066,
+      "observation": {
+        "joint_positions": [0.28, 0.14, 0.04, -0.04, 0.02, 0.02, 0.38, 0.04, 0.02, 0.02, 0.02, 0.02],
+        "joint_velocities": [0.8, 0.4, 0.2, -0.2, 0.15, 0.15, 1.0, 0.2, 0.15, 0.15, 0.15, 0.15],
+        "base_position": [0.0, 0.0, 1.0],
+        "base_orientation": [0.98, 0.02, 0.0, 0.0],
+        "object_position": [0.48, 0.01, 0.79],
+        "object_orientation": [0.99, 0.01, 0.0, 0.0],
+        "gripper_state": 0.45,
+        "force_torque_sensor": [0.5, 0.1, 0.0, 0.0, 0.0, 0.0]
+      },
+      "action": {
+        "joint_targets": [0.35, 0.2, 0.1, 0.0, 0.0, 0.0, 0.45, 0.1, 0.0, 0.0, 0.0, 0.0],
+        "gripper_command": 0.8,
+        "control_mode": "impedance",
+        "stiffness": [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000],
+        "damping": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100]
+      },
+      "reward": 0.3,
+      "next_observation": {
+        "joint_positions": [0.33, 0.19, 0.08, 0.01, 0.03, 0.03, 0.43, 0.08, 0.03, 0.03, 0.03, 0.03],
+        "joint_velocities": [1.0, 0.5, 0.3, 0.1, 0.2, 0.2, 1.2, 0.3, 0.2, 0.2, 0.2, 0.2],
+        "base_position": [0.0, 0.0, 1.0],
+        "base_orientation": [0.97, 0.03, 0.0, 0.0],
+        "object_position": [0.45, 0.02, 0.78],
+        "object_orientation": [0.98, 0.02, 0.0, 0.0],
+        "gripper_state": 0.75,
+        "force_torque_sensor": [2.5, 0.3, 0.1, 0.0, 0.0, 0.0]
+      },
+      "done": true,
+      "info": {
+        "distance_to_object": 0.4,
+        "gripper_closure": 0.75,
+        "object_grasped": true,
+        "collision_detected": false,
+        "grasp_force": 2.5
+      }
+    }
+  ],
+  "total_reward": 0.45,
+  "goal": {
+    "object_id": "cube_001",
+    "target_position": [0.0, 0.0, 1.0],
+    "target_orientation": [1.0, 0.0, 0.0, 0.0],
+    "task_description": "抓取并移动立方体到指定位置"
+  },
+  "metadata": {
+    "creation_date": "2026-01-16",
+    "simulation_time": 0.1,
+    "control_frequency": 30,
+    "algorithm": "SAC",
+    "robot_model": "humanoid_v2_with_gripper",
+    "object_properties": {"mass": 0.5, "size": [0.1, 0.1, 0.1], "friction": 0.8}
+  }
+}
+
+{
+  "episode_id": "robot_003",
+  "task_type": "sensor_fusion",
+  "robot_type": "mobile",
+  "sim_backend": "real_hardware",
+  "steps": [
+    {
+      "step": 0,
+      "timestamp": 0.0,
+      "observation": {
+        "camera_image": "/data/images/navigation_001.jpg",
+        "lidar_data": [5.0, 5.1, 5.0, 4.9, 5.0, 0.5, 0.6, 0.5, 0.4, 0.5],
+        "imu_data": {"acceleration": [0.0, 0.0, 9.8], "angular_velocity": [0.0, 0.0, 0.0], "orientation": [1.0, 0.0, 0.0, 0.0]},
+        "wheel_encoders": [0.0, 0.0, 0.0, 0.0],
+        "gps_position": [31.2304, 121.4737, 5.0],
+        "battery_level": 95.0
+      },
+      "action": {
+        "wheel_velocities": [0.5, 0.5, 0.5, 0.5],
+        "steering_angle": 0.0,
+        "camera_pan_tilt": [0.0, 0.0]
+      },
+      "reward": 0.1,
+      "next_observation": {
+        "camera_image": "/data/images/navigation_002.jpg",
+        "lidar_data": [4.9, 5.0, 4.9, 4.8, 4.9, 0.4, 0.5, 0.4, 0.3, 0.4],
+        "imu_data": {"acceleration": [0.1, 0.0, 9.7], "angular_velocity": [0.0, 0.0, 0.0], "orientation": [0.99, 0.01, 0.0, 0.0]},
+        "wheel_encoders": [0.05, 0.05, 0.05, 0.05],
+        "gps_position": [31.23041, 121.47371, 5.0],
+        "battery_level": 94.8
+      },
+      "done": false,
+      "info": {
+        "distance_to_target": 10.0,
+        "obstacle_detected": false,
+        "path_clearance": 0.5
+      }
+    }
+  ],
+  "total_reward": 0.1,
+  "goal": {
+    "target_position": [31.2308, 121.4742, 5.0],
+    "target_orientation": [1.0, 0.0, 0.0, 0.0],
+    "task_description": "自主导航到指定GPS坐标"
+  },
+  "metadata": {
+    "creation_date": "2026-01-17",
+    "environment": "真实室外环境",
+    "weather": "晴朗",
+    "algorithm": "TD3",
+    "sensor_configuration": ["RGB相机", "2D激光雷达", "IMU", "GPS", "编码器"],
+    "hardware_platform": "自主移动机器人平台V3"
+  }
+}
+
+# 字段说明:
+# - episode_id: 轨迹唯一标识符
+# - task_type: 任务类型 (walking, object_manipulation, sensor_fusion, navigation等)
+# - robot_type: 机器人类型 (humanoid, mobile, arm等)
+# - sim_backend: 仿真后端 (pybullet, gazebo, real_hardware)
+# - steps: 轨迹步骤列表，每个步骤包含:
+#   - step: 步骤编号
+#   - timestamp: 时间戳 (秒)
+#   - observation: 观察数据，包含:
+#     - joint_positions: 关节位置 (12维，弧度)
+#     - joint_velocities: 关节速度 (12维，弧度/秒)
+#     - base_position: 基座位置 (3维，x,y,z，米)
+#     - base_orientation: 基座朝向 (4维，四元数w,x,y,z)
+#     - base_linear_velocity: 基座线速度 (3维，米/秒)
+#     - base_angular_velocity: 基座角速度 (3维，弧度/秒)
+#     - object_position: 目标物体位置 (可选，3维)
+#     - object_orientation: 目标物体朝向 (可选，4维)
+#     - gripper_state: 夹爪状态 (0-1)
+#     - force_torque_sensor: 力扭矩传感器数据 (6维，力x,y,z，扭矩x,y,z)
+#     - camera_image: 相机图像路径 (可选)
+#     - lidar_data: 激光雷达数据 (可选，距离数组)
+#     - imu_data: IMU数据 (加速度、角速度、朝向)
+#     - wheel_encoders: 轮式编码器数据
+#     - gps_position: GPS位置 (纬度,经度,海拔)
+#     - battery_level: 电池电量
+#   - action: 动作数据，包含:
+#     - joint_targets: 关节目标位置/速度/力矩 (12维)
+#     - gripper_command: 夹爪控制命令 (0-1)
+#     - control_mode: 控制模式 (position, velocity, torque, impedance)
+#     - stiffness: 刚度系数 (可选，阻抗控制)
+#     - damping: 阻尼系数 (可选，阻抗控制)
+#     - wheel_velocities: 轮子速度 (4维，移动机器人)
+#     - steering_angle: 转向角度 (移动机器人)
+#     - camera_pan_tilt: 相机云台控制 (2维，平移/倾斜)
+#   - reward: 即时奖励值
+#   - next_observation: 下一观察数据
+#   - done: 是否结束 (true/false)
+#   - info: 额外信息，包含:
+#     - distance_to_target: 到目标的距离
+#     - energy_consumption: 能量消耗
+#     - stability: 稳定性指标 (0-1)
+#     - contact_forces: 接触力数据
+#     - distance_to_object: 到物体的距离
+#     - gripper_closure: 夹爪闭合度
+#     - object_grasped: 物体是否被抓取
+#     - collision_detected: 是否检测到碰撞
+#     - grasp_force: 抓取力
+#     - obstacle_detected: 是否检测到障碍物
+#     - path_clearance: 路径畅通度
+# - total_reward: 轨迹总奖励
+# - goal: 任务目标描述
+#   - target_position: 目标位置
+#   - target_orientation: 目标朝向
+#   - task_description: 任务描述
+#   - object_id: 物体ID (可选)
+# - metadata: 元数据信息
+#   - creation_date: 创建日期
+#   - simulation_time: 仿真时间
+#   - control_frequency: 控制频率 (Hz)
+#   - algorithm: 使用的强化学习算法
+#   - robot_model: 机器人模型
+#   - sensor_configuration: 传感器配置
+#   - environment: 环境描述
+#   - weather: 天气条件 (真实环境)
+#   - hardware_platform: 硬件平台
+#   - object_properties: 物体属性

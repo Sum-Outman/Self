@@ -1,0 +1,84 @@
+# Prometheus 配置
+# Self AGI 系统监控
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'production'
+    cluster: 'selfagi'
+
+# 告警规则
+rule_files:
+  # - "alert_rules.yml"
+
+# 抓取配置
+scrape_configs:
+  # Prometheus自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Self AGI 后端服务
+  - job_name: 'selfagi-backend'
+    static_configs:
+      - targets: ['backend:8000']
+        labels:
+          service: 'selfagi-backend'
+          component: 'api'
+    metrics_path: '/api/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Self AGI 训练服务
+  - job_name: 'selfagi-training'
+    static_configs:
+      - targets: ['training:8001']
+        labels:
+          service: 'selfagi-training'
+          component: 'training'
+    metrics_path: '/api/training/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Node Exporter（系统指标）
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'node-exporter'
+          component: 'system'
+
+  # cAdvisor（容器指标）
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'cadvisor'
+          component: 'container'
+
+  # PostgreSQL 数据库
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'postgres-exporter'
+          component: 'database'
+
+  # Redis 缓存
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'redis-exporter'
+          component: 'cache'
+
+# 远程写入配置（可选）
+# remote_write:
+#   - url: "http://thanos-receive:10908/api/v1/receive"
+
+# 远程读取配置（可选）
+# remote_read:
+#   - url: "http://thanos-query:10902/api/v1/read"

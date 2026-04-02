@@ -1,0 +1,104 @@
+# Self AGI 系统依赖包
+
+# Web框架
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# 数据库和ORM
+sqlalchemy==2.0.23
+alembic==1.13.1
+# psycopg2-binary==2.9.9  # 可选，如果需要PostgreSQL支持（默认使用SQLite）
+pymongo==4.6.0
+redis==5.0.1
+
+# AI/ML框架
+torch==2.9.0
+torchvision==0.24.0
+torchaudio==2.9.0
+# FlashAttention-2高效注意力实现 (需要CUDA和特定硬件支持，CPU环境将自动回退)
+flash-attn>=2.0.0  # 可选但推荐，用于高效注意力计算
+
+# FAISS/HNSW高效向量检索 (需要根据硬件选择CPU或GPU版本)
+faiss-cpu>=1.7.4  # CPU版本，可选但推荐，用于高效向量检索
+hnswlib>=0.8.0  # HNSW索引库，可选但推荐
+
+
+
+
+
+
+# 多模态处理
+pillow==9.5.0
+opencv-python==4.8.1.78
+pydub==0.25.1
+speechrecognition==3.10.0
+pyttsx3==2.90
+
+# 数据处理
+numpy==1.24.3
+pandas==2.1.3
+scipy==1.11.4
+scikit-learn==1.3.2
+
+# 异步和并发
+# asyncio是Python标准库，无需单独安装
+aiohttp==3.9.1
+celery==5.3.4
+
+# 安全和认证
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-dotenv==1.0.0
+cryptography==41.0.7
+pyotp==2.9.0
+
+# 工具和工具类
+pydantic==2.5.0
+pydantic-settings==2.1.0
+loguru==0.7.2
+rich==13.7.0
+tqdm==4.66.1
+
+# 规则引擎和推理
+rule-engine==4.5.3
+sympy==1.14.0
+jedi==0.19.1
+radon==6.0.1
+mccabe==0.7.0
+networkx>=3.1  # 知识图谱和推理引擎必需
+
+# 强化学习
+# gym==0.26.2  # 已过时，使用gymnasium替代
+stable-baselines3==2.7.1
+gymnasium>=0.28.0
+
+# 测试
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-ordering==0.6
+httpx==0.25.1
+
+# 其他
+click==8.1.7
+pyyaml==6.0.1
+jsonschema==4.19.2
+requests==2.31.0
+websockets==12.0
+slowapi==0.1.8
+
+# 机器人仿真和硬件接口
+pybullet==3.2.5  # 机器人仿真，Windows安装需要Visual Studio构建工具
+# rclpy是ROS2 Python接口，通常通过ROS2系统安装，不是pip包
+# 如果需要ROS2支持，请先安装ROS2系统: http://docs.ros.org/en/foxy/Installation.html
+roslibpy==1.2.0  # ROS1 Python接口
+
+# 传感器接口协议
+smbus2==0.4.3
+spidev==3.6
+pyserial==3.5  # 串口通信必需
+python-can>=4.3.0  # CAN总线通信
+
+# 系统监控和硬件检测
+psutil==5.9.7
+netifaces==0.11.0

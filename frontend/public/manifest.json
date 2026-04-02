@@ -1,0 +1,22 @@
+{
+  "name": "Self AGI - 自主通用人工智能系统",
+  "short_name": "Self AGI",
+  "description": "工业级自主通用人工智能系统，具有多模态感知、推理、规划和自我认知能力",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "48x48 72x72 96x96 128x128 192x192 256x256 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
+}

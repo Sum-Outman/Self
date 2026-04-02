@@ -1,0 +1,142 @@
+# 多模态训练数据样例 (JSONL格式)
+# 基于RealMultimodalItem数据结构
+# 每行是一个独立的JSON对象，表示一个多模态训练样本
+# 文件编码: UTF-8
+
+{
+  "item_id": "multi_001",
+  "data_source": "real_multimodal",
+  "file_paths": {
+    "image": "/data/images/dog_running_001.jpg",
+    "text": "/data/texts/dog_running_001.txt",
+    "audio": "/data/audio/dog_barking_001.wav"
+  },
+  "raw_text": "一只棕色的狗在绿色的草地上奔跑，阳光明媚。",
+  "labels": {
+    "text_classification": 3,
+    "image_classification": 3,
+    "color_recognition": "棕色",
+    "shape_recognition": "不规则",
+    "cross_modal_matching": 1
+  },
+  "metadata": {
+    "creation_date": "2026-01-01",
+    "source": "COCO",
+    "license": "CC BY 4.0",
+    "image_size": "1920x1080",
+    "audio_duration": 3.5,
+    "language": "zh"
+  }
+}
+
+{
+  "item_id": "multi_002",
+  "data_source": "real_image_text",
+  "file_paths": {
+    "image": "/data/images/cityscape_001.jpg",
+    "text": "/data/texts/cityscape_001.txt"
+  },
+  "raw_text": "现代都市的天际线，高楼林立，夜晚灯火辉煌。",
+  "labels": {
+    "text_classification": 10,
+    "image_classification": 10,
+    "color_recognition": "多种颜色",
+    "shape_recognition": "几何形状",
+    "cross_modal_matching": 1
+  },
+  "metadata": {
+    "creation_date": "2026-01-02",
+    "source": "自定义采集",
+    "license": "内部使用",
+    "image_size": "2560x1440",
+    "location": "上海",
+    "time_of_day": "夜晚"
+  }
+}
+
+{
+  "item_id": "multi_003",
+  "data_source": "real_audio_text",
+  "file_paths": {
+    "audio": "/data/audio/bird_singing_001.wav",
+    "text": "/data/texts/bird_singing_001.txt"
+  },
+  "raw_text": "清晨的鸟鸣声，清脆悦耳，预示着新的一天的开始。",
+  "labels": {
+    "text_classification": 11,
+    "audio_classification": 5,
+    "cross_modal_matching": 1
+  },
+  "metadata": {
+    "creation_date": "2026-01-03",
+    "source": "野外录音",
+    "license": "CC BY-NC 4.0",
+    "audio_duration": 8.2,
+    "sample_rate": 44100,
+    "bird_species": "麻雀"
+  }
+}
+
+{
+  "item_id": "multi_004",
+  "data_source": "real_video_text",
+  "file_paths": {
+    "video": "/data/videos/cooking_001.mp4",
+    "text": "/data/texts/cooking_001.txt"
+  },
+  "raw_text": "厨师正在准备一道精美的意大利面，手法娴熟，配料丰富。",
+  "labels": {
+    "text_classification": 12,
+    "video_classification": 8,
+    "cross_modal_matching": 1,
+    "action_recognition": "烹饪"
+  },
+  "metadata": {
+    "creation_date": "2026-01-04",
+    "source": "教学视频",
+    "license": "教育使用",
+    "video_duration": 120.5,
+    "resolution": "1920x1080",
+    "fps": 30,
+    "cuisine": "意大利菜"
+  }
+}
+
+{
+  "item_id": "multi_005",
+  "data_source": "real_sensor",
+  "file_paths": {
+    "sensor": "/data/sensors/robot_arm_001.csv"
+  },
+  "raw_text": "机器人手臂运动轨迹数据，包含位置、速度和力传感器读数。",
+  "labels": {
+    "sensor_classification": 15,
+    "motion_pattern": "抓取"
+  },
+  "metadata": {
+    "creation_date": "2026-01-05",
+    "source": "实验室采集",
+    "license": "研究使用",
+    "sensor_types": ["加速度计", "陀螺仪", "力传感器"],
+    "sampling_rate": 100,
+    "duration": 10.2
+  }
+}
+
+# 字段说明:
+# - item_id: 样本唯一标识符
+# - data_source: 数据源类型 (real_multimodal: 真实多模态, real_image_text: 真实图像-文本对等)
+# - file_paths: 各模态文件路径映射 (键: 模态类型, 值: 文件路径)
+# - raw_text: 原始文本内容 (可选)
+# - labels: 多任务标签字典，包含各种任务的标签
+#   - text_classification: 文本分类标签
+#   - image_classification: 图像分类标签  
+#   - audio_classification: 音频分类标签
+#   - video_classification: 视频分类标签
+#   - color_recognition: 颜色识别标签
+#   - shape_recognition: 形状识别标签
+#   - cross_modal_matching: 跨模态匹配标签 (1: 匹配, 0: 不匹配)
+#   - action_recognition: 动作识别标签
+#   - sensor_classification: 传感器数据分类标签
+#   - motion_pattern: 运动模式标签
+# - metadata: 元数据信息，包含数据来源、许可证、技术参数等

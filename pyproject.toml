@@ -1,0 +1,131 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "self-agi"
+version = "0.1.0"
+description = "完整的自主通用人工智能系统"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Self AGI 开发团队", email = "silencecrowtom@qq.com"}
+]
+keywords = ["agi", "artificial-intelligence", "transformer", "multimodal", "robotics"]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "torch>=2.9.0",
+    "torchvision>=0.24.0",
+    "torchaudio>=2.9.0",
+    "transformers>=4.35.0",
+    "sqlalchemy>=2.0.0",
+    "pydantic>=2.0.0",
+    "redis>=5.0.0",
+    "pymongo>=4.6.0",
+    "celery>=5.3.0",
+    "requests>=2.31.0",
+    "Pillow>=9.5.0",
+    "scikit-learn>=1.3.0",
+    "numpy>=1.24.0",
+    "psutil>=5.9.0",
+    "opencv-python>=4.8.0",
+    "flash-attn>=2.3.0",
+    "faiss-cpu>=1.7.4",
+    "hnswlib>=0.7.0",
+    "scipy>=1.11.4",
+    "aiohttp>=3.9.1",
+    "pydantic-settings>=2.1.0",
+    "loguru>=0.7.2",
+    "rich>=13.7.0",
+    "tqdm>=4.66.1",
+    "pyyaml>=6.0.1",
+    "jsonschema>=4.19.2",
+    "websockets>=12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.7.0",
+    "flake8>=6.1.0",
+    "jedi>=0.19.0",
+]
+gpu = [
+    "torch>=2.9.0",
+    "torchvision>=0.24.0",
+    "torchaudio>=2.9.0",
+]
+training = [
+    "torch>=2.9.0",
+    "transformers>=4.35.0",
+    "datasets>=2.14.0",
+    "accelerate>=0.24.0",
+    "pandas>=2.0.0",
+]
+robotics = [
+    "roslibpy>=1.2.0",
+    "pyserial>=3.5",
+    "pybullet>=3.2.5",
+]
+
+[project.urls]
+Homepage = "https://self-agi.ai"
+Repository = "https://github.com/self-agi/self"
+Documentation = "https://docs.self-agi.ai"
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[project.scripts]
+self-agi = "self_agi.cli:main"
+self-train = "self_agi.training.cli:train"
+self-serve = "self_agi.serving.cli:serve"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["self_agi*"]
+exclude = ["tests*", "docs*", "examples*"]

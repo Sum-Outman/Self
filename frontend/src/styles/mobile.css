@@ -1,0 +1,398 @@
+/**
+ * 移动端优化样式
+ * 针对移动设备和触摸屏的优化
+ */
+
+/* 移动端基础优化 */
+@layer base {
+  /* 改善移动端点击体验 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+  }
+
+  /* 改善文本选择 */
+  ::selection {
+    @apply bg-gray-200 dark:bg-gray-800;
+  }
+
+  /* 移动端字体大小优化 */
+  html {
+    font-size: 16px;
+  }
+
+  @media (max-width: 640px) {
+    html {
+      font-size: 15px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    html {
+      font-size: 14px;
+    }
+  }
+
+  /* 移动端滚动优化 */
+  body {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+  }
+
+  /* 移动端表单元素优化 */
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px; /* 防止iOS自动缩放 */
+  }
+
+  /* 移动端链接优化 */
+  a {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+
+  a:active {
+    @apply text-gray-700 dark:text-gray-300;
+  }
+}
+
+/* 移动端组件优化 */
+@layer components {
+  /* 移动端按钮优化 */
+  .btn-mobile {
+    @apply min-h-[44px] min-w-[44px]; /* 最小点击区域 */
+    @apply px-4 py-3; /* 更大的内边距 */
+    @apply text-base; /* 更大的字体 */
+  }
+
+  /* 移动端卡片优化 */
+  .card-mobile {
+    @apply rounded-lg;
+    @apply border border-gray-200 dark:border-gray-700;
+    @apply bg-white dark:bg-gray-800;
+    @apply shadow-sm;
+  }
+
+  /* 移动端输入框优化 */
+  .input-mobile {
+    @apply min-h-[44px];
+    @apply text-base;
+    @apply px-4;
+  }
+
+  /* 移动端模态框优化 */
+  .modal-mobile {
+    @apply fixed inset-0 z-50;
+    @apply bg-black bg-opacity-50;
+    @apply flex items-end sm:items-center justify-center;
+    @apply p-4;
+  }
+
+  .modal-content-mobile {
+    @apply w-full max-w-lg;
+    @apply bg-white dark:bg-gray-800;
+    @apply rounded-t-2xl sm:rounded-2xl;
+    @apply shadow-xl;
+    @apply max-h-[85vh] overflow-auto;
+  }
+
+  /* 移动端导航优化 */
+  .nav-mobile {
+    @apply fixed bottom-0 left-0 right-0;
+    @apply bg-white dark:bg-gray-800;
+    @apply border-t border-gray-200 dark:border-gray-700;
+    @apply flex items-center justify-around;
+    @apply p-2;
+    @apply safe-area-inset-bottom;
+  }
+
+  .nav-item-mobile {
+    @apply flex flex-col items-center;
+    @apply p-2;
+    @apply text-xs;
+    @apply text-gray-600 dark:text-gray-400;
+  }
+
+  .nav-item-mobile.active {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+
+  /* 移动端列表优化 */
+  .list-mobile {
+    @apply divide-y divide-gray-200 dark:divide-gray-700;
+  }
+
+  .list-item-mobile {
+    @apply py-3 px-4;
+  }
+
+  /* 移动端表格优化 */
+  .table-mobile {
+    @apply block overflow-x-auto;
+  }
+
+  .table-row-mobile {
+    @apply flex flex-col sm:table-row;
+    @apply border-b border-gray-200 dark:border-gray-700;
+    @apply p-4;
+  }
+
+  .table-cell-mobile {
+    @apply py-2 px-4;
+  }
+}
+
+/* 移动端实用类 */
+@layer utilities {
+  /* 安全区域适配（iPhone X+） */
+  .safe-area-inset-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-inset-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-inset-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* 移动端隐藏/显示 */
+  .mobile-only {
+    @apply block sm:hidden;
+  }
+
+  .desktop-only {
+    @apply hidden sm:block;
+  }
+
+  .tablet-only {
+    @apply hidden md:block lg:hidden;
+  }
+
+  /* 移动端触摸反馈 */
+  .touch-feedback {
+    @apply active:scale-95 active:opacity-80;
+    @apply transition-transform duration-150;
+  }
+
+  /* 移动端滚动优化 */
+  .scroll-mobile {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* 移动端图片优化 */
+  .img-responsive {
+    @apply max-w-full h-auto;
+    @apply object-cover;
+  }
+
+  /* 移动端文本优化 */
+  .text-mobile {
+    @apply text-base leading-relaxed;
+    @apply tracking-normal;
+  }
+
+  .text-mobile-sm {
+    @apply text-sm leading-snug;
+  }
+
+  .text-mobile-lg {
+    @apply text-lg leading-relaxed;
+  }
+
+  /* 移动端间距优化 */
+  .space-mobile {
+    @apply space-y-4;
+  }
+
+  .space-mobile-sm {
+    @apply space-y-2;
+  }
+
+  .space-mobile-lg {
+    @apply space-y-6;
+  }
+
+  /* 移动端动画优化 */
+  .animate-mobile {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* 移动端阴影优化 */
+  .shadow-mobile {
+    @apply shadow-sm;
+  }
+
+  .shadow-mobile-lg {
+    @apply shadow-md;
+  }
+
+  /* 移动端圆角优化 */
+  .rounded-mobile {
+    @apply rounded-lg;
+  }
+
+  .rounded-mobile-sm {
+    @apply rounded-md;
+  }
+
+  .rounded-mobile-lg {
+    @apply rounded-xl;
+  }
+
+  /* 移动端背景优化 */
+  .bg-mobile {
+    @apply bg-white dark:bg-gray-800;
+  }
+
+  .bg-mobile-alt {
+    @apply bg-gray-50 dark:bg-gray-900;
+  }
+}
+
+/* 移动端媒体查询 */
+@media (max-width: 640px) {
+  /* 移动端容器优化 */
+  .container-mobile {
+    @apply px-4;
+  }
+
+  /* 移动端网格优化 */
+  .grid-mobile {
+    @apply grid-cols-1;
+    @apply gap-4;
+  }
+
+  /* 移动端弹性布局优化 */
+  .flex-mobile {
+    @apply flex-col;
+  }
+
+  /* 移动端边距优化 */
+  .m-mobile {
+    @apply mx-4 my-2;
+  }
+
+  .p-mobile {
+    @apply px-4 py-3;
+  }
+
+  /* 移动端文字对齐优化 */
+  .text-center-mobile {
+    @apply text-center;
+  }
+
+  /* 移动端图片尺寸优化 */
+  .w-full-mobile {
+    @apply w-full;
+  }
+
+  .h-auto-mobile {
+    @apply h-auto;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 超小屏幕优化 */
+  .xs\:hidden {
+    display: none;
+  }
+
+  .xs\:block {
+    display: block;
+  }
+
+  .xs\:flex {
+    display: flex;
+  }
+
+  .xs\:grid {
+    display: grid;
+  }
+
+  .xs\:text-xs {
+    font-size: 0.75rem;
+  }
+
+  .xs\:text-sm {
+    font-size: 0.875rem;
+  }
+
+  .xs\:p-2 {
+    padding: 0.5rem;
+  }
+
+  .xs\:p-3 {
+    padding: 0.75rem;
+  }
+}
+
+/* 移动端打印优化 */
+@media print {
+  .no-print {
+    display: none;
+  }
+
+  .print-only {
+    display: block;
+  }
+}
+
+/* 移动端方向优化 */
+@media (orientation: portrait) {
+  .portrait\:flex-col {
+    flex-direction: column;
+  }
+
+  .portrait\:h-screen {
+    height: 100vh;
+  }
+}
+
+@media (orientation: landscape) {
+  .landscape\:flex-row {
+    flex-direction: row;
+  }
+
+  .landscape\:h-auto {
+    height: auto;
+  }
+}
+
+/* 移动端性能优化 */
+.mobile-perf {
+  /* 硬件加速 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000;
+  will-change: transform;
+}
+
+/* 移动端禁用选择 */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 移动端禁用长按菜单 */
+.no-context-menu {
+  -webkit-touch-callout: none;
+}
+
+/* 移动端滚动条隐藏 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

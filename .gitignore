@@ -1,0 +1,28 @@
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# Python缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 环境变量文件
+.env
+
+# 数据库文件
+self_agi.db
+*.db
+*.sqlite3
+
+# 日志文件
+*.log
+
+# 开发工具文件
+.vscode/
+.idea/
+*.swp
+*.swo

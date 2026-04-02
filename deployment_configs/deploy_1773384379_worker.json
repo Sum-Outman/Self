@@ -1,0 +1,33 @@
+{
+  "deployment_id": "deploy_1773384379",
+  "deployment_mode": "worker",
+  "timestamp": 1773384379.62379,
+  "deployment_config": {
+    "mode": "worker",
+    "gpu_ids": [],
+    "cpu_only": false,
+    "memory_limit_gb": null,
+    "master_addr": "localhost",
+    "master_port": 29500,
+    "network_interface": "eth0",
+    "batch_size_per_gpu": 32,
+    "num_epochs": 100,
+    "checkpoint_dir": "checkpoints_distributed",
+    "dynamic_batch_size": true,
+    "auto_mixed_precision": true,
+    "gradient_checkpointing": false,
+    "monitoring_port": 8080,
+    "log_level": "INFO",
+    "docker_enabled": false,
+    "kubernetes_enabled": false,
+    "singularity_enabled": false
+  },
+  "distributed_config": {
+    "world_size": 1,
+    "strategy": "data_parallel",
+    "master_addr": "localhost",
+    "master_port": 29500,
+    "backend": "gloo",
+    "batch_size_per_gpu": 32
+  }
+}

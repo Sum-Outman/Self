@@ -1,0 +1,42 @@
+{
+  "name": "Self_AGI_Example_Multimodal_Dataset",
+  "version": "1.0.0",
+  "description": "用于Self AGI系统的示例多模态数据集，包含图像和文本对",
+  "num_samples": 100,
+  "image_size": [
+    224,
+    224
+  ],
+  "categories": [
+    "猫",
+    "狗",
+    "鸟",
+    "车",
+    "树",
+    "房子",
+    "人",
+    "花",
+    "书",
+    "电脑"
+  ],
+  "data_source": "real_image_text",
+  "created_date": "2026-03-14",
+  "strict_mode_compatible": true,
+  "file_structure": {
+    "images": "images/*.png",
+    "annotations": "annotations/annotations.jsonl"
+  },
+  "annotation_format": {
+    "required_fields": [
+      "id",
+      "image_path",
+      "text",
+      "labels"
+    ],
+    "labels": {
+      "category": "类别名称",
+      "category_id": "类别ID",
+      "multilabel": "多标签列表"
+    }
+  }
+}

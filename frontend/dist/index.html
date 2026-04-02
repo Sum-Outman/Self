@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Self AGI - 自主通用人工智能系统" />
+    <title>Self AGI - 自主通用人工智能系统</title>
+    
+    <!-- 字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- 主题颜色 -->
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f9fafb" media="(prefers-color-scheme: light)">
+    
+    <!-- PWA 配置 -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script type="module" crossorigin src="/assets/index-BskRALqT.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-BilXNL6J.js">
+    <link rel="modulepreload" crossorigin href="/assets/charts-CxkdNT_c.js">
+    <link rel="modulepreload" crossorigin href="/assets/three-kjc83C6e.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-DczoVcDR.css">
+  </head>
+  <body class="bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100 transition-colors duration-300">
+    <div id="root"></div>
+    
+    <!-- 主题切换脚本 -->
+    <script>
+      // 检查本地存储的主题设置
+      const storedTheme = localStorage.getItem('theme') || 'system';
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      if (storedTheme === 'dark' || (storedTheme === 'system' && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
+  </body>
+</html>
