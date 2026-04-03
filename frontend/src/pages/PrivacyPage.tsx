@@ -359,7 +359,7 @@ const PrivacyPage: React.FC = () => {
               </p>
               <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p className="text-gray-700 dark:text-gray-300">
-                  <strong>邮箱:</strong> silencecrowtom@qq.com
+                  <strong>邮箱:</strong> silenceceowtom@qq.com
                 </p>
                 <p className="text-gray-700 dark:text-gray-300 mt-2">
                   <strong>数据保护问题:</strong> 对于隐私相关问题，请在邮件主题中注明"隐私查询"

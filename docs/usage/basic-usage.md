@@ -317,12 +317,12 @@ If you need help:
 1. **Check Documentation**: Check this documentation and other documentation pages
 2. **Search Issues**: Search existing issues on GitHub
 3. **Ask Questions**: Ask questions in the GitHub discussions
-4. **Contact Support**: Email silencecrowtom@qq.com for support
+4. **Contact Support**: Email silenceceowtom@qq.com for support
 
 1. **检查文档**: 检查本文档和其他文档页面
 2. **搜索问题**: 在 GitHub 上搜索现有问题
 3. **提问**: 在 GitHub 讨论中提问
-4. **联系支持**: 发送邮件至 silencecrowtom@qq.com 获取支持
+4. **联系支持**: 发送邮件至 silenceceowtom@qq.com 获取支持
 
 ---
 

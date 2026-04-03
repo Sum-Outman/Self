@@ -43,7 +43,7 @@ Welcome to the Self AGI documentation. This documentation provides comprehensive
 - **GitHub 仓库 | GitHub Repository**: https://github.com/Sum-Outman/Self
 - **主 README | Main README**: [../README.md](../README.md)
 - **Issue Tracker**: https://github.com/Sum-Outman/Self/issues
-- **联系邮箱 | Contact Email**: silencecrowtom@qq.com
+- **联系邮箱 | Contact Email**: silenceceowtom@qq.com
 
 ## 文档约定 | Documentation Conventions
 

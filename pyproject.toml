@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Self AGI 开发团队", email = "silencecrowtom@qq.com"}
+    {name = "Self AGI 开发团队", email = "silenceceowtom@qq.com"}
 ]
 keywords = ["agi", "artificial-intelligence", "transformer", "multimodal", "robotics"]
 

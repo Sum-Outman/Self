@@ -1511,7 +1511,7 @@ python -m training.optimization.checkpoint_optimizer \
 
 For any questions about training, please contact:
 
-- **Email**: silencecrowtom@qq.com
+- **Email**: silenceceowtom@qq.com
 - **Project Address**: [Self AGI GitHub Repository]
 - **Document Feedback**: [Document Issue Feedback Link]
 

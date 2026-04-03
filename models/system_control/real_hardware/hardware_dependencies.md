@@ -324,7 +324,7 @@ print('硬件管理器初始化成功')
 1. 查看本文档的故障排除部分
 2. 检查硬件连接和配置
 3. 在项目Issue中反馈问题
-4. 联系开发团队：silencecrowtom@qq.com
+4. 联系开发团队：silenceceowtom@qq.com
 
 ---
 

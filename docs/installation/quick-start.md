@@ -177,11 +177,11 @@ If you encounter issues:
 
 1. **Check Issues**: Check existing issues on GitHub
 2. **Create Issue**: Create a new issue with detailed information
-3. **Contact**: Email silencecrowtom@qq.com for support
+3. **Contact**: Email silenceceowtom@qq.com for support
 
 1. **检查问题**: 检查 GitHub 上的现有问题
 2. **创建问题**: 创建包含详细信息的新问题
-3. **联系**: 发送邮件至 silencecrowtom@qq.com 获取支持
+3. **联系**: 发送邮件至 silenceceowtom@qq.com 获取支持
 
 ---
 

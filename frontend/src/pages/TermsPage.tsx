@@ -277,7 +277,7 @@ const TermsPage: React.FC = () => {
               </p>
               <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p className="text-gray-700 dark:text-gray-300">
-                  <strong>邮箱:</strong> silencecrowtom@qq.com
+                  <strong>邮箱:</strong> silenceceowtom@qq.com
                 </p>
                 <p className="text-gray-700 dark:text-gray-300 mt-2">
                   <strong>最后更新:</strong> 2026年3月11日

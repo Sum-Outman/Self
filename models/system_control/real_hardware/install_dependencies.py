@@ -370,7 +370,7 @@ def main():
     print("="*60)
     print("版本: 1.0.0")
     print("日期: 2026-03-29")
-    print("作者: silencecrowtom@qq.com")
+    print("作者: silenceceowtom@qq.com")
     print("="*60)
     
     # 获取平台信息

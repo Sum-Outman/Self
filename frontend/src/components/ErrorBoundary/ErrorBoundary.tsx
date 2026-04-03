@@ -228,7 +228,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <p className="text-sm text-gray-500 dark:text-gray-400">
               如果问题持续存在，请联系技术支持。
               <br />
-              邮箱: <a href="mailto:support@example.com" className="text-gray-600 dark:text-gray-400 hover:underline">silencecrowtom@qq.com</a>
+              邮箱: <a href="mailto:support@example.com" className="text-gray-600 dark:text-gray-400 hover:underline">silenceceowtom@qq.com</a>
             </p>
           </div>
         </div>
