@@ -16,41 +16,76 @@ import {
 export const authService = {
   // 用户认证
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = (await apiClient.post('/auth/login', credentials)) as AuthResponse;
+    const response = await apiClient.post('/auth/login', credentials);
+    
+    // 检查是否为SuccessResponse格式（包含success, data, message字段）
+    let authData: any = response;
+    if (response && typeof response === 'object' && 'data' in response) {
+      // 如果是SuccessResponse格式，提取data字段
+      authData = response.data;
+    }
     
     // 检查是否需要2FA验证
-    if (response.requires_2fa) {
+    if (authData.requires_2fa) {
       return {
-        ...response,
+        ...authData,
         requires_2fa: true,
       };
     }
     
     // 转换用户数据（仅在成功登录时）
-    if (!response.user) {
+    if (!authData.user) {
+      // 尝试从响应中提取用户信息
+      if (authData.access_token && authData.refresh_token) {
+        // 如果有token但没有user对象，尝试获取当前用户
+        console.warn('登录响应缺少用户数据，但包含token');
+        return {
+          ...authData,
+          user: {
+            id: '',
+            username: credentials.username,
+            email: '',
+            full_name: credentials.username,
+            is_admin: false,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            role: 'user',
+            permissions: [],
+          } as User,
+        };
+      }
       throw new Error('登录响应中缺少用户数据');
     }
     
     return {
-      ...response,
+      ...authData,
       user: {
-        ...response.user,
-        role: response.user.is_admin ? 'admin' : 'user',
+        ...authData.user,
+        role: authData.user.is_admin ? 'admin' : 'user',
       },
     };
   },
 
   // 双因素认证
   async loginWith2FA(loginData: TwoFactorLoginRequest): Promise<AuthResponse> {
-    const response = (await apiClient.post('/auth/2fa/login', loginData)) as AuthResponse;
-    if (!response.user) {
+    const response = await apiClient.post('/auth/2fa/login', loginData);
+    
+    // 检查是否为SuccessResponse格式（包含success, data, message字段）
+    let authData: any = response;
+    if (response && typeof response === 'object' && 'data' in response) {
+      // 如果是SuccessResponse格式，提取data字段
+      authData = response.data;
+    }
+    
+    if (!authData.user) {
       throw new Error('2FA登录响应中缺少用户数据');
     }
     return {
-      ...response,
+      ...authData,
       user: {
-        ...response.user,
-        role: response.user.is_admin ? 'admin' : 'user',
+        ...authData.user,
+        role: authData.user.is_admin ? 'admin' : 'user',
       },
     };
   },
@@ -84,16 +119,30 @@ export const authService = {
   },
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
-    const response = (await apiClient.post('/auth/refresh', { refresh_token: refreshToken })) as AuthResponse;
+    const response = await apiClient.post('/auth/refresh', { refresh_token: refreshToken });
+    
+    // 检查是否为SuccessResponse格式（包含success, data, message字段）
+    let authData: any = response;
+    if (response && typeof response === 'object' && 'data' in response) {
+      // 如果是SuccessResponse格式，提取data字段
+      authData = response.data;
+    }
+    
     // 转换用户数据
-    if (!response.user) {
+    if (!authData.user) {
+      // 刷新token可能不返回用户数据，只有新的token
+      if (authData.access_token && authData.refresh_token) {
+        console.warn('刷新令牌响应缺少用户数据，但包含新的token');
+        return authData; // 只返回token数据
+      }
       throw new Error('刷新令牌响应中缺少用户数据');
     }
+    
     return {
-      ...response,
+      ...authData,
       user: {
-        ...response.user,
-        role: response.user.is_admin ? 'admin' : 'user',
+        ...authData.user,
+        role: authData.user.is_admin ? 'admin' : 'user',
       },
     };
   },

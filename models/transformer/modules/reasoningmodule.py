@@ -7,6 +7,16 @@ import torch.nn.functional as F
 from typing import Dict, Any, List, Optional, Union, Callable, Tuple
 import logging
 
+# 导入Transformer块
+from models.transformer.cores.transformerblock import TransformerBlock
+# 导入配置
+from models.transformer.config import AGIModelConfig
+# 导入认知科学算法
+from models.transformer.modules.cognitivesciencealgorithms import CognitiveScienceAlgorithms
+
+# 日志记录器
+logger = logging.getLogger(__name__)
+
 class ReasoningModule(nn.Module):
     """推理模块 - 真实推理引擎实现
 
@@ -34,6 +44,7 @@ class ReasoningModule(nn.Module):
 
         # === 真实推理引擎集成 ===
         # 解决审计报告中"能力模块空壳实现"问题
+        # 根据项目要求"不采用任何降级处理，直接报错"，如果真实推理引擎不可用，直接报错
         try:
             from models.reasoning_engine import ReasoningEngine
 
@@ -41,9 +52,12 @@ class ReasoningModule(nn.Module):
             self.real_reasoning_available = True
             logger.info("推理模块：真实推理引擎集成成功")
         except ImportError as e:
-            self.real_reasoning_engine = None
-            self.real_reasoning_available = False
-            logger.warning(f"推理模块：无法加载真实推理引擎，使用神经网络模式: {e}")
+            # 根据项目要求"直接报错，降级处理不容易被发现"，不允许降级处理
+            raise RuntimeError(
+                f"真实推理引擎不可用: {e}\n"
+                "根据项目要求，推理模块必须使用真实推理引擎，禁止使用神经网络模拟。\n"
+                "请确保models/reasoning_engine.py存在并实现真实的推理算法。"
+            )
 
         # === 逻辑推理专家 - 真实逻辑推理引擎 ===
         # 命题逻辑编码器：处理AND, OR, NOT, IMPLIES等逻辑操作

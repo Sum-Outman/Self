@@ -383,12 +383,25 @@ class ErrorMonitor {
     this.errors = [];
 
     try {
+      // 构建请求头，只有在有访问令牌时才包含Authorization头
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // 检查是否有访问令牌（仅在用户已登录时）
+      try {
+        const accessToken = localStorage.getItem('access_token');
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+      } catch (e) {
+        // 忽略localStorage错误，继续发送无认证请求
+        console.debug('无法获取访问令牌，发送无认证错误报告:', e);
+      }
+
       const response = await fetch(this.config.apiEndpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`,
-        },
+        headers,
         body: JSON.stringify({
           errors: errorsToReport,
           performanceMetrics: this.performanceMetrics,

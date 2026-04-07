@@ -4468,44 +4468,97 @@ async def acknowledge_system_alert(
 @app.get("/api/system/logs", response_model=Dict[str, Any])
 async def get_system_logs(
     limit: int = 100,
+    offset: int = 0,
     level: Optional[str] = None,
     source: Optional[str] = None,
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
     user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """获取系统日志
     
     注意：根据项目要求"禁止使用虚拟数据"，系统日志功能需要真实日志系统实现。
-    目前返回空结果，需要集成真实日志存储系统（如ELK、Splunk等）。
+    如果真实日志系统不可用，直接报错而不是返回空数据。
     """
     try:
         from datetime import datetime
         import logging
         
-        # 记录警告信息
-        logger = logging.getLogger(__name__)
-        logger.warning("系统日志API被调用，但真实日志系统尚未集成（项目要求禁止使用虚拟数据）")
+        # 检查真实日志系统是否可用
+        # 尝试从数据库日志表查询
+        try:
+            # 检查是否有日志表模型
+            from backend.db_models import SystemLog
+            has_log_table = True
+        except ImportError:
+            has_log_table = False
+            
+        # 检查是否有外部日志系统配置
+        log_system_enabled = os.getenv("LOG_SYSTEM_ENABLED", "false").lower() == "true"
+        elk_endpoint = os.getenv("ELK_ENDPOINT")
+        splunk_endpoint = os.getenv("SPLUNK_ENDPOINT")
         
-        # 根据项目要求"禁止使用虚拟数据"，返回空数组而不是模拟数据
-        # 未来需要集成真实日志系统，如：
-        # 1. 从数据库日志表查询
-        # 2. 从ELK、Splunk等日志管理系统获取
-        # 3. 从文件日志系统读取
+        # 根据项目要求"禁止使用虚拟数据"，如果没有任何真实日志系统可用，直接报错
+        if not has_log_table and not log_system_enabled and not elk_endpoint and not splunk_endpoint:
+            raise HTTPException(
+                status_code=501,
+                detail="系统日志功能需要真实日志系统集成（项目要求禁止使用虚拟数据）。\n" +
+                       "请配置以下至少一种日志系统：\n" +
+                       "1. 数据库日志表（创建SystemLog模型）\n" +
+                       "2. ELK日志系统（设置ELK_ENDPOINT环境变量）\n" +
+                       "3. Splunk日志系统（设置SPLUNK_ENDPOINT环境变量）\n" +
+                       "4. 启用文件日志系统（设置LOG_SYSTEM_ENABLED=true）"
+            )
         
+        # 如果有数据库日志表，从数据库查询
         logs = []
-        
-        # 即使返回空数据，也处理过滤参数以保持API接口一致性
-        # 注意：由于没有真实数据，过滤逻辑实际上不执行任何操作
-        
-        return {
-            "success": True,
-            "logs": logs,
-            "total_count": len(logs),
-            "timestamp": datetime.now().isoformat(),
-            "message": "系统日志功能需要真实日志系统集成（项目要求禁止使用虚拟数据）",
-            "suggestion": "请集成真实日志存储系统，如数据库日志表、ELK、Splunk等"
-        }
+        if has_log_table:
+            # 构建查询
+            log_query = db.query(SystemLog)
+            
+            # 应用过滤条件
+            if level:
+                log_query = log_query.filter(SystemLog.level == level)
+            if source:
+                log_query = log_query.filter(SystemLog.source.ilike(f"%{source}%"))
+            if start_time:
+                log_query = log_query.filter(SystemLog.timestamp >= start_time)
+            if end_time:
+                log_query = log_query.filter(SystemLog.timestamp <= end_time)
+            
+            # 排序和分页
+            log_query = log_query.order_by(SystemLog.timestamp.desc())
+            total_count = log_query.count()
+            log_items = log_query.offset(offset).limit(limit).all()
+            
+            # 格式化日志
+            for log_item in log_items:
+                logs.append({
+                    "id": log_item.id,
+                    "timestamp": log_item.timestamp.isoformat(),
+                    "level": log_item.level,
+                    "source": log_item.source,
+                    "message": log_item.message,
+                    "details": json.loads(log_item.details) if log_item.details else {},
+                    "user_id": log_item.user_id,
+                })
+            
+            return {
+                "success": True,
+                "logs": logs,
+                "total_count": total_count,
+                "timestamp": datetime.now().isoformat(),
+            }
+        else:
+            # 如果没有数据库日志表，尝试其他日志系统
+            # 注意：根据项目要求"禁止使用虚拟数据"，这里应该实现真实的日志系统集成
+            # 目前直接报错，因为其他日志系统尚未实现
+            raise HTTPException(
+                status_code=501,
+                detail="系统日志功能需要真实日志系统集成（项目要求禁止使用虚拟数据）。\n" +
+                       "数据库日志表不存在，其他日志系统（ELK/Splunk）集成尚未实现。"
+            )
     except Exception as e:
         logger.error(f"获取系统日志失败: {e}")
         raise HTTPException(status_code=500, detail=f"获取系统日志失败: {str(e)}")
@@ -4747,6 +4800,9 @@ async def search_knowledge(
 ):
     """搜索知识项"""
     try:
+        # 相似度字典，用于存储已计算的相似度值
+        similarity_dict = None
+        
         query = db.query(KnowledgeItem).filter(KnowledgeItem.is_public)
 
         # 文本搜索（简单实现）
@@ -4770,26 +4826,146 @@ async def search_knowledge(
             query = query.filter(KnowledgeItem.upload_date <= request.end_date)
 
         # 排序
-        sort_column = KnowledgeItem.upload_date
-        if request.sort_by == "access":
-            sort_column = KnowledgeItem.access_count
-        elif request.sort_by == "size":
-            sort_column = KnowledgeItem.size
-
-        if request.sort_order == "desc":
-            query = query.order_by(sort_column.desc())
+        # 注意：如果按相关性排序，需要在获取所有结果后计算相似度再排序
+        if request.sort_by == "relevance":
+            # 先按默认排序获取所有匹配项（不分页），计算相似度后再排序分页
+            # 获取所有匹配项用于相似度计算
+            all_items_query = query.order_by(KnowledgeItem.upload_date.desc())
+            all_items = all_items_query.all()
+            
+            # 计算相似度（需要检索服务）
+            if request.query and request.query.strip():
+                try:
+                    from backend.services.retrieval_service import RetrievalService
+                    retrieval_service = RetrievalService()
+                    
+                    # 为每个项目计算相似度
+                    items_with_similarity = []
+                    # 使用外层作用域的similarity_dict变量
+                    similarity_dict = {}
+                    for item in all_items:
+                        item_text = f"{item.title}: {item.description}"
+                        similarity_result = retrieval_service.cross_modal_similarity(
+                            modality_a="text",
+                            content_a=request.query,
+                            modality_b="text",
+                            content_b=item_text
+                        )
+                        similarity = similarity_result.get("similarity", 0.0)
+                        items_with_similarity.append((item, similarity))
+                        similarity_dict[item.id] = similarity  # 存储到字典
+                    
+                    # 按相似度排序
+                    items_with_similarity.sort(
+                        key=lambda x: x[1],
+                        reverse=(request.sort_order == "desc")
+                    )
+                    
+                    # 分页
+                    start_idx = request.offset
+                    end_idx = request.offset + request.limit
+                    paginated_items = items_with_similarity[start_idx:end_idx]
+                    
+                    # 提取项目对象
+                    items = [item for item, similarity in paginated_items]
+                    total_count = len(all_items)
+                    
+                    # 设置标志，表示已计算相似度
+                    similarity_computed = True
+                    
+                except Exception as e:
+                    logger.error(f"相关性排序失败: {e}")
+                    # 根据项目要求"不采用任何降级处理，直接报错"
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"相关性排序失败: {e}\n根据项目要求'禁止使用虚拟数据'，必须使用真实的相似度计算功能。"
+                    )
+            else:
+                # 没有查询文本，无法按相关性排序，回退到按日期排序
+                sort_column = KnowledgeItem.upload_date
+                if request.sort_order == "desc":
+                    query = query.order_by(sort_column.desc())
+                else:
+                    query = query.order_by(sort_column.asc())
+                
+                # 获取总数
+                total_count = query.count()
+                
+                # 分页
+                items = query.offset(request.offset).limit(request.limit).all()
+                similarity_computed = False
         else:
-            query = query.order_by(sort_column.asc())
+            # 非相关性排序（按日期、访问次数、大小等）
+            sort_column = KnowledgeItem.upload_date
+            if request.sort_by == "access":
+                sort_column = KnowledgeItem.access_count
+            elif request.sort_by == "size":
+                sort_column = KnowledgeItem.size
 
-        # 获取总数
-        total_count = query.count()
+            if request.sort_order == "desc":
+                query = query.order_by(sort_column.desc())
+            else:
+                query = query.order_by(sort_column.asc())
 
-        # 分页
-        items = query.offset(request.offset).limit(request.limit).all()
+            # 获取总数
+            total_count = query.count()
 
-        # 格式化返回数据
+            # 分页
+            items = query.offset(request.offset).limit(request.limit).all()
+            similarity_computed = False
+
+        # 格式化返回数据并计算相似度
         formatted_items = []
+        
+        # 根据项目要求"禁止使用虚拟数据"，使用真实的向量搜索功能计算相似度
+        retrieval_service = None
+        if not similarity_computed and request.query and request.query.strip():  # 有查询文本且尚未计算相似度时才需要初始化检索服务
+            try:
+                from backend.services.retrieval_service import RetrievalService
+                retrieval_service = RetrievalService()
+            except ImportError as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"向量搜索功能不可用: {e}\n根据项目要求'禁止使用虚拟数据'，真实相似度计算需要集成向量搜索功能。"
+                )
+        
+        # 用于存储相似度（如果在相关性排序中已计算）
+        # similarity_dict变量已在函数开头声明
+        
+        # 确保similarity_dict是字典（如果为None则初始化为空字典）
+        if similarity_dict is None:
+            similarity_dict = {}
+        
+        # 遍历所有项目，计算相似度并格式化
         for item in items:
+            # 计算相似度（如果有查询文本和检索服务，且尚未计算）
+            similarity = None
+            if request.query and request.query.strip():
+                # 首先检查是否已经在字典中
+                if item.id in similarity_dict:
+                    similarity = similarity_dict[item.id]
+                elif retrieval_service:  # 有检索服务，计算相似度
+                    try:
+                        # 组合标题和描述作为知识项文本
+                        item_text = f"{item.title}: {item.description}"
+                        # 计算相似度
+                        similarity_result = retrieval_service.cross_modal_similarity(
+                            modality_a="text",
+                            content_a=request.query,
+                            modality_b="text",
+                            content_b=item_text
+                        )
+                        similarity = similarity_result.get("similarity", 0.0)
+                        # 存储到字典
+                        similarity_dict[item.id] = similarity
+                    except Exception as e:
+                        logger.warning(f"计算知识项{item.id}相似度失败: {e}")
+                        # 根据项目要求"不采用任何降级处理，直接报错"
+                        raise HTTPException(
+                            status_code=500,
+                            detail=f"相似度计算失败: {e}\n根据项目要求'禁止使用虚拟数据'，必须使用真实的相似度计算功能。"
+                        )
+            
             formatted_items.append(
                 {
                     "id": item.id,
@@ -4806,7 +4982,7 @@ async def search_knowledge(
                     "file_url": (
                         f"/uploads/{item.file_path}" if item.file_path else None
                     ),
-                    "similarity": None,  # 注意：根据项目要求"禁止使用虚拟数据"，真实相似度计算需要集成向量搜索功能
+                    "similarity": similarity,  # 真实的相似度值，根据项目要求"禁止使用虚拟数据"
                 }
             )
 
@@ -5306,7 +5482,7 @@ async def get_gpu_status(user: User = Depends(get_current_user)):
                     "pytorch_version": torch.__version__,
                     "cuda_available": torch.cuda.is_available(),
                     "cuda_version": (
-                        torch.version.cuda if hasattr(torch.version, "cuda") else "未知"
+                        torch.version.cuda if hasattr(torch.version, "cuda") else None
                     ),
                     "timestamp": datetime.now().isoformat(),
                 }
@@ -5319,32 +5495,21 @@ async def get_gpu_status(user: User = Depends(get_current_user)):
             "gpu_devices": [],
             "system_platform": platform.system(),
             "python_version": platform.python_version(),
-            "pytorch_version": (
-                torch.__version__ if "torch" in sys.modules else "未安装"
-            ),
+            "pytorch_version": torch.__version__,
             "cuda_available": False,
             "message": "GPU不可用或未安装CUDA",
             "timestamp": datetime.now().isoformat(),
         }
 
     except ImportError:
-        logger.warning("PyTorch未安装，无法获取GPU信息")
-        return {
-            "success": True,
-            "gpu_available": False,
-            "gpu_count": 0,
-            "gpu_devices": [],
-            "system_platform": (
-                platform.system() if "platform" in sys.modules else "未知"
-            ),
-            "python_version": (
-                platform.python_version() if "platform" in sys.modules else "未知"
-            ),
-            "pytorch_version": "未安装",
-            "cuda_available": False,
-            "message": "PyTorch未安装",
-            "timestamp": datetime.now().isoformat(),
-        }
+        logger.error("PyTorch未安装，无法获取GPU信息（根据项目要求'禁止使用虚拟数据，直接报错'）")
+        raise HTTPException(
+            status_code=501,
+            detail="PyTorch未安装，无法获取GPU状态。\n"
+                   "根据项目要求'禁止使用虚拟数据，不采用任何降级处理，直接报错'，\n"
+                   "必须安装PyTorch才能使用GPU状态检测功能。\n"
+                   "请执行: pip install torch"
+        )
     except Exception as e:
         logger.error(f"获取GPU状态失败: {e}")
         raise HTTPException(status_code=500, detail=f"获取GPU状态失败: {str(e)}")

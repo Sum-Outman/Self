@@ -957,3 +957,254 @@ class AdvancedRobotController:
         except Exception as e:
             logger.error(f"计算动力学失败: {e}")
             return {}  # 返回空字典
+
+
+class BalanceController:
+    """平衡控制器 - 实现零力矩点（ZMP）和PD平衡控制
+    
+    功能：
+    - 零力矩点（ZMP）计算和跟踪
+    - 姿态稳定控制
+    - 抗干扰恢复
+    - 步行模式平衡
+    
+    算法：
+    1. ZMP = (∑ m_i * (g * z_i + a_i * z_i) - ∑ m_i * x_i * (g + a_z)) / (∑ m_i * (g + a_z))
+    2. PD控制：扭矩 = Kp * 角度误差 + Kd * 角速度误差
+    """
+    
+    def __init__(self, robot_config: Any = None):
+        """初始化平衡控制器
+        
+        参数:
+            robot_config: 机器人配置对象（可选），预期类型为 models.physics.robot_dynamics.RobotConfig
+        """
+        self.robot_config = robot_config
+        
+        # 控制参数
+        self.kp_roll = 1.5   # 滚转比例增益
+        self.kd_roll = 0.2   # 滚转微分增益
+        self.kp_pitch = 1.5  # 俯仰比例增益
+        self.kd_pitch = 0.2  # 俯仰微分增益
+        
+        # ZMP参数
+        self.zmp_reference = np.array([0.0, 0.0])  # 参考ZMP位置
+        self.zmp_margin = 0.02  # ZMP安全边界（米）
+        
+        # 状态
+        self.prev_roll_error = 0.0
+        self.prev_pitch_error = 0.0
+        
+        # 支持多边形（脚底接触点）
+        self.support_polygon = np.array([
+            [-0.1, -0.05],   # 左脚后跟
+            [0.1, -0.05],    # 右脚后跟
+            [0.1, 0.05],     # 右脚前掌
+            [-0.1, 0.05]     # 左脚前掌
+        ])
+        
+    def calculate_zmp(self, com_position: np.ndarray, com_acceleration: np.ndarray,
+                     foot_positions: List[np.ndarray], foot_forces: List[np.ndarray]) -> np.ndarray:
+        """计算零力矩点（ZMP）
+        
+        参数:
+            com_position: 质心位置 [x, y, z] (米)
+            com_acceleration: 质心加速度 [ax, ay, az] (m/s²)
+            foot_positions: 脚底位置列表 [x, y, z]
+            foot_forces: 脚底力列表 [fx, fy, fz]
+            
+        返回:
+            zmp: 零力矩点位置 [x, y] (米)
+        """
+        try:
+            # 简单ZMP计算（假设所有质量集中在质心）
+            g = 9.81  # 重力加速度
+            
+            # 总力
+            total_force_z = 0.0
+            total_moment_x = 0.0
+            total_moment_y = 0.0
+            
+            for pos, force in zip(foot_positions, foot_forces):
+                total_force_z += force[2]
+                total_moment_x += force[2] * pos[0] - force[0] * pos[2]
+                total_moment_y += force[2] * pos[1] - force[1] * pos[2]
+            
+            # 添加质心动力学贡献
+            total_mass = 50.0  # 机器人总质量（kg），实际值应从配置获取
+            com_x, com_y, com_z = com_position
+            ax, ay, az = com_acceleration
+            
+            # 完整ZMP公式
+            if total_force_z != 0:
+                zmp_x = total_moment_y / total_force_z
+                zmp_y = total_moment_x / total_force_z
+            else:
+                zmp_x = com_x - com_z * ax / (g + az)
+                zmp_y = com_y - com_z * ay / (g + az)
+            
+            return np.array([zmp_x, zmp_y])
+            
+        except Exception as e:
+            logger.error(f"计算ZMP失败: {e}")
+            return np.array([0.0, 0.0])
+    
+    def is_balance_stable(self, zmp: np.ndarray) -> bool:
+        """检查平衡是否稳定（ZMP是否在支持多边形内）
+        
+        参数:
+            zmp: 零力矩点位置 [x, y]
+            
+        返回:
+            stable: 如果ZMP在支持多边形内返回True，否则返回False
+        """
+        # 简单凸多边形包含测试
+        from scipy.spatial import ConvexHull
+        
+        try:
+            # 检查ZMP是否在支持多边形内
+            points = np.vstack([self.support_polygon, zmp])
+            hull = ConvexHull(points)
+            
+            # 如果ZMP是凸包的顶点，则不稳定
+            is_vertex = any(np.allclose(zmp, points[idx]) for idx in hull.vertices)
+            
+            # 安全检查：ZMP到多边形边界的距离
+            if is_vertex:
+                return False
+            
+            # 计算到边界的最近距离
+            min_distance = float('inf')
+            n = len(self.support_polygon)
+            for i in range(n):
+                p1 = self.support_polygon[i]
+                p2 = self.support_polygon[(i + 1) % n]
+                
+                # 线段到点的距离
+                distance = self._point_to_line_distance(zmp, p1, p2)
+                min_distance = min(min_distance, distance)
+            
+            # 如果距离小于安全边界，则不稳定
+            return min_distance > self.zmp_margin
+            
+        except Exception:
+            # 如果凸包计算失败，使用简单边界框检查
+            x_min, y_min = np.min(self.support_polygon, axis=0) + self.zmp_margin
+            x_max, y_max = np.max(self.support_polygon, axis=0) - self.zmp_margin
+            
+            return (x_min <= zmp[0] <= x_max) and (y_min <= zmp[1] <= y_max)
+    
+    def _point_to_line_distance(self, point: np.ndarray, line_p1: np.ndarray, line_p2: np.ndarray) -> float:
+        """计算点到线段的距离"""
+        # 向量计算
+        line_vec = line_p2 - line_p1
+        point_vec = point - line_p1
+        
+        line_len_squared = np.dot(line_vec, line_vec)
+        
+        if line_len_squared == 0:
+            return np.linalg.norm(point_vec)
+        
+        # 投影参数
+        t = max(0, min(1, np.dot(point_vec, line_vec) / line_len_squared))
+        
+        # 最近点
+        projection = line_p1 + t * line_vec
+        
+        # 距离
+        return np.linalg.norm(point - projection)
+    
+    def compute_balance_correction(self, 
+                                  roll_angle: float, 
+                                  roll_velocity: float,
+                                  pitch_angle: float,
+                                  pitch_velocity: float,
+                                  zmp: np.ndarray) -> Dict[str, float]:
+        """计算平衡校正扭矩
+        
+        参数:
+            roll_angle: 滚转角（弧度）
+            roll_velocity: 滚转角速度（弧度/秒）
+            pitch_angle: 俯仰角（弧度）
+            pitch_velocity: 俯仰角速度（弧度/秒）
+            zmp: 零力矩点位置 [x, y]
+            
+        返回:
+            correction_torques: 校正扭矩字典（滚转，俯仰）
+        """
+        # 姿态误差
+        roll_error = -roll_angle  # 负号用于稳定
+        pitch_error = -pitch_angle
+        
+        # 微分误差
+        roll_error_diff = roll_velocity
+        pitch_error_diff = pitch_velocity
+        
+        # PD控制
+        roll_torque = self.kp_roll * roll_error + self.kd_roll * roll_error_diff
+        pitch_torque = self.kp_pitch * pitch_error + self.kd_pitch * pitch_error_diff
+        
+        # ZMP校正（如果ZMP接近边界，增加恢复扭矩）
+        zmp_distance = self._distance_to_support_boundary(zmp)
+        if zmp_distance < 0.05:  # 接近边界
+            scale_factor = 1.0 + (0.05 - zmp_distance) * 2.0
+            roll_torque *= scale_factor
+            pitch_torque *= scale_factor
+        
+        # 限制最大扭矩
+        max_torque = 10.0
+        roll_torque = np.clip(roll_torque, -max_torque, max_torque)
+        pitch_torque = np.clip(pitch_torque, -max_torque, max_torque)
+        
+        return {
+            'roll_torque': roll_torque,
+            'pitch_torque': pitch_torque,
+            'zmp_x': zmp[0],
+            'zmp_y': zmp[1],
+            'stable': self.is_balance_stable(zmp)
+        }
+    
+    def _distance_to_support_boundary(self, point: np.ndarray) -> float:
+        """计算点到支持多边形边界的最短距离"""
+        min_distance = float('inf')
+        n = len(self.support_polygon)
+        
+        for i in range(n):
+            p1 = self.support_polygon[i]
+            p2 = self.support_polygon[(i + 1) % n]
+            
+            distance = self._point_to_line_distance(point, p1, p2)
+            min_distance = min(min_distance, distance)
+        
+        return min_distance
+    
+    def update_support_polygon(self, left_foot_pos: np.ndarray, right_foot_pos: np.ndarray):
+        """更新支持多边形（基于脚底位置）
+        
+        参数:
+            left_foot_pos: 左脚位置 [x, y, z] (相对躯干)
+            right_foot_pos: 右脚位置 [x, y, z] (相对躯干)
+        """
+        # 脚底尺寸
+        foot_length = 0.2  # 脚长（米）
+        foot_width = 0.1   # 脚宽（米）
+        
+        # 计算四个角点（相对脚中心）
+        corners = np.array([
+            [-foot_length/2, -foot_width/2],  # 后跟外侧
+            [foot_length/2, -foot_width/2],   # 前掌外侧
+            [foot_length/2, foot_width/2],    # 前掌内侧
+            [-foot_length/2, foot_width/2]    # 后跟内侧
+        ])
+        
+        # 转换到全局坐标系
+        left_corners = corners + left_foot_pos[:2]
+        right_corners = corners + right_foot_pos[:2]
+        
+        # 合并多边形
+        self.support_polygon = np.vstack([left_corners, right_corners])
+        
+    def reset(self):
+        """重置控制器状态"""
+        self.prev_roll_error = 0.0
+        self.prev_pitch_error = 0.0

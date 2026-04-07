@@ -7,6 +7,7 @@
 import sys
 import os
 import logging
+import pytest
 from typing import Dict
 
 # 添加项目根目录到Python路径
@@ -20,26 +21,126 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def test_knowledge_manager_initialization():
-    """测试知识管理器初始化"""
-    logger.info("测试知识管理器初始化...")
-
+@pytest.fixture
+def km():
+    """知识管理器fixture"""
+    logger.info("创建知识管理器fixture...")
     try:
         # 创建知识管理器
-        km = KnowledgeManager()
-
+        km_instance = KnowledgeManager()
+        
         # 检查组件
-        assert km.store is not None, "知识存储器未初始化"
-        assert km.retriever is not None, "知识检索器未初始化"
-        assert km.graph is not None, "知识图谱未初始化"
-        assert km.validator is not None, "知识验证器未初始化"
-
-        logger.info("✓ 知识管理器初始化测试通过")
-        return km
-
+        assert km_instance.store is not None, "知识存储器未初始化"
+        assert km_instance.retriever is not None, "知识检索器未初始化"
+        assert km_instance.graph is not None, "知识图谱未初始化"
+        assert km_instance.validator is not None, "知识验证器未初始化"
+        
+        logger.info("✓ 知识管理器fixture创建成功")
+        return km_instance
     except Exception as e:
-        logger.error(f"知识管理器初始化测试失败: {e}")
+        logger.error(f"知识管理器fixture创建失败: {e}")
         raise
+
+
+@pytest.fixture
+def knowledge_ids(km):
+    """知识ID fixture，预先添加测试知识并返回ID字典"""
+    logger.info("创建知识ID fixture...")
+    ids = {}
+    
+    # 添加事实知识 - 满足验证要求
+    fact_content = {
+        "statement": "水在标准大气压下的沸点精确为100摄氏度，这是一个经过多次科学实验验证的基本物理常数。",
+        "evidence": ["热力学实验数据", "国际标准计量数据", "科学教科书参考"],
+        "confidence": 0.98,
+    }
+    fact_result = km.add_knowledge(
+        knowledge_type=KnowledgeType.FACT,
+        content=fact_content,
+        metadata={"domain": "physics", "language": "zh", "source": "科学常识"},
+    )
+    # 检查返回的键名
+    if "knowledge_id" in fact_result:
+        ids["fact_id"] = fact_result["knowledge_id"]
+    elif "id" in fact_result:
+        ids["fact_id"] = fact_result["id"]
+    else:
+        logger.error(f"事实知识添加返回结果中未找到ID键: {fact_result}")
+        raise KeyError(f"事实知识添加返回结果中未找到ID键: {fact_result.keys()}")
+    
+    # 添加概念知识 - 满足验证要求
+    concept_content = {
+        "name": "机器学习",
+        "definition": "机器学习是人工智能的一个分支，通过算法和统计模型使计算机系统能够从数据中学习并改进性能，而无需显式编程。",
+        "attributes": ["监督学习", "无监督学习", "强化学习", "深度学习"],
+    }
+    concept_result = km.add_knowledge(
+        knowledge_type=KnowledgeType.CONCEPT,
+        content=concept_content,
+        metadata={"domain": "ai", "language": "zh", "category": "计算机科学"},
+    )
+    if "knowledge_id" in concept_result:
+        ids["concept_id"] = concept_result["knowledge_id"]
+    elif "id" in concept_result:
+        ids["concept_id"] = concept_result["id"]
+    else:
+        logger.error(f"概念知识添加返回结果中未找到ID键: {concept_result}")
+        raise KeyError(f"概念知识添加返回结果中未找到ID键: {concept_result.keys()}")
+    
+    # 添加过程知识 - 满足验证要求
+    procedure_content = {
+        "name": "数据清洗完整流程",
+        "steps": "1. 数据收集：从多个来源收集原始数据；2. 缺失值处理：使用插值或删除方法处理缺失值；3. 异常值检测：使用统计方法识别和处理异常值；4. 数据标准化：将数据转换为统一尺度以便后续分析",
+        "tools": ["Python编程语言", "Pandas数据分析库", "NumPy数值计算库", "Scikit-learn机器学习库"],
+    }
+    procedure_result = km.add_knowledge(
+        knowledge_type=KnowledgeType.PROCEDURE,
+        content=procedure_content,
+        metadata={"domain": "data_science", "language": "zh", "difficulty": "中级"},
+    )
+    if "knowledge_id" in procedure_result:
+        ids["procedure_id"] = procedure_result["knowledge_id"]
+    elif "id" in procedure_result:
+        ids["procedure_id"] = procedure_result["id"]
+    else:
+        logger.error(f"过程知识添加返回结果中未找到ID键: {procedure_result}")
+        raise KeyError(f"过程知识添加返回结果中未找到ID键: {procedure_result.keys()}")
+    
+    # 添加规则知识 - 满足验证要求
+    rule_content = {
+        "condition": "如果室外温度低于0摄氏度且天空有云层",
+        "action": "那么可能会下雪，建议携带雨具并注意保暖",
+        "priority": 0.8,
+    }
+    rule_result = km.add_knowledge(
+        knowledge_type=KnowledgeType.RULE,
+        content=rule_content,
+        metadata={"domain": "weather", "language": "zh", "applicability": "日常使用"},
+    )
+    if "knowledge_id" in rule_result:
+        ids["rule_id"] = rule_result["knowledge_id"]
+    elif "id" in rule_result:
+        ids["rule_id"] = rule_result["id"]
+    else:
+        logger.error(f"规则知识添加返回结果中未找到ID键: {rule_result}")
+        raise KeyError(f"规则知识添加返回结果中未找到ID键: {rule_result.keys()}")
+    
+    logger.info(f"✓ 知识ID fixture创建成功: {ids}")
+    return ids
+
+
+def test_knowledge_manager_initialization(km):
+    """测试知识管理器初始化"""
+    logger.info("测试知识管理器初始化...")
+    
+    # 使用fixture创建的km实例进行验证
+    assert km is not None, "知识管理器实例不应为None"
+    assert km.store is not None, "知识存储器未初始化"
+    assert km.retriever is not None, "知识检索器未初始化"
+    assert km.graph is not None, "知识图谱未初始化"
+    assert km.validator is not None, "知识验证器未初始化"
+    
+    logger.info("✓ 知识管理器初始化测试通过")
 
 
 def test_add_knowledge(km: KnowledgeManager):

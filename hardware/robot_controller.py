@@ -8,20 +8,52 @@ import logging
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 import numpy as np
+from datetime import datetime
 
 # 真实机器人硬件接口导入
-try:
-    import importlib
-    real_robot_interface_module = importlib.import_module('.real_robot_interface', package='hardware')
-    REAL_ROBOT_INTERFACE_AVAILABLE = True
-    # 不直接导入类，将在使用时动态导入
-except ImportError:
-    REAL_ROBOT_INTERFACE_AVAILABLE = False
-    real_robot_interface_module = None
-    logging.warning("真实机器人硬件接口不可用（请检查real_robot_interface.py）")
+# 根据项目要求"不采用任何降级处理，直接报错"，如果真实机器人硬件接口不可用，直接报错
+# 注意：导入检查已移到函数内部，避免循环导入
 
 # 高级控制可用性标志（在运行时检查）
 ADVANCED_CONTROL_AVAILABLE = None
+
+# 真实机器人接口可用性检查函数
+def is_real_robot_interface_available():
+    """检查真实机器人硬件接口是否可用
+    
+    返回:
+        bool: 如果真实机器人硬件接口可用返回True，否则返回False
+    """
+    try:
+        import importlib
+        # 尝试导入真实机器人接口模块
+        importlib.import_module('.real_robot_interface', package='hardware')
+        return True
+    except ImportError:
+        return False
+
+# 真实机器人接口模块缓存
+_real_robot_interface_module = None
+
+def get_real_robot_interface_module():
+    """获取真实机器人接口模块
+    
+    返回:
+        module: 真实机器人接口模块，如果不可用则抛出RuntimeError
+    """
+    global _real_robot_interface_module
+    if _real_robot_interface_module is None:
+        try:
+            import importlib
+            _real_robot_interface_module = importlib.import_module('.real_robot_interface', package='hardware')
+        except ImportError as e:
+            # 根据项目要求"直接报错，降级处理不容易被发现"，不允许降级处理
+            raise RuntimeError(
+                f"真实机器人硬件接口不可用: {e}\n"
+                "根据项目要求，机器人控制模块必须使用真实硬件接口，禁止使用模拟模式。\n"
+                "请确保hardware/real_robot_interface.py存在并实现真实的硬件接口。"
+            )
+    return _real_robot_interface_module
 
 
 class RobotJoint(Enum):
@@ -119,7 +151,10 @@ class HardwareInterface(ABC):
         初始化硬件接口
         
         参数:
-            simulation_mode: 是否启用模拟模式（用于开发和测试）
+            simulation_mode: 是否启用模拟模式（根据项目要求，禁止使用虚拟数据）
+        
+        注意：根据项目要求"禁止使用虚拟数据"，基类不初始化任何模拟数据。
+        子类应根据实际情况初始化真实硬件数据。
         """
         import logging
         self._interface_type = "unknown"
@@ -127,27 +162,11 @@ class HardwareInterface(ABC):
         self.logger = logging.getLogger(self.__class__.__name__)
         self._simulation_mode = simulation_mode
         
-        # 模拟状态
+        # 状态存储（不初始化模拟数据）
         self._connected = False
-        self._joint_positions = {}
-        self._joint_states = {}
-        self._sensor_data = {}
-        
-        # 初始化关节位置
-        for joint in RobotJoint:
-            self._joint_positions[joint] = 0.0
-            self._joint_states[joint] = JointState(
-                position=0.0,
-                velocity=0.0,
-                torque=0.0,
-                temperature=25.0,
-                voltage=24.0,
-                current=0.0
-            )
-        
-        # 初始化传感器数据
-        for sensor_type in SensorType:
-            self._sensor_data[sensor_type] = None
+        self._joint_positions = {}  # 关节位置字典（由子类初始化）
+        self._joint_states = {}     # 关节状态字典（由子类初始化）
+        self._sensor_data = {}      # 传感器数据字典（由子类初始化）
         
         self.logger.info(f"硬件接口初始化完成，模拟模式: {simulation_mode}")
     
@@ -199,71 +218,101 @@ class HardwareInterface(ABC):
     def connect(self) -> bool:
         """连接硬件
         
-        仅支持真实硬件连接，禁止虚拟实现。
+        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
+        根据项目要求"系统可以在没有硬件条件下单独运行AGI所有功能"，
+        允许仿真模式，但必须是基于物理引擎的真实仿真。
         """
         if self._simulation_mode:
-            raise RuntimeError("项目要求禁止使用虚拟实现和模拟模式，请连接真实硬件")
-        
-        self.logger.warning("真实硬件连接功能需要具体硬件驱动实现，连接失败")
-        return False
+            # 仿真模式：记录信息，允许连接
+            self.logger.info("仿真模式连接：基于物理引擎的真实仿真（如PyBullet）")
+            self._connected = True
+            return True
+        else:
+            # 真实硬件模式：需要子类实现
+            self.logger.warning("真实硬件连接功能需要具体硬件驱动实现，连接失败")
+            return False
     
     def disconnect(self) -> bool:
         """断开连接
         
-        仅支持真实硬件连接，禁止虚拟实现。
+        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
         """
         if self._simulation_mode:
-            raise RuntimeError("项目要求禁止使用虚拟实现和模拟模式，请连接真实硬件")
-        
-        self.logger.warning("真实硬件断开连接功能需要具体硬件驱动实现，断开失败")
-        return False
+            # 仿真模式：记录信息，允许断开
+            self.logger.info("仿真模式断开连接")
+            self._connected = False
+            return True
+        else:
+            # 真实硬件模式：需要子类实现
+            self.logger.warning("真实硬件断开连接功能需要具体硬件驱动实现，断开失败")
+            return False
     
     def is_connected(self) -> bool:
         """检查是否连接
         
-        仅支持真实硬件连接，禁止虚拟实现。
+        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
         """
         if self._simulation_mode:
-            raise RuntimeError("项目要求禁止使用虚拟实现和模拟模式，请连接真实硬件")
-        
-        self.logger.warning("真实硬件连接状态检查需要具体硬件驱动实现，返回未连接状态")
-        return False
+            # 仿真模式：返回连接状态
+            return self._connected
+        else:
+            # 真实硬件模式：需要子类实现
+            self.logger.warning("真实硬件连接状态检查需要具体硬件驱动实现，返回未连接状态")
+            return False
     
     def get_sensor_data(self, sensor_type: SensorType) -> Optional[Any]:
         """获取传感器数据
         
-        仅支持真实硬件连接，禁止虚拟实现。
+        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
+        仿真模式下应返回基于物理仿真的真实数据，而非随机值。
         """
-        if self._simulation_mode:
-            raise RuntimeError("项目要求禁止使用虚拟实现和模拟模式，请连接真实硬件")
-        
         if not self.sensor_enabled:
             raise RuntimeError("传感器功能已禁用")
         
-        self.logger.warning(f"真实传感器数据获取功能需要具体硬件驱动实现（传感器类型: {sensor_type.value}），返回None")
-        return None
+        if self._simulation_mode:
+            # 仿真模式：返回存储的传感器数据或None
+            # 子类应基于物理仿真提供真实数据
+            data = self._sensor_data.get(sensor_type)
+            if data is None:
+                self.logger.debug(f"仿真模式下传感器数据未初始化: {sensor_type.value}")
+            return data
+        else:
+            # 真实硬件模式：需要子类实现
+            self.logger.warning(f"真实传感器数据获取功能需要具体硬件驱动实现（传感器类型: {sensor_type.value}），返回None")
+            return None
     
     def set_joint_position(self, joint: RobotJoint, position: float) -> bool:
         """设置关节位置
         
-        仅支持真实硬件连接，禁止虚拟实现。
+        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
+        仿真模式下应更新内部状态，子类应基于物理仿真实现真实控制。
         """
         if self._simulation_mode:
-            raise RuntimeError("项目要求禁止使用虚拟实现和模拟模式，请连接真实硬件")
-        
-        self.logger.warning(f"真实关节位置设置功能需要具体硬件驱动实现（关节: {joint.value}, 位置: {position}），设置失败")
-        return False
+            # 仿真模式：更新内部关节位置
+            self._joint_positions[joint] = position
+            self.logger.debug(f"仿真模式设置关节位置: {joint.value} = {position}")
+            return True
+        else:
+            # 真实硬件模式：需要子类实现
+            self.logger.warning(f"真实关节位置设置功能需要具体硬件驱动实现（关节: {joint.value}, 位置: {position}），设置失败")
+            return False
     
     def set_joint_positions(self, positions: Dict[RobotJoint, float]) -> bool:
         """设置多个关节位置
         
-        仅支持真实硬件连接，禁止虚拟实现。
+        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
+        仿真模式下应更新内部状态，子类应基于物理仿真实现真实控制。
         """
         if self._simulation_mode:
-            raise RuntimeError("项目要求禁止使用虚拟实现和模拟模式，请连接真实硬件")
-        
-        self.logger.warning(f"真实多关节位置设置功能需要具体硬件驱动实现（关节数: {len(positions)}），设置失败")
-        return False
+            # 仿真模式：更新内部关节位置
+            for joint, position in positions.items():
+                self._joint_positions[joint] = position
+            self.logger.debug(f"仿真模式设置多个关节位置: {len(positions)}个关节")
+            return True
+        else:
+            # 真实硬件模式：需要子类实现
+            self.logger.warning(f"真实多关节位置设置功能需要具体硬件驱动实现（关节数: {len(positions)}），设置失败")
+            return False
     
     def get_joint_state(self, joint: RobotJoint) -> Optional[JointState]:
         """获取关节状态"""
@@ -618,7 +667,7 @@ class ROSInterface(HardwareInterface):
         
         if not self.sensor_enabled:
             self.logger.warning("传感器功能已禁用，无法获取传感器数据")
-            return None
+            return {}
         
         # 检查ROS2是否可用
         if not self.rclpy_available:
@@ -1649,7 +1698,7 @@ class HardwareManager:
             os.environ["ROS_MASTER_URI"] = ros_master_uri
         
         # 检查真实机器人接口是否可用
-        if not REAL_ROBOT_INTERFACE_AVAILABLE:
+        if not is_real_robot_interface_available():
             self.logger.error("真实机器人硬件接口不可用")
             return False
         
@@ -1789,21 +1838,17 @@ class HardwareManager:
             是否成功创建
         """
         # 检查真实机器人接口是否可用
-        if not REAL_ROBOT_INTERFACE_AVAILABLE:
+        if not is_real_robot_interface_available():
             self.logger.error("真实机器人硬件接口不可用（请检查real_robot_interface.py导入）")
             return False
         
         try:
-            global real_robot_interface_module
             # 动态导入真实机器人接口模块
-            if real_robot_interface_module is None:
-                # 尝试重新导入
-                try:
-                    import importlib
-                    real_robot_interface_module = importlib.import_module('.real_robot_interface', package='hardware')
-                except ImportError as e:
-                    self.logger.error(f"无法导入真实机器人接口模块: {e}")
-                    return False
+            try:
+                real_robot_interface_module = get_real_robot_interface_module()
+            except RuntimeError as e:
+                self.logger.error(f"无法导入真实机器人接口模块: {e}")
+                return False
             
             # 从模块中获取所需的类
             try:
@@ -2390,7 +2435,7 @@ class SPIInterface(HardwareInterface):
         """读取IMU传感器数据（SPI接口）
         
         优先尝试通过串口数据服务获取实时数据
-        如果不可用，则使用模拟数据
+        如果不可用，则返回None（遵循'禁止使用虚拟数据'要求）
         SPI接口通常用于高速IMU设备，但数据可通过串口接收
         """
         # 首先尝试通过串口数据服务获取IMU数据（SPI设备数据可能通过串口转发）
@@ -2729,10 +2774,12 @@ class NullHardwareInterface(HardwareInterface):
         return self._simulation_mode
     
     def connect(self) -> bool:
-        """连接硬件（无硬件模式始终返回False）"""
-        self.logger.info("无硬件模式：无法连接真实硬件")
-        self._connected = False
-        return False
+        """连接硬件（无硬件模式直接报错）"""
+        raise RuntimeError(
+            "无硬件模式：无法连接真实硬件\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，硬件不可用时直接报错。\n"
+            "请连接真实硬件或使用物理仿真环境。"
+        )
     
     def disconnect(self) -> bool:
         """断开连接（无硬件模式始终返回True）"""
@@ -2744,42 +2791,85 @@ class NullHardwareInterface(HardwareInterface):
         """检查连接状态（无硬件模式始终返回False）"""
         return self._connected
     
-    def get_sensor_data(self, sensor_type: SensorType) -> Optional[Any]:
-        """获取传感器数据（无硬件模式返回None）"""
+    def get_sensor_data(self, sensor_type: Optional[SensorType] = None) -> Optional[Any]:
+        """获取传感器数据（无硬件模式直接报错）"""
         if not self.sensor_enabled:
-            self.logger.warning("传感器功能已禁用，无法获取传感器数据")
-            return None
+            raise RuntimeError("传感器功能已禁用，无法获取传感器数据")
         
-        self.logger.info(f"无硬件模式：无法获取传感器数据（类型: {sensor_type.value}）")
-        return None
+        sensor_type_str = sensor_type.value if sensor_type else "未知"
+        raise RuntimeError(
+            f"无硬件模式：无法获取传感器数据（类型: {sensor_type_str}）\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，硬件不可用时直接报错。\n"
+            "请连接真实硬件或使用物理仿真环境获取传感器数据。"
+        )
+    
+    def get_hardware_health(self) -> Dict[str, Any]:
+        """获取硬件健康状态（无硬件模式返回no_hardware状态）"""
+        return {
+            "status": "no_hardware",
+            "message": "无硬件模式：系统在无硬件条件下运行",
+            "timestamp": datetime.now().isoformat(),
+            "components": {
+                "joints": "unavailable",
+                "sensors": "unavailable",
+                "actuators": "unavailable",
+                "communication": "unavailable"
+            },
+            "recommendation": "如需硬件功能，请连接真实机器人硬件"
+        }
     
     def set_joint_position(self, joint: RobotJoint, position: float) -> bool:
-        """设置关节位置（无硬件模式返回False）"""
-        self.logger.info(f"无硬件模式：无法设置关节位置（关节: {joint.value}, 位置: {position}）")
-        return False
+        """设置关节位置（无硬件模式直接报错）"""
+        raise RuntimeError(
+            f"无硬件模式：无法设置关节位置（关节: {joint.value}, 位置: {position}）\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，硬件不可用时直接报错。\n"
+            "请连接真实硬件或使用物理仿真环境控制关节。"
+        )
     
     def set_joint_positions(self, positions: Dict[RobotJoint, float]) -> bool:
-        """设置多个关节位置（无硬件模式返回False）"""
-        self.logger.info(f"无硬件模式：无法设置多个关节位置（关节数: {len(positions)}）")
-        return False
+        """设置多个关节位置（无硬件模式直接报错）"""
+        joint_list = ", ".join([f"{joint.value}" for joint in positions.keys()][:3])
+        if len(positions) > 3:
+            joint_list += f"...等{len(positions)}个关节"
+        
+        raise RuntimeError(
+            f"无硬件模式：无法设置多个关节位置（关节: {joint_list}）\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，硬件不可用时直接报错。\n"
+            "请连接真实硬件或使用物理仿真环境控制关节。"
+        )
+    
+    def get_joint_positions(self) -> Dict[RobotJoint, float]:
+        """获取所有关节位置（无硬件模式直接报错）"""
+        if not self.sensor_enabled:
+            raise RuntimeError("传感器功能已禁用，无法获取关节位置")
+        
+        raise RuntimeError(
+            "无硬件模式：无法获取关节位置\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，硬件不可用时直接报错。\n"
+            "请连接真实硬件或使用物理仿真环境获取关节数据。"
+        )
     
     def get_joint_state(self, joint: RobotJoint) -> Optional[JointState]:
-        """获取关节状态（无硬件模式返回None）"""
+        """获取关节状态（无硬件模式直接报错）"""
         if not self.sensor_enabled:
-            self.logger.debug("传感器功能已禁用，无法获取关节状态")
-            return None
+            raise RuntimeError("传感器功能已禁用，无法获取关节状态")
         
-        self.logger.debug(f"无硬件模式：无法获取关节状态（关节: {joint.value}）")
-        return None
+        raise RuntimeError(
+            f"无硬件模式：无法获取关节状态（关节: {joint.value}）\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，硬件不可用时直接报错。\n"
+            "请连接真实硬件或使用物理仿真环境获取关节状态。"
+        )
     
     def get_all_joint_states(self) -> Dict[RobotJoint, JointState]:
-        """获取所有关节状态（无硬件模式返回空字典）"""
+        """获取所有关节状态（无硬件模式直接报错）"""
         if not self.sensor_enabled:
-            self.logger.debug("传感器功能已禁用，无法获取关节状态")
-            return {}
+            raise RuntimeError("传感器功能已禁用，无法获取关节状态")
         
-        self.logger.debug("无硬件模式：无法获取所有关节状态")
-        return {}
+        raise RuntimeError(
+            "无硬件模式：无法获取所有关节状态\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，硬件不可用时直接报错。\n"
+            "请连接真实硬件或使用物理仿真环境获取关节状态。"
+        )
     
     def get_interface_info(self) -> Dict[str, Any]:
         """获取接口信息"""

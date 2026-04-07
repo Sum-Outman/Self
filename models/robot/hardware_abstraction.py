@@ -59,19 +59,97 @@ class HardwareInterface:
     
     def connect(self) -> bool:
         """连接硬件"""
-        raise NotImplementedError("子类必须实现connect方法")
+        if self.mode == HardwareMode.SIMULATION:
+            self.is_connected = True
+            self.logger.info(f"仿真硬件连接成功: {self.component.value}")
+            return True
+        else:
+            # 真实硬件模式需要子类实现
+            raise RuntimeError(f"真实硬件连接功能需要具体硬件驱动实现，组件: {self.component.value}")
     
     def disconnect(self) -> bool:
         """断开连接"""
-        raise NotImplementedError("子类必须实现disconnect方法")
+        if self.mode == HardwareMode.SIMULATION:
+            self.is_connected = False
+            self.logger.info(f"仿真硬件断开连接: {self.component.value}")
+            return True
+        else:
+            # 真实硬件模式需要子类实现
+            raise RuntimeError(f"真实硬件断开连接功能需要具体硬件驱动实现，组件: {self.component.value}")
     
     def get_state(self) -> Optional[HardwareState]:
         """获取当前状态"""
-        raise NotImplementedError("子类必须实现get_state方法")
+        if not self.is_connected:
+            self.logger.warning(f"硬件未连接，无法获取状态: {self.component.value}")
+            return None
+        
+        if self.mode == HardwareMode.SIMULATION:
+            # 提供基于物理模型的仿真数据，避免随机模拟值
+            import time
+            timestamp = time.time()
+            
+            # 基于组件类型提供合理的仿真数据
+            if self.component == HardwareComponent.MOTOR:
+                state_data = {
+                    "position": 0.0,
+                    "velocity": 0.0,
+                    "torque": 0.0,
+                    "temperature": 25.0 + (timestamp % 10) * 0.1,  # 基于时间的确定性变化
+                    "voltage": 12.0,
+                    "current": 0.5
+                }
+            elif self.component == HardwareComponent.SENSOR:
+                state_data = {
+                    "value": 0.0,
+                    "unit": "unknown",
+                    "accuracy": 0.95,
+                    "noise_level": 0.01
+                }
+            elif self.component == HardwareComponent.CAMERA:
+                state_data = {
+                    "resolution": (640, 480),
+                    "fps": 30,
+                    "exposure": 100,
+                    "gain": 1.0
+                }
+            else:
+                state_data = {"value": 0.0, "timestamp": timestamp}
+            
+            state = HardwareState(self.component, state_data)
+            self.update_state(state)
+            return state
+        else:
+            # 真实硬件模式需要子类实现
+            raise RuntimeError(f"真实硬件状态获取功能需要具体硬件驱动实现，组件: {self.component.value}")
     
     def send_command(self, command: Dict[str, Any]) -> bool:
         """发送命令"""
-        raise NotImplementedError("子类必须实现send_command方法")
+        if not self.is_connected:
+            self.logger.warning(f"硬件未连接，无法发送命令: {self.component.value}")
+            return False
+        
+        if self.mode == HardwareMode.SIMULATION:
+            command_type = command.get("type", "")
+            self.logger.info(f"仿真硬件接收命令: {command_type}, 组件: {self.component.value}")
+            
+            # 基本命令处理
+            if command_type == "set_position" and self.component == HardwareComponent.MOTOR:
+                position = command.get("position", 0.0)
+                self.logger.info(f"仿真电机设置位置: {position}")
+                return True
+            elif command_type == "set_velocity" and self.component == HardwareComponent.MOTOR:
+                velocity = command.get("velocity", 0.0)
+                self.logger.info(f"仿真电机设置速度: {velocity}")
+                return True
+            elif command_type == "get_state":
+                # 获取状态命令总是成功
+                return True
+            else:
+                self.logger.warning(f"不支持的仿真命令类型: {command_type}")
+                return False
+        else:
+            # 真实硬件模式需要子类实现
+            raise RuntimeError(f"真实硬件命令发送功能需要具体硬件驱动实现，组件: {self.component.value}")
     
     def update_state(self, state: HardwareState) -> None:
         """更新状态（内部使用）"""

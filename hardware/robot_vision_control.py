@@ -275,56 +275,79 @@ class VisionGuidedController:
             self.voice_recognizer = None
     
     def _initialize_hardware_interface(self):
-        """初始化硬件接口"""
+        """初始化硬件接口
+        
+        根据项目要求:
+        1. 不可以使用任何假数据和虚拟数据
+        2. 不采用任何降级处理，直接报错
+        3. 硬件不可用时直接报错，禁止使用仿真模式
+        """
         try:
             # 创建硬件管理器
             self.hardware_manager = HardwareManager()
             
-            # 连接硬件（使用仿真模式）
+            # 连接真实硬件（禁止使用仿真模式）
             connected = self.hardware_manager.connect()
             
-            if connected:
-                self.logger.info("硬件管理器连接成功")
-                
-                # 创建默认的PyBullet仿真接口
-                simulation_created = self.hardware_manager.create_pybullet_interface(
-                    name="default_simulation",
-                    gui_enabled=False  # 不显示GUI以提高性能
+            if not connected:
+                # 根据项目要求"不采用任何降级处理，直接报错"
+                raise RuntimeError(
+                    "硬件管理器连接失败\n"
+                    "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，\n"
+                    "硬件不可用时直接报错，禁止使用仿真模式。\n"
+                    "请连接真实硬件或确保硬件接口正常工作。"
+                )
+            
+            self.logger.info("硬件管理器连接成功")
+            
+            # 创建真实硬件接口（禁止使用PyBullet仿真）
+            # 根据项目要求，必须使用真实硬件接口
+            try:
+                # 尝试创建真实机器人控制器
+                self.robot_controller = self.hardware_manager.create_robot_controller(
+                    name="main_robot",
+                    interface_name="real_hardware",  # 必须使用真实硬件接口名称
+                    enable_advanced_control=False
                 )
                 
-                if simulation_created:
-                    # 创建机器人控制器
-                    self.robot_controller = self.hardware_manager.create_robot_controller(
-                        name="main_robot",
-                        interface_name="default_simulation",
-                        enable_advanced_control=False
+                if self.robot_controller is None:
+                    # 根据项目要求"不采用任何降级处理，直接报错"
+                    raise RuntimeError(
+                        "无法创建真实机器人控制器\n"
+                        "根据项目要求'禁止使用虚拟数据'，必须使用真实硬件接口。\n"
+                        "请确保硬件接口配置正确且真实硬件可用。"
                     )
-                    
-                    if self.robot_controller:
-                        # 连接机器人控制器
-                        robot_connected = self.robot_controller.connect()
-                        if robot_connected:
-                            self.logger.info("机器人控制器连接成功")
-                            self.hardware_interface = self.robot_controller  # 兼容旧代码
-                        else:
-                            self.logger.warning("机器人控制器连接失败")
-                            self.hardware_interface = self.hardware_manager  # 回退到硬件管理器
-                    else:
-                        self.logger.warning("无法创建机器人控制器")
-                        self.hardware_interface = self.hardware_manager  # 回退到硬件管理器
-                else:
-                    self.logger.warning("无法创建仿真接口")
-                    self.hardware_interface = self.hardware_manager  # 回退到硬件管理器
-            else:
-                self.logger.warning("硬件管理器连接失败，使用仿真模式")
-                self.hardware_interface = self.hardware_manager  # 回退到硬件管理器
+                
+                # 连接机器人控制器
+                robot_connected = self.robot_controller.connect()
+                if not robot_connected:
+                    # 根据项目要求"不采用任何降级处理，直接报错"
+                    raise RuntimeError(
+                        "机器人控制器连接失败\n"
+                        "根据项目要求'不采用任何降级处理，直接报错'，硬件不可用时直接报错。\n"
+                        "请连接真实机器人硬件或确保控制器配置正确。"
+                    )
+                
+                self.logger.info("机器人控制器连接成功")
+                self.hardware_interface = self.robot_controller
+                
+            except Exception as e:
+                # 根据项目要求"不采用任何降级处理，直接报错"
+                raise RuntimeError(
+                    f"初始化真实硬件接口失败: {str(e)}\n"
+                    "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，\n"
+                    "硬件初始化失败时直接报错，禁止降级到仿真模式。\n"
+                    "请使用真实硬件或修复硬件配置问题。"
+                ) from e
                 
         except Exception as e:
-            self.logger.error(f"初始化硬件接口失败: {e}")
-            self.hardware_enabled = False
-            self.hardware_interface = None
-            self.hardware_manager = None
-            self.robot_controller = None
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"初始化硬件接口失败: {str(e)}\n"
+                "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，\n"
+                "硬件不可用时直接报错，系统无法在无硬件模式下运行。\n"
+                "请连接真实硬件或确保硬件配置正确。"
+            )
     
     def _start_processing_threads(self):
         """启动处理线程"""
@@ -365,15 +388,28 @@ class VisionGuidedController:
             
         返回:
             检测到的视觉对象列表
+            
+        异常:
+            根据项目要求"不采用任何降级处理，直接报错":
+            1. 视觉功能不可用时直接报错
+            2. 真实对象检测不可用时直接报错
+            3. 检测失败时直接报错
         """
+        # 检查视觉功能是否可用
         if not self.vision_enabled or self.multimodal_processor is None:
-            return []  # 返回空列表
+            raise RuntimeError(
+                "视觉功能不可用\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，视觉功能不可用时直接报错。\n"
+                "请启用视觉功能或初始化多模态处理器。"
+            )
         
         try:
             # 检查图像尺寸
             if len(image_data.shape) != 3 or image_data.shape[2] != 3:
-                self.logger.warning(f"无效的图像数据形状: {image_data.shape}")
-                return []  # 返回空列表
+                raise ValueError(
+                    f"无效的图像数据形状: {image_data.shape}\n"
+                    "图像数据必须是H×W×C格式的三维数组。"
+                )
             
             # 将图像转换为多模态处理器可处理的格式
             # 完整处理，实际应该使用多模态处理器的视觉编码器
@@ -382,9 +418,13 @@ class VisionGuidedController:
             if self.config.get("use_real_object_detection", False) and self.real_detector:
                 objects = self._real_object_detection(image_data)
             else:
-                # 真实检测不可用，返回空列表（不生成虚拟数据）
-                self.logger.warning("真实对象检测不可用，返回空列表（禁止使用虚拟数据）")
-                objects = []
+                # 真实检测不可用，根据项目要求直接报错
+                raise RuntimeError(
+                    "真实对象检测不可用\n"
+                    "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，\n"
+                    "真实对象检测不可用时直接报错，禁止返回空列表。\n"
+                    "请启用真实对象检测功能并初始化检测器。"
+                )
             
             # 更新对象跟踪
             if self.config["object_tracking_enabled"]:
@@ -394,7 +434,8 @@ class VisionGuidedController:
             
         except Exception as e:
             self.logger.error(f"处理视觉帧失败: {e}")
-            return []  # 返回空列表
+            # 根据项目要求"不采用任何降级处理，直接报错"，重新抛出异常
+            raise RuntimeError(f"处理视觉帧失败: {e}") from e
     
     def _real_object_detection(self, image_data: np.ndarray) -> List[VisualObject]:
         """真实对象检测（使用OpenCV Haar级联分类器）
@@ -404,14 +445,23 @@ class VisionGuidedController:
             
         返回:
             检测到的视觉对象列表
+            
+        异常:
+            根据项目要求"不采用任何降级处理，直接报错":
+            1. 检测器未初始化时直接报错
+            2. 检测失败时直接报错
         """
         objects = []
         
         try:
             # 检查检测器是否初始化
             if not self.real_detector:
-                self.logger.warning("真实对象检测器未初始化，返回空列表（禁止使用虚拟数据）")
-                return []
+                raise RuntimeError(
+                    "真实对象检测器未初始化\n"
+                    "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，\n"
+                    "检测器未初始化时直接报错，禁止返回空列表。\n"
+                    "请初始化真实对象检测器。"
+                )
             
             # 将图像转换为灰度图（Haar级联需要灰度图）
             gray = cv2.cvtColor(image_data, cv2.COLOR_RGB2GRAY)
@@ -469,50 +519,23 @@ class VisionGuidedController:
             
         except Exception as e:
             self.logger.error(f"真实对象检测失败: {e}")
-            # 检测失败，返回空列表（不生成虚拟数据）
-            return []
+            # 根据项目要求"不采用任何降级处理，直接报错"，重新抛出异常
+            raise RuntimeError(f"真实对象检测失败: {e}") from e
         
         return objects
     
     def _test_object_detection(self, image_data: np.ndarray) -> List[VisualObject]:
-        """测试对象检测（仅用于开发和测试）
+        """测试对象检测（已被禁用）
         
-        警告：此方法返回固定测试数据，不应用于真实训练。
-        真实训练必须使用真实对象检测或真实图像数据。
+        注意：根据项目要求"禁止使用虚拟数据"，此方法已被禁用。
+        必须使用真实对象检测(_real_object_detection)获取真实数据。
         """
-        objects = []
-        
-        # 警告：测试数据，不用于真实训练
-        self.logger.warning("使用测试对象检测数据（不应用于真实训练）")
-        
-        # 测试检测数据（仅用于开发和测试）
-        test_objects = [
-            {"id": "person_1", "class": "person", "confidence": 0.85},
-            {"id": "cup_1", "class": "cup", "confidence": 0.72},
-            {"id": "table_1", "class": "table", "confidence": 0.90},
-        ]
-        
-        height, width = image_data.shape[:2]
-        
-        for i, obj in enumerate(test_objects):
-            # 测试边界框（固定位置，仅用于测试）
-            x = width * 0.1 + (width * 0.8 * (i / len(test_objects)))
-            y = height * 0.3
-            w = width * 0.15
-            h = height * 0.2
-            
-            # 创建视觉对象
-            visual_obj = VisualObject(
-                object_id=obj["id"],
-                class_name=obj["class"],
-                confidence=obj["confidence"],
-                bbox=(x, y, w, h),
-                timestamp=time.time()
-            )
-            
-            objects.append(visual_obj)
-        
-        return objects
+        raise RuntimeError(
+            "测试对象检测已被禁用\n"
+            "根据项目要求'禁止使用虚拟数据'，不支持使用测试数据。\n"
+            "必须使用真实对象检测(_real_object_detection)获取真实硬件数据。"
+        )
+
     
     def _update_object_tracking(self, objects: List[VisualObject]):
         """更新对象跟踪状态"""
@@ -818,14 +841,42 @@ class VisionGuidedController:
                     return success
                 elif direction == "backward":
                     # 向后移动可以通过反向行走实现
-                    # 完整实现：记录日志并模拟成功
-                    self.logger.info(f"仿真向后移动，距离: {distance}米，速度: {speed}")
-                    return True
+                    # 根据项目要求"禁止使用虚拟数据"，不能模拟执行
+                    if hasattr(self.robot_controller, 'walk_backward'):
+                        steps = max(1, int(distance / 0.1))
+                        success = self.robot_controller.walk_backward(steps=steps, step_length=0.1)
+                        if success:
+                            self.logger.info(f"向后移动成功，距离: {distance}米")
+                        else:
+                            self.logger.warning("向后移动失败")
+                        return success
+                    else:
+                        # 硬件不支持向后移动，根据项目要求直接报错
+                        raise NotImplementedError(
+                            f"向后移动功能不可用\n"
+                            "根据项目要求'禁止使用虚拟数据'，硬件不支持向后移动时直接报错。\n"
+                            "请实现walk_backward方法或使用支持的移动方向。"
+                        )
                 elif direction == "left" or direction == "right":
                     # 转向动作
                     turn_angle = 30  # 默认30度
-                    self.logger.info(f"仿真{direction}转，角度: {turn_angle}度")
-                    return True
+                    if hasattr(self.robot_controller, 'turn'):
+                        success = self.robot_controller.turn(
+                            angle=turn_angle if direction == "left" else -turn_angle,
+                            speed=speed
+                        )
+                        if success:
+                            self.logger.info(f"{direction}转成功，角度: {turn_angle}度")
+                        else:
+                            self.logger.warning(f"{direction}转失败")
+                        return success
+                    else:
+                        # 硬件不支持转向，根据项目要求直接报错
+                        raise NotImplementedError(
+                            f"{direction}转功能不可用\n"
+                            "根据项目要求'禁止使用虚拟数据'，硬件不支持转向时直接报错。\n"
+                            "请实现turn方法或使用支持的移动方向。"
+                        )
                 else:
                     self.logger.warning(f"不支持的移动方向: {direction}")
                     return False
@@ -833,9 +884,13 @@ class VisionGuidedController:
                 self.logger.error(f"移动命令执行出错: {e}")
                 return False
         else:
-            # 仿真执行（硬件接口不可用）
-            self.logger.info(f"仿真移动命令: 方向={direction}, 距离={distance}, 速度={speed}")
-            return True
+            # 硬件接口不可用，根据项目要求直接报错
+            raise RuntimeError(
+                f"机器人控制器不可用，无法执行移动命令: {direction}\n"
+                "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，\n"
+                "硬件不可用时直接报错，禁止仿真执行。\n"
+                "请连接机器人硬件或初始化机器人控制器。"
+            )
     
     def _execute_gesture_command(self, command: VoiceCommand) -> bool:
         """执行手势命令"""
@@ -866,10 +921,13 @@ class VisionGuidedController:
                     self.logger.error(f"挥手动作执行出错: {e}")
                     return False
             else:
-                self.logger.warning("机器人控制器不可用或不支持挥手动作")
-                # 仿真挥手成功
-                self.logger.info(f"仿真执行{hand}手挥手动作（持续时间: {duration}秒）")
-                return True
+                # 机器人控制器不可用或不支持挥手动作，根据项目要求直接报错
+                raise RuntimeError(
+                    f"机器人控制器不可用或不支持挥手动作: {hand}手\n"
+                    "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，\n"
+                    "硬件不可用时直接报错，禁止仿真执行。\n"
+                    "请连接机器人硬件或实现挥手动作功能。"
+                )
         elif gesture == "stand":
             # 执行站立动作
             if self.robot_controller and hasattr(self.robot_controller, 'set_pose'):
@@ -895,10 +953,13 @@ class VisionGuidedController:
                     self.logger.error(f"站立动作执行出错: {e}")
                     return False
             else:
-                self.logger.warning("机器人控制器不可用或不支持设置姿势")
-                # 仿真站立成功
-                self.logger.info(f"仿真执行站立动作（持续时间: {duration}秒）")
-                return True
+                # 机器人控制器不可用或不支持设置姿势，根据项目要求直接报错
+                raise RuntimeError(
+                    f"机器人控制器不可用或不支持设置姿势: {gesture}\n"
+                    "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，\n"
+                    "硬件不可用时直接报错，禁止仿真执行。\n"
+                    "请连接机器人硬件或实现设置姿势功能。"
+                )
         else:
             self.logger.warning(f"未知的手势: {gesture}")
             return False

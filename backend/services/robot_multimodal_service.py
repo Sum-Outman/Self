@@ -25,24 +25,16 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-try:
-    from models.robot_multimodal_control import (
-        RobotMultimodalController,
-        RobotLearningController,
-        RobotBehaviorMode,
-        create_robot_multimodal_integration
-    )
-    MULTIMODAL_CONTROL_AVAILABLE = True
-except ImportError as e:
-    logging.warning(f"机器人多模态控制模块导入失败: {e}")
-    MULTIMODAL_CONTROL_AVAILABLE = False
+# 直接导入，根据项目要求"不采用任何降级处理，直接报错"
+# 如果导入失败，异常会直接传播，不会设置降级标志
+from models.robot_multimodal_control import (
+    RobotMultimodalController,
+    RobotLearningController,
+    RobotBehaviorMode,
+    create_robot_multimodal_integration
+)
 
-try:
-    from .robot_service import RobotService
-    ROBOT_CONTROL_AVAILABLE = True
-except ImportError as e:
-    logging.warning(f"机器人服务导入失败: {e}")
-    ROBOT_CONTROL_AVAILABLE = False
+from .robot_service import RobotService
 
 logger = logging.getLogger(__name__)
 
@@ -79,39 +71,31 @@ class RobotMultimodalService:
             logger.info("机器人多模态控制服务初始化完成")
     
     def _initialize_components(self):
-        """初始化所有组件"""
-        try:
-            # 初始化多模态控制器
-            if MULTIMODAL_CONTROL_AVAILABLE:
-                self.multimodal_controller = create_robot_multimodal_integration({
-                    "enable_multimodal": True,
-                    "enable_hardware": ROBOT_CONTROL_AVAILABLE,
-                    "behavior_mode": RobotBehaviorMode.AUTONOMOUS.value,
-                    "learning_enabled": True,
-                })
-                
-                # 初始化学习控制器
-                self.learning_controller = RobotLearningController(self.multimodal_controller)
-                
-                logger.info("多模态控制器初始化成功")
-            else:
-                logger.warning("多模态控制模块不可用，相关功能将受限")
-            
-            # 初始化机器人控制服务
-            if ROBOT_CONTROL_AVAILABLE:
-                self.robot_control_service = RobotService()
-                logger.info("机器人控制服务初始化成功")
-            else:
-                logger.warning("机器人控制服务不可用，硬件控制功能将受限")
-            
-            # 更新服务状态
-            self.service_status = "running"
-            self.last_update = datetime.now(timezone.utc)
-            
-        except Exception as e:
-            logger.error(f"初始化组件失败: {e}")
-            self.service_status = "error"
-            self.error_count += 1
+        """初始化所有组件
+        
+        根据项目要求"不采用任何降级处理，直接报错"，任何组件初始化失败都直接抛出异常。
+        模块导入已确保成功，否则代码不会执行到此。
+        """
+        # 初始化多模态控制器
+        self.multimodal_controller = create_robot_multimodal_integration({
+            "enable_multimodal": True,
+            "enable_hardware": True,  # 模块导入成功，启用硬件功能
+            "behavior_mode": RobotBehaviorMode.AUTONOMOUS.value,
+            "learning_enabled": True,
+        })
+        
+        # 初始化学习控制器
+        self.learning_controller = RobotLearningController(self.multimodal_controller)
+        
+        logger.info("多模态控制器初始化成功")
+        
+        # 初始化机器人控制服务
+        self.robot_control_service = RobotService()
+        logger.info("机器人控制服务初始化成功")
+        
+        # 更新服务状态
+        self.service_status = "running"
+        self.last_update = datetime.now(timezone.utc)
     
     def process_multimodal_command(self, 
                                   command_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -409,10 +393,10 @@ class RobotMultimodalService:
         capabilities = {
             "text_processing": True,
             "sensor_integration": True,
-            "image_processing": MULTIMODAL_CONTROL_AVAILABLE,
-            "audio_processing": MULTIMODAL_CONTROL_AVAILABLE,
+            "image_processing": True,  # 模块导入成功，图像处理可用
+            "audio_processing": True,  # 模块导入成功，音频处理可用
             "learning_capabilities": self.learning_controller is not None,
-            "behavior_modes": [mode.value for mode in RobotBehaviorMode] if MULTIMODAL_CONTROL_AVAILABLE else [],
+            "behavior_modes": [mode.value for mode in RobotBehaviorMode],  # 模块导入成功，行为模式可用
             "supported_command_types": [
                 "movement",
                 "gesture",
@@ -422,7 +406,7 @@ class RobotMultimodalService:
                 "pose"
             ],
             "real_time_processing": True,
-            "adaptive_behavior": MULTIMODAL_CONTROL_AVAILABLE,
+            "adaptive_behavior": True,  # 模块导入成功，自适应行为可用
         }
         
         # 如果多模态控制器可用，添加更多信息
@@ -441,6 +425,10 @@ def get_robot_multimodal_service() -> RobotMultimodalService:
     
     返回:
         机器人多模态服务实例
+        
+    异常:
+        当服务初始化失败时直接抛出异常，不创建降级实例
+        根据项目要求"不采用任何降级处理，直接报错"
     """
     global _robot_multimodal_service
     
@@ -449,26 +437,9 @@ def get_robot_multimodal_service() -> RobotMultimodalService:
             _robot_multimodal_service = RobotMultimodalService()
             logger.info("创建机器人多模态服务实例")
         except Exception as e:
-            logger.error(f"创建机器人多模态服务实例失败: {e}")
-            # 创建降级实例
-            class DegradedRobotMultimodalService:
-                def __init__(self):
-                    self.service_status = "degraded"
-                
-                def process_multimodal_command(self, command_data):
-                    return {
-                        "success": False,
-                        "error": "多模态服务不可用（降级模式）",
-                        "timestamp": datetime.now(timezone.utc).isoformat()
-                    }
-                
-                def get_service_status(self):
-                    return {
-                        "service_status": "degraded",
-                        "timestamp": datetime.now(timezone.utc).isoformat()
-                    }
-            
-            _robot_multimodal_service = DegradedRobotMultimodalService()
+            logger.error(f"创建机器人多模态服务实例失败，根据项目要求直接报错: {e}")
+            # 根据项目要求"不采用任何降级处理，直接报错"，这里重新抛出异常
+            raise RuntimeError(f"机器人多模态服务初始化失败: {e}") from e
     
     return _robot_multimodal_service
 

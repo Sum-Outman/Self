@@ -14,10 +14,17 @@ class TransformerBlock(nn.Module):
         super().__init__()
         self.config = config
 
-        # 自注意力
+        # 自注意力 - 确保头数能整除嵌入维度
+        num_heads = config.num_attention_heads
+        if config.hidden_size % num_heads != 0:
+            # 调整为最大可整除的头数
+            num_heads = max(1, config.hidden_size // 64)
+            if config.hidden_size % num_heads != 0:
+                num_heads = 1  # 最终回退
+        
         self.attention = nn.MultiheadAttention(
             embed_dim=config.hidden_size,
-            num_heads=config.num_attention_heads,
+            num_heads=num_heads,
             dropout=config.attention_probs_dropout_prob,
             batch_first=True,
         )

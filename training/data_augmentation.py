@@ -469,10 +469,15 @@ class TextAugmentationStrategy(DataAugmentationStrategy):
         
         augmented_texts = texts.copy()
         
-        for method_name in self.config.methods:
-            # 简化实现：返回原始文本
-            # 实际实现应调用具体的文本增强方法
-            pass
+        # 根据项目要求，禁止降级处理
+        if self.config.methods:
+            raise RuntimeError(
+                "文本增强功能需要NLP库支持，当前未实现。\n"
+                "根据项目要求'不使用任何降级处理，失败报错即可'，\n"
+                "系统禁止使用简化实现或隐式降级。\n"
+                "请求的增强方法: " + ", ".join(self.config.methods) + "\n"
+                "解决方案：安装NLP库并实现完整的文本增强功能。"
+            )
         
         return augmented_texts
 

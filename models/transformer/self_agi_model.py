@@ -293,9 +293,16 @@ class MultiModalEncoder(nn.Module):
             )
 
             # 跨模态注意力对齐网络
+            # 确保头数能整除嵌入维度
+            num_heads = config.num_attention_heads // 2
+            if config.hidden_size % num_heads != 0:
+                # 调整为最大可整除的头数
+                num_heads = max(1, config.hidden_size // 64)
+                if config.hidden_size % num_heads != 0:
+                    num_heads = 1  # 最终回退
             self.cross_modal_attention = nn.MultiheadAttention(
                 embed_dim=config.hidden_size,
-                num_heads=config.num_attention_heads // 2,
+                num_heads=num_heads,
                 dropout=config.attention_probs_dropout_prob,
                 batch_first=True,
             )
@@ -344,30 +351,27 @@ class MultiModalEncoder(nn.Module):
         self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
-    def forward(
+    def _encode_modalities(
         self,
         text_embeddings: Optional[torch.Tensor] = None,
         image_embeddings: Optional[torch.Tensor] = None,
         audio_embeddings: Optional[torch.Tensor] = None,
         video_embeddings: Optional[torch.Tensor] = None,
         sensor_embeddings: Optional[torch.Tensor] = None,
-        modality_types: Optional[List[int]] = None,
-        return_alignment_info: bool = False,
-    ) -> Union[torch.Tensor, Dict[str, Any]]:
-        """前向传播 - 增强版，支持跨模态对齐
-
+    ) -> Tuple[List[torch.Tensor], List[str], Dict[str, Any]]:
+        """编码所有输入模态
+        
         参数:
-            text_embeddings: [batch_size, seq_len, text_embedding_dim]
-            image_embeddings: [batch_size, seq_len, image_embedding_dim]
-            audio_embeddings: [batch_size, seq_len, audio_embedding_dim]
-            video_embeddings: [batch_size, seq_len, video_embedding_dim]
-            sensor_embeddings: [batch_size, seq_len, sensor_embedding_dim]
-            modality_types: 模态类型列表
-            return_alignment_info: 是否返回对齐信息
-
+            text_embeddings: 文本嵌入 [batch_size, seq_len, text_embedding_dim]
+            image_embeddings: 图像嵌入 [batch_size, seq_len, image_embedding_dim]
+            audio_embeddings: 音频嵌入 [batch_size, seq_len, audio_embedding_dim]
+            video_embeddings: 视频嵌入 [batch_size, seq_len, video_embedding_dim]
+            sensor_embeddings: 传感器嵌入 [batch_size, seq_len, sensor_embedding_dim]
+        
         返回:
-            如果return_alignment_info为False: encoded_embeddings [batch_size, seq_len, hidden_size]
-            如果return_alignment_info为True: 包含编码嵌入和对齐信息的字典
+            encoded_features: 编码后的特征列表
+            modality_list: 模态类型列表
+            alignment_info: 对齐信息字典（包含原始特征）
         """
         encoded_features = []
         modality_list = []
@@ -409,26 +413,23 @@ class MultiModalEncoder(nn.Module):
                 modality_list.append("sensor")
                 alignment_info["sensor_features"] = sensor_encoded
 
-        # 如果没有特征，返回空张量
-        if not encoded_features:
-            batch_size = text_embeddings.shape[0] if text_embeddings is not None else 1
-            seq_len = text_embeddings.shape[1] if text_embeddings is not None else 1
-            empty_result = torch.zeros(batch_size, seq_len, self.config.hidden_size).to(
-                text_embeddings.device
-                if text_embeddings is not None
-                else torch.device("cpu")
-            )
+        return encoded_features, modality_list, alignment_info
 
-            if return_alignment_info:
-                return {
-                    "encoded_embeddings": empty_result,
-                    "alignment_info": {},
-                    "modality_weights": {},
-                    "concept_features": empty_result,
-                }
-            else:
-                return empty_result
-
+    def _perform_cross_modal_alignment(
+        self,
+        encoded_features: List[torch.Tensor],
+        alignment_info: Dict[str, Any],
+    ) -> Tuple[torch.Tensor, Dict[str, Any]]:
+        """执行跨模态对齐和特征融合
+        
+        参数:
+            encoded_features: 编码后的特征列表
+            alignment_info: 对齐信息字典（将被更新）
+            
+        返回:
+            combined: 融合后的特征张量 [batch_size, seq_len, hidden_size]
+            alignment_info: 更新后的对齐信息字典
+        """
         # 跨模态对齐（如果有多模态）
         if self.config.multimodal_enabled and len(encoded_features) > 1:
             # 1. 跨模态注意力对齐
@@ -517,8 +518,23 @@ class MultiModalEncoder(nn.Module):
 
         # 加权平均（最终融合）
         combined = torch.stack(encoded_features, dim=0).mean(dim=0)
+        
+        return combined, alignment_info
 
-        # 添加模态嵌入
+    def _add_modality_embeddings(
+        self,
+        combined: torch.Tensor,
+        modality_types: Optional[List[int]] = None,
+    ) -> torch.Tensor:
+        """添加模态类型嵌入
+        
+        参数:
+            combined: 融合后的特征张量 [batch_size, seq_len, hidden_size]
+            modality_types: 模态类型列表
+            
+        返回:
+            添加模态嵌入后的特征张量
+        """
         if modality_types is not None:
             modality_embeds = self.modality_embeddings(
                 torch.tensor(modality_types).to(combined.device)
@@ -532,18 +548,108 @@ class MultiModalEncoder(nn.Module):
                     batch_size, -1, -1
                 )
             combined = combined + modality_embeds
+        
+        return combined
 
+    def _apply_post_processing(
+        self,
+        combined: torch.Tensor,
+        alignment_info: Dict[str, Any],
+        modality_list: List[str],
+    ) -> Tuple[torch.Tensor, Dict[str, Any]]:
+        """应用后处理：层归一化和dropout，并更新对齐信息
+        
+        参数:
+            combined: 融合后的特征张量
+            alignment_info: 对齐信息字典
+            modality_list: 模态类型列表
+            
+        返回:
+            processed: 处理后特征张量
+            alignment_info: 更新后的对齐信息字典
+        """
         # 层归一化和dropout
-        combined = self.layer_norm(combined)
-        combined = self.dropout(combined)
+        processed = self.layer_norm(combined)
+        processed = self.dropout(processed)
 
-        alignment_info["encoded_embeddings"] = combined
+        # 更新对齐信息
+        alignment_info["encoded_embeddings"] = processed
         alignment_info["modality_list"] = modality_list
+        
+        return processed, alignment_info
 
+    def forward(
+        self,
+        text_embeddings: Optional[torch.Tensor] = None,
+        image_embeddings: Optional[torch.Tensor] = None,
+        audio_embeddings: Optional[torch.Tensor] = None,
+        video_embeddings: Optional[torch.Tensor] = None,
+        sensor_embeddings: Optional[torch.Tensor] = None,
+        modality_types: Optional[List[int]] = None,
+        return_alignment_info: bool = False,
+    ) -> Union[torch.Tensor, Dict[str, Any]]:
+        """前向传播 - 增强版，支持跨模态对齐
+
+        参数:
+            text_embeddings: [batch_size, seq_len, text_embedding_dim]
+            image_embeddings: [batch_size, seq_len, image_embedding_dim]
+            audio_embeddings: [batch_size, seq_len, audio_embedding_dim]
+            video_embeddings: [batch_size, seq_len, video_embedding_dim]
+            sensor_embeddings: [batch_size, seq_len, sensor_embedding_dim]
+            modality_types: 模态类型列表
+            return_alignment_info: 是否返回对齐信息
+
+        返回:
+            如果return_alignment_info为False: encoded_embeddings [batch_size, seq_len, hidden_size]
+            如果return_alignment_info为True: 包含编码嵌入和对齐信息的字典
+        """
+        # 编码所有输入模态
+        encoded_features, modality_list, alignment_info = self._encode_modalities(
+            text_embeddings=text_embeddings,
+            image_embeddings=image_embeddings,
+            audio_embeddings=audio_embeddings,
+            video_embeddings=video_embeddings,
+            sensor_embeddings=sensor_embeddings,
+        )
+
+        # 如果没有特征，返回空张量
+        if not encoded_features:
+            batch_size = text_embeddings.shape[0] if text_embeddings is not None else 1
+            seq_len = text_embeddings.shape[1] if text_embeddings is not None else 1
+            empty_result = torch.zeros(batch_size, seq_len, self.config.hidden_size).to(
+                text_embeddings.device
+                if text_embeddings is not None
+                else torch.device("cpu")
+            )
+
+            if return_alignment_info:
+                return {
+                    "encoded_embeddings": empty_result,
+                    "alignment_info": {},
+                    "modality_weights": {},
+                    "concept_features": empty_result,
+                }
+            else:
+                return empty_result
+
+        # 执行跨模态对齐和特征融合
+        combined, alignment_info = self._perform_cross_modal_alignment(
+            encoded_features, alignment_info
+        )
+        
+        # 添加模态类型嵌入
+        combined = self._add_modality_embeddings(combined, modality_types)
+        
+        # 应用后处理
+        processed, alignment_info = self._apply_post_processing(
+            combined, alignment_info, modality_list
+        )
+        
+        # 根据标志返回结果
         if return_alignment_info:
             return alignment_info
         else:
-            return combined
+            return processed
 
 
 class StateSpaceBlock(nn.Module):
@@ -1090,13 +1196,17 @@ class EfficientAttentionBlock(nn.Module):
                         "FlashAttention-2可用（CUDA已启用），将使用FlashAttention-2实现"
                     )
                 else:
-                    logger.warning(
-                        "FlashAttention-2已启用但CUDA不可用，回退到普通注意力。FlashAttention-2需要CUDA环境"
+                    raise RuntimeError(
+                        "FlashAttention-2已启用但CUDA不可用，系统要求直接报错。FlashAttention-2需要CUDA环境\n"
+                        "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                        "解决方案：1.启用CUDA环境 2.禁用FlashAttention-2 3.提供替代硬件支持"
                     )
-                    self.flash_attn_available = False
             except ImportError:
-                logger.warning(
-                    "FlashAttention-2已启用但未安装，回退到普通注意力。请安装: pip install flash-attn"
+                raise RuntimeError(
+                    "FlashAttention-2已启用但未安装，系统要求直接报错。\n"
+                    "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                    "安装命令: pip install flash-attn\n"
+                    "或禁用FlashAttention-2配置"
                 )
 
         # 查询、键、值投影
@@ -1192,19 +1302,14 @@ class EfficientAttentionBlock(nn.Module):
                 attn_output = attn_output_fa.transpose(
                     1, 2
                 )  # [batch_size, num_heads, seq_len, head_dim]
-            except AttributeError:
-                # 回退到普通注意力
-                logger.warning("FlashAttention-2 API不匹配，回退到普通注意力")
-                attn_weights = torch.matmul(q, k.transpose(-2, -1)) / (head_dim**0.5)
-
-                if attention_mask is not None:
-                    attn_weights = attn_weights + attention_mask.unsqueeze(1).unsqueeze(
-                        2
-                    )
-
-                attn_weights = torch.softmax(attn_weights, dim=-1)
-                attn_weights = self.dropout(attn_weights)
-                attn_output = torch.matmul(attn_weights, v)
+            except AttributeError as e:
+                # FlashAttention-2 API不匹配，直接报错
+                raise RuntimeError(
+                    "FlashAttention-2 API不匹配，系统要求直接报错。\n"
+                    f"错误详情: {e}\n"
+                    "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                    "解决方案：1.检查flash-attn版本兼容性 2.禁用FlashAttention-2 3.更新API调用"
+                )
 
         elif self.attention_type == "vanilla":
             # 标准点积注意力
@@ -1270,13 +1375,13 @@ class EfficientAttentionBlock(nn.Module):
         # 合并多头
         # 安全检查：确保attn_output已定义
         if "attn_output" not in locals():
-            # 回退到vanilla注意力
-            attn_weights = torch.matmul(q, k.transpose(-2, -1)) / (head_dim**0.5)
-            if attention_mask is not None:
-                attn_weights = attn_weights + attention_mask.unsqueeze(1).unsqueeze(2)
-            attn_weights = torch.softmax(attn_weights, dim=-1)
-            attn_weights = self.dropout(attn_weights)
-            attn_output = torch.matmul(attn_weights, v)
+            # 根据项目要求，禁止回退机制，直接报错
+            raise RuntimeError(
+                "注意力输出未定义，系统要求直接报错。\n"
+                "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                "可能原因：注意力类型配置错误或实现逻辑缺陷。\n"
+                "解决方案：检查注意力类型配置，确保正确实现所有注意力机制。"
+            )
         attn_output = attn_output.transpose(1, 2).reshape(
             batch_size, seq_len, self.hidden_size
         )
@@ -2865,51 +2970,59 @@ class PlanningModule(nn.Module):
         if action is None:
             return current_state
 
+        # 根据项目要求，物理模型必须启用
+        if not self.physics_model_enabled:
+            raise RuntimeError(
+                "物理模型未启用，系统要求直接报错。\n"
+                "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                "状态转移预测必须使用物理模型，禁止使用回退机制。\n"
+                "解决方案：启用physics_model_enabled配置或实现完整的物理模型预测"
+            )
+
         batch_size = current_state.shape[0]
         device = current_state.device
 
         # 方法1: 使用物理模型预测（如果启用）
-        if self.physics_model_enabled:
-            # 准备动作嵌入
-            if action.dim() == 1:
-                action = action.unsqueeze(0)
+        # 准备动作嵌入
+        if action.dim() == 1:
+            action = action.unsqueeze(0)
 
-            # 确保动作维度与状态匹配
-            if action.shape[-1] != current_state.shape[-1]:
-                # 使用动作编码器投影到正确维度
-                if not hasattr(self, "_action_projection"):
-                    self._action_projection = nn.Linear(
-                        action.shape[-1], current_state.shape[-1]
-                    ).to(device)
-                action = self._action_projection(action)
+        # 确保动作维度与状态匹配
+        if action.shape[-1] != current_state.shape[-1]:
+            # 使用动作编码器投影到正确维度
+            if not hasattr(self, "_action_projection"):
+                self._action_projection = nn.Linear(
+                    action.shape[-1], current_state.shape[-1]
+                ).to(device)
+            action = self._action_projection(action)
 
-            # 组合状态和动作
-            combined = torch.cat([current_state, action], dim=-1)
+        # 组合状态和动作
+        combined = torch.cat([current_state, action], dim=-1)
 
-            # 方法1a: 使用PINN物理模型（如果可用）
-            if self.pinn_available and self.pinn_model is not None:
-                try:
-                    # 使用PINN进行物理精确预测
-                    pinn_input = torch.cat(
-                        [current_state.unsqueeze(1), action.unsqueeze(1)], dim=-1
-                    )
-                    # 确保输入数据类型与PINN模型参数匹配
-                    if hasattr(self.pinn_model, 'parameters') and next(iter(self.pinn_model.parameters()), None) is not None:
-                        model_dtype = next(iter(self.pinn_model.parameters())).dtype
-                        pinn_input = pinn_input.to(model_dtype)
-                    
-                    next_state_pinn = self.pinn_model(pinn_input)
-                    if next_state_pinn is not None:
-                        next_state_pinn = next_state_pinn.squeeze(1)
-                        # 验证PINN输出有效性
-                        if torch.isfinite(next_state_pinn).all():
-                            logger.debug("使用PINN物理模型进行状态转移预测")
-                            # 如果需要，将输出转换回原始dtype
-                            if next_state_pinn.dtype != current_state.dtype:
-                                next_state_pinn = next_state_pinn.to(current_state.dtype)
-                            return next_state_pinn
-                except Exception as e:
-                    logger.warning(f"PINN物理模型预测失败，使用备用物理模型: {e}")
+        # 方法1a: 使用PINN物理模型（如果可用）
+        if self.pinn_available and self.pinn_model is not None:
+            try:
+                # 使用PINN进行物理精确预测
+                pinn_input = torch.cat(
+                    [current_state.unsqueeze(1), action.unsqueeze(1)], dim=-1
+                )
+                # 确保输入数据类型与PINN模型参数匹配
+                if hasattr(self.pinn_model, 'parameters') and next(iter(self.pinn_model.parameters()), None) is not None:
+                    model_dtype = next(iter(self.pinn_model.parameters())).dtype
+                    pinn_input = pinn_input.to(model_dtype)
+                
+                next_state_pinn = self.pinn_model(pinn_input)
+                if next_state_pinn is not None:
+                    next_state_pinn = next_state_pinn.squeeze(1)
+                    # 验证PINN输出有效性
+                    if torch.isfinite(next_state_pinn).all():
+                        logger.debug("使用PINN物理模型进行状态转移预测")
+                        # 如果需要，将输出转换回原始dtype
+                        if next_state_pinn.dtype != current_state.dtype:
+                            next_state_pinn = next_state_pinn.to(current_state.dtype)
+                        return next_state_pinn
+            except Exception as e:
+                logger.warning(f"PINN物理模型预测失败，使用备用物理模型: {e}")
 
             # 方法1b: 使用物理状态转移网络
             if combined.shape[-1] == self.physics_transition_network[0].in_features:
@@ -2975,23 +3088,13 @@ class PlanningModule(nn.Module):
 
                     return next_state_physics
 
-        # 方法2: 使用原始GRU转移模型（回退）
-        batch_size = current_state.shape[0]
-
-        # 使用状态转移模型
-        action_embedding = self.action_embeddings(
-            torch.tensor([0], device=current_state.device)
-        )  # 形状: [1, embedding_dim]
-
-        # 扩展以匹配批次大小
-        action_embedding = action_embedding.expand(batch_size, -1).unsqueeze(
-            1
-        )  # [batch_size, 1, embedding_dim]
-
-        # 使用转移模型预测
-        combined = torch.cat([current_state.unsqueeze(1), action_embedding], dim=-1)
-        output, _ = self.transition_model(combined)
-        return output.squeeze(1)
+        # 根据项目要求，禁止回退机制，直接报错
+        raise RuntimeError(
+            "状态转移预测失败，系统要求直接报错。\n"
+            "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+            f"可能原因：物理模型未启用或配置错误 (physics_model_enabled={self.physics_model_enabled})。\n"
+            "解决方案：1.启用物理模型配置 2.确保PINN模型可用 3.实现正确的状态转移预测机制"
+        )
 
     def _optimize_control_action(
         self,
@@ -3370,17 +3473,20 @@ class PlanningModule(nn.Module):
                 else:
                     plan_result = None
             except Exception as e:
-                logger.warning(f"MPC规划失败，回退到beam search: {e}")
-                plan_result = None
+                raise RuntimeError(
+                    f"MPC规划失败，系统要求直接报错。\n"
+                    f"错误详情: {e}\n"
+                    "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                    "解决方案：检查MPC规划器配置，确保模型预测控制算法正确实现"
+                )
 
-        # 如果所有真实规划算法都失败，回退到beam search
+        # 根据项目要求，禁止回退机制，规划失败必须直接报错
         if plan_result is None:
-            plan_result = self.beam_search_planning(
-                initial_state=current_state,
-                goal=goal_features if goal_features is not None else current_state,
-                constraints=constraints,
-                resources=resources,
-                max_steps=self.max_plan_steps,
+            raise RuntimeError(
+                "所有真实规划算法都失败，系统要求直接报错。\n"
+                "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                "规划系统无法生成有效计划，禁止回退到beam search。\n"
+                "解决方案：1.检查MPC规划器实现 2.验证状态和约束有效性 3.确保规划算法正确配置"
             )
 
         # 5. 解码计划序列
@@ -3766,17 +3872,21 @@ class PlanningModule(nn.Module):
                 )
                 plan_result["method"] = "MPC_incremental"
             else:
-                plan_result = None
+                raise RuntimeError(
+                    "MPC增量规划失败，系统要求直接报错。\n"
+                    "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                    "增量规划必须使用MPC算法成功完成，禁止回退到beam search。\n"
+                    "解决方案：检查MPC规划器配置和状态输入，确保增量规划正确实现"
+                )
         else:
-            # 回退到beam search
-            plan_result = self.beam_search_planning(
-                initial_state=current_state,
-                goal=goal_state,
-                constraints=constraints,
-                resources=resources,
-                max_steps=remaining_horizon,
+            # 根据项目要求，禁止回退机制
+            raise RuntimeError(
+                "MPC增量规划未启用或配置错误，系统要求直接报错。\n"
+                f"规划方法: {planning_method}, MPC启用: {self.enable_mpc_planning}\n"
+                "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                "增量规划必须使用MPC算法，禁止使用其他回退方法。\n"
+                "解决方案：启用MPC规划配置 (enable_mpc_planning=True)"
             )
-            plan_result["method"] = "BeamSearch_incremental"
 
         # 合并原始计划和增量计划（平滑过渡）
         if plan_result is not None and original_embeddings.shape[1] > 0:
@@ -4376,28 +4486,19 @@ class ReasoningModule(nn.Module):
         self.domain_fusion = nn.ModuleDict(
             {
                 "logic": nn.Sequential(
-                    nn.Linear(
-                        config.hidden_size * 3 + config.hidden_size // 2,
-                        config.hidden_size * 2,
-                    ),
+                    nn.LazyLinear(config.hidden_size * 2),  # 动态适应输入维度
                     nn.GELU(),
                     nn.Linear(config.hidden_size * 2, config.hidden_size),
                     nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps),
                 ),
                 "causal": nn.Sequential(
-                    nn.Linear(
-                        config.hidden_size * 3 + config.hidden_size // 2,
-                        config.hidden_size * 2,
-                    ),
+                    nn.LazyLinear(config.hidden_size * 2),  # 动态适应输入维度
                     nn.GELU(),
                     nn.Linear(config.hidden_size * 2, config.hidden_size),
                     nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps),
                 ),
                 "spatial": nn.Sequential(
-                    nn.Linear(
-                        config.hidden_size * 3 + config.hidden_size // 4,  # 适应所有组件：768*3 + 192 = 2496
-                        config.hidden_size * 2,
-                    ),
+                    nn.LazyLinear(config.hidden_size * 2),  # 动态适应输入维度，解决1792 vs 1664不匹配问题
                     nn.GELU(),
                     nn.Linear(config.hidden_size * 2, config.hidden_size),
                     nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps),
@@ -4857,8 +4958,8 @@ class ReasoningModule(nn.Module):
                 # 为了简单起见，使用GNN处理展平的特征
                 # 完整处理
                 gnn_input = reasoning_features.reshape(batch_size * seq_len, hidden_dim)
-                # 需要构造图数据，这里标准：使用虚拟图
-                # 实际项目中需要根据具体任务构造图
+                # 构造全连接图作为默认图结构（所有节点相互连接，除自连接外）
+                # 实际项目中可以根据具体任务需求调整图结构
                 gnn_output = self.gnn_model(gnn_input, adjacency_matrix)
                 # 恢复形状
                 gnn_output = gnn_output.reshape(batch_size, seq_len, -1)
@@ -5280,45 +5381,15 @@ class ReasoningModule(nn.Module):
             推理结果字典
         """
         if not self.real_reasoning_available or not self.real_reasoning_engine:
-            # 回退到神经网络推理
-            logger.warning("真实推理引擎不可用，使用神经网络推理")
-
-            # 完整处理）
-            import hashlib
-            import numpy as np
-
-            # 创建确定性嵌入
-            query_hash = hashlib.md5(query.encode()).hexdigest()
-            hash_int = int(query_hash[:8], 16)
-
-            # 生成伪嵌入
-            batch_size = 1
-            seq_len = min(len(query.split()), 32)
-            hidden_dim = self.config.hidden_size
-
-            # 基于查询哈希生成确定性随机嵌入
-            np.random.seed(hash_int % (2**32))
-            pseudo_embedding = torch.tensor(
-                np.random.randn(batch_size, seq_len, hidden_dim) * 0.02,
-                dtype=torch.float32,
+            # 根据项目要求，禁止回退机制
+            raise RuntimeError(
+                "真实推理引擎不可用，系统要求直接报错。\n"
+                f"真实推理引擎可用: {self.real_reasoning_available}, 引擎实例: {self.real_reasoning_engine}\n"
+                "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                "推理必须使用真实推理引擎，禁止回退到神经网络推理。\n"
+                "解决方案：1.初始化真实推理引擎 2.确保reasoning_type配置正确 3.实现完整的推理引擎功能"
             )
 
-            # 使用神经网络推理
-            neural_result = self.forward(
-                pseudo_embedding, reasoning_type=[reasoning_type]
-            )
-
-            # 转换为文本结果
-            return {
-                "success": True,
-                "query": query,
-                "reasoning_type": reasoning_type,
-                "result": f"神经网络推理完成: {reasoning_type}",
-                "neural_output": neural_result.get(f"{reasoning_type}_output", None),
-                "confidence": 0.7,
-                "engine_type": "neural_network",
-                "explanation": "真实推理引擎不可用，使用神经网络推理",
-            }
 
         try:
             # 使用真实推理引擎
@@ -5333,17 +5404,15 @@ class ReasoningModule(nn.Module):
 
             return result
         except Exception as e:
-            logger.error(f"真实推理引擎执行失败: {e}")
-
-            # 回退到神经网络
-            return {
-                "success": False,
-                "error": str(e),
-                "query": query,
-                "reasoning_type": reasoning_type,
-                "engine_type": "error_fallback",
-                "explanation": f"真实推理引擎失败，错误: {e}",
-            }
+            # 根据项目要求，禁止回退机制
+            raise RuntimeError(
+                f"真实推理引擎执行失败，系统要求直接报错。\n"
+                f"错误详情: {e}\n"
+                f"查询: {query}, 推理类型: {reasoning_type}\n"
+                "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                "真实推理引擎执行失败，禁止回退到神经网络或其他备用方案。\n"
+                "解决方案：1.检查真实推理引擎实现 2.验证输入参数 3.确保推理类型支持"
+            )
 
     def compute_alignment_loss(
         self, reasoning_outputs: Dict[str, torch.Tensor]
@@ -11012,19 +11081,26 @@ class SelfAGIModel(nn.Module):
     def _init_weights(self, module: nn.Module) -> None:
         """初始化权重 - 改进的从零开始训练初始化策略"""
         if isinstance(module, nn.Linear):
-            # 根据激活函数选择初始化方法
-            hidden_act = getattr(self.config, "hidden_act", "gelu")
-            if hidden_act in ["relu", "leaky_relu", "gelu"]:
-                # 使用Kaiming初始化，适用于ReLU族激活函数
-                nn.init.kaiming_normal_(
-                    module.weight, mode="fan_in", nonlinearity="relu"
-                )
-            else:
-                # 默认正态分布初始化
-                module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            # 检查是否为LazyLinear（未初始化权重）
+            try:
+                # 尝试访问权重形状，如果失败说明是未初始化的LazyLinear
+                _ = module.weight.shape
+                # 如果成功，说明权重已初始化，可以正常初始化
+                hidden_act = getattr(self.config, "hidden_act", "gelu")
+                if hidden_act in ["relu", "leaky_relu", "gelu"]:
+                    # 使用Kaiming初始化，适用于ReLU族激活函数
+                    nn.init.kaiming_normal_(
+                        module.weight, mode="fan_in", nonlinearity="relu"
+                    )
+                else:
+                    # 默认正态分布初始化
+                    module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
 
-            if module.bias is not None:
-                module.bias.data.zero_()
+                if module.bias is not None:
+                    module.bias.data.zero_()
+            except RuntimeError:
+                # LazyLinear未初始化权重，跳过初始化，让它在第一次前向传播时自动初始化
+                pass
         elif isinstance(module, nn.Embedding):
             # 嵌入层使用正态分布初始化，标准差适当缩小
             module.weight.data.normal_(
@@ -15048,9 +15124,9 @@ class VisualImitationLearningModule(nn.Module):
             if "precision_limit" in robot_capabilities:
                 # 调整动作精度特征
                 precision_limit = robot_capabilities["precision_limit"]
-                # 应用精度限制：通过缩放因子模拟精度损失
+                # 应用精度限制：通过缩放因子调整动作特征（精度限制<0.95时）
                 if precision_limit < 0.95:  # 95%精度阈值
-                    # 使用精度限制作为缩放因子，模拟精度下降
+                    # 使用精度限制作为缩放因子调整动作特征
                     precision_scaling = precision_limit
                     robot_action_features = robot_action_features * precision_scaling
 

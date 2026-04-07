@@ -1124,16 +1124,17 @@ class MultimodalTrainer:
             raise RuntimeError(f"多模态处理器初始化失败: {e}")
     
     def _create_mock_processor(self):
-        """创建模拟多模态处理器 - 根据用户要求"系统可以在没有硬件条件下单独运行AGI所有功能"
+        """创建模拟多模态处理器 - 根据项目要求"不采用任何降级处理，直接报错"
         
-        当真实多模态处理器不可用时，返回None并记录警告。
+        当真实多模态处理器不可用时，直接抛出异常，不返回模拟处理器。
         """
-        self.logger.warning(
-            "模拟多模态处理器创建：真实处理器不可用。\n"
-            "根据用户要求'系统可以在没有硬件条件下单独运行AGI所有功能'，\n"
-            "返回None，系统可以继续运行（多模态处理功能将受限）。"
+        error_msg = (
+            "模拟多模态处理器创建失败：真实处理器不可用。\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，\n"
+            "系统初始化失败，禁止返回None或模拟处理器。"
         )
-        return None  # 返回None表示模拟处理器不可用
+        self.logger.error(error_msg)
+        raise RuntimeError(error_msg)
     
     def _init_loss_function(self):
         """初始化损失函数"""

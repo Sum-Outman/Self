@@ -25,7 +25,6 @@ from .text_encoder import IndustrialTextEncoder
 from .vision_encoder import IndustrialVisionEncoder
 from .cnn_enhancement import CNNConfig, ResNetEncoder, HybridVisionEncoder, CNNArchitectureSearch, \
     ConvBlock, ResidualBlock, CBAM, SEBlock, ECABlock, FeaturePyramidNetwork, EnhancedVisionEncoder
-from .audio_encoder import AudioEncoder
 from .industrial_audio_encoder import IndustrialAudioEncoder
 from .sensor_encoder import IndustrialSensorEncoder
 from .fusion_networks import CrossModalAttention, ProjectionLayerManager, HierarchicalFusionNetwork
@@ -47,7 +46,6 @@ __all__ = [
     # 编码器
     "IndustrialTextEncoder",
     "IndustrialVisionEncoder",
-    "AudioEncoder",
     "IndustrialAudioEncoder",
     "IndustrialSensorEncoder",
     

@@ -22,7 +22,7 @@ try:
     from models.multimodal.processor import MultimodalProcessor
     from models.multimodal.text_encoder import IndustrialTextEncoder
     from models.multimodal.vision_encoder import IndustrialVisionEncoder
-    from models.multimodal.audio_encoder import AudioEncoder
+    from models.multimodal.industrial_audio_encoder import IndustrialAudioEncoder
     CONTRASTIVE_MODEL_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"无法导入对比学习模型: {e}")

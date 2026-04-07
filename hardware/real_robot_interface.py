@@ -22,10 +22,15 @@ from enum import Enum
 import threading
 import numpy as np
 
-# 导入基类
-from .robot_controller import (
-    HardwareInterface, RobotJoint, SensorType,
-    JointState, IMUData, CameraData, LidarData
+# 从hardware包导入基类（避免直接循环导入）
+from hardware import (
+    HardwareInterface,
+    RobotJoint,
+    SensorType,
+    JointState,
+    IMUData,
+    CameraData,
+    LidarData
 )
 
 logger = logging.getLogger(__name__)
@@ -199,7 +204,13 @@ class NAOqiRobotInterface(HardwareInterface):
             return {}  # 返回空字典
     
     def connect(self) -> bool:
-        """连接到机器人"""
+        """连接到机器人，支持部分硬件连接
+        
+        根据项目要求"部分硬件连接就可以工作"，此方法支持：
+        1. 即使部分代理创建失败，也继续尝试连接
+        2. 记录哪些代理可用，哪些不可用
+        3. 只要至少有一个关键代理可用，就返回True（部分连接）
+        """
         try:
             logger.info(f"尝试连接到 {self.config.robot_type.value} 机器人: {self.config.host}:{self.config.port}")
             
@@ -211,53 +222,236 @@ class NAOqiRobotInterface(HardwareInterface):
             except ImportError:
                 logger.error("NAOqi SDK未安装，无法连接真实机器人")
                 NAOQI_AVAILABLE = False
+                self._connected = False
+                self._partial_connection = False
                 return False
             
             if not NAOQI_AVAILABLE:
+                self._connected = False
+                self._partial_connection = False
                 return False
             
-            # 创建代理
-            self.motion_proxy = naoqi.ALProxy("ALMotion", self.config.host, self.config.port)
-            self.memory_proxy = naoqi.ALProxy("ALMemory", self.config.host, self.config.port)
-            self.posture_proxy = naoqi.ALProxy("ALRobotPosture", self.config.host, self.config.port)
+            # 初始化部分连接状态
+            self._partial_connection = False
+            self._unavailable_proxies = []
+            self._available_proxies = []
             
-            # 检查连接
-            robot_name = self.memory_proxy.getData("RobotConfig/Body/Type")
-            logger.info(f"连接成功，机器人型号: {robot_name}")
+            # 使用安全方法创建关键代理
+            critical_proxies = [
+                ("motion_proxy", "ALMotion"),
+                ("memory_proxy", "ALMemory"),
+                ("posture_proxy", "ALRobotPosture")
+            ]
             
-            # 设置刚体模式（禁用自主生命）
-            try:
-                self.autonomous_life_proxy = naoqi.ALProxy("ALAutonomousLife", self.config.host, self.config.port)
-                self.autonomous_life_proxy.setState("disabled")
-                logger.info("已禁用自主生命模式")
-            except Exception:
-                logger.warning("无法禁用自主生命模式（可能是旧版NAOqi）")
+            proxy_success_count = 0
+            for proxy_name, service_name in critical_proxies:
+                if self._create_proxy_safe(proxy_name, service_name):
+                    proxy_success_count += 1
+                    self._available_proxies.append(service_name)
+                else:
+                    self._unavailable_proxies.append(service_name)
             
-            # 唤醒机器人
-            self.motion_proxy.wakeUp()
+            # 尝试创建可选代理（不影响连接状态）
+            optional_proxies = [
+                ("autonomous_life_proxy", "ALAutonomousLife"),
+                ("video_proxy", "ALVideoDevice"),
+                ("audio_proxy", "ALAudioDevice")
+            ]
             
-            # 设置初始姿态
-            if self.config.robot_type == RealRobotType.NAO:
-                self.posture_proxy.goToPosture("StandInit", 0.5)
-            elif self.config.robot_type == RealRobotType.PEPPER:
-                self.posture_proxy.goToPosture("Stand", 0.5)
+            for proxy_name, service_name in optional_proxies:
+                if self._create_proxy_safe(proxy_name, service_name):
+                    self._available_proxies.append(service_name)
+                else:
+                    self._unavailable_proxies.append(service_name)
             
-            self._connected = True
+            # 检查连接状态（需要至少一个关键代理）
+            if proxy_success_count == 0:
+                logger.warning("所有关键代理创建失败，无法连接")
+                self._connected = False
+                self._partial_connection = False
+                return False
             
-            # 启动传感器数据采集线程
-            self._start_sensor_thread()
+            # 尝试获取机器人信息（如果memory_proxy可用）
+            robot_name = "unknown"
+            if self.memory_proxy is not None:
+                try:
+                    robot_name = self.memory_proxy.getData("RobotConfig/Body/Type")
+                    logger.info(f"连接成功，机器人型号: {robot_name}")
+                except Exception as e:
+                    logger.warning(f"无法获取机器人型号: {e}")
+                    robot_name = f"unknown (error: {e})"
+            
+            # 设置刚体模式（如果自主生命代理可用）
+            if self.autonomous_life_proxy is not None:
+                try:
+                    self.autonomous_life_proxy.setState("disabled")
+                    logger.info("已禁用自主生命模式")
+                except Exception:
+                    logger.warning("无法禁用自主生命模式（可能是旧版NAOqi）")
+            
+            # 唤醒机器人（如果运动代理可用）
+            if self.motion_proxy is not None:
+                try:
+                    self.motion_proxy.wakeUp()
+                except Exception as e:
+                    logger.warning(f"无法唤醒机器人: {e}")
+            
+            # 设置初始姿态（如果姿态代理可用）
+            if self.posture_proxy is not None:
+                try:
+                    if self.config.robot_type == RealRobotType.NAO:
+                        self.posture_proxy.goToPosture("StandInit", 0.5)
+                    elif self.config.robot_type == RealRobotType.PEPPER:
+                        self.posture_proxy.goToPosture("Stand", 0.5)
+                except Exception as e:
+                    logger.warning(f"无法设置初始姿态: {e}")
+            
+            # 确定连接状态
+            if proxy_success_count == len(critical_proxies):
+                # 所有关键代理都成功创建
+                self._connected = True
+                self._partial_connection = False
+                logger.info("完全连接成功，所有关键代理可用")
+            else:
+                # 只有部分关键代理成功创建
+                self._connected = True  # 仍然标记为已连接，但是部分连接
+                self._partial_connection = True
+                logger.info(f"部分连接成功，{proxy_success_count}/{len(critical_proxies)} 个关键代理可用")
+            
+            # 启动传感器数据采集线程（如果memory_proxy可用）
+            if self.memory_proxy is not None:
+                try:
+                    self._start_sensor_thread()
+                except Exception as e:
+                    logger.warning(f"无法启动传感器数据采集线程: {e}")
             
             # 启动安全监控线程
             if self.config.emergency_stop_enabled:
-                self._start_safety_monitor()
+                try:
+                    self._start_safety_monitor()
+                except Exception as e:
+                    logger.warning(f"无法启动安全监控线程: {e}")
             
-            logger.info(f"机器人连接成功，准备就绪")
+            logger.info(f"机器人连接{'完全' if not self._partial_connection else '部分'}成功，准备就绪")
+            logger.info(f"可用代理: {self._available_proxies}")
+            if self._unavailable_proxies:
+                logger.info(f"不可用代理: {self._unavailable_proxies}")
+            
             return True
             
         except Exception as e:
             logger.error(f"连接机器人失败: {e}")
             self._connected = False
+            self._partial_connection = False
             return False
+    
+    def _create_proxy_safe(self, proxy_name: str, service_name: str):
+        """安全创建代理，支持部分硬件连接
+        
+        参数:
+            proxy_name: 代理属性名（如'motion_proxy'）
+            service_name: NAOqi服务名（如'ALMotion'）
+        
+        返回:
+            bool: 是否成功创建代理
+        """
+        try:
+            import naoqi  # type: ignore
+            from naoqi import ALProxy  # type: ignore
+            
+            proxy = naoqi.ALProxy(service_name, self.config.host, self.config.port)
+            setattr(self, proxy_name, proxy)
+            logger.info(f"成功创建代理 {service_name}")
+            return True
+        except Exception as e:
+            logger.warning(f"创建代理 {service_name} 失败: {e}")
+            setattr(self, proxy_name, None)
+            
+            # 记录不可用的代理
+            if not hasattr(self, '_unavailable_proxies'):
+                self._unavailable_proxies = []
+            self._unavailable_proxies.append(service_name)
+            
+            return False
+    
+    def get_hardware_health(self) -> Dict[str, Any]:
+        """获取硬件健康状态，支持部分硬件检测"""
+        health_status = {
+            "status": "unknown",
+            "message": "",
+            "timestamp": time.time(),
+            "components": {},
+            "available_proxies": [],
+            "unavailable_proxies": [],
+            "partial_hardware": False
+        }
+        
+        try:
+            # 检查关键代理可用性
+            proxies_to_check = [
+                ("motion_proxy", "ALMotion", "运动控制"),
+                ("memory_proxy", "ALMemory", "内存/传感器"),
+                ("posture_proxy", "ALRobotPosture", "姿态控制"),
+                ("autonomous_life_proxy", "ALAutonomousLife", "自主生命"),
+                ("video_proxy", "ALVideoDevice", "视频设备"),
+                ("audio_proxy", "ALAudioDevice", "音频设备")
+            ]
+            
+            available_count = 0
+            total_count = len(proxies_to_check)
+            
+            for proxy_attr, service_name, description in proxies_to_check:
+                proxy = getattr(self, proxy_attr, None)
+                if proxy is not None:
+                    health_status["available_proxies"].append(service_name)
+                    health_status["components"][service_name] = "available"
+                    available_count += 1
+                else:
+                    health_status["unavailable_proxies"].append(service_name)
+                    health_status["components"][service_name] = "unavailable"
+            
+            # 确定整体状态
+            if self._connected:
+                if available_count == total_count:
+                    health_status["status"] = "fully_connected"
+                    health_status["message"] = "所有硬件组件连接正常"
+                elif available_count > 0:
+                    health_status["status"] = "partially_connected"
+                    health_status["message"] = f"部分硬件组件可用 ({available_count}/{total_count})"
+                    health_status["partial_hardware"] = True
+                else:
+                    health_status["status"] = "connected_no_proxies"
+                    health_status["message"] = "已连接但无可用代理"
+            else:
+                if available_count > 0:
+                    health_status["status"] = "partially_available"
+                    health_status["message"] = f"部分硬件代理可用但未连接 ({available_count}/{total_count})"
+                    health_status["partial_hardware"] = True
+                else:
+                    health_status["status"] = "unavailable"
+                    health_status["message"] = "硬件不可用"
+            
+            # 检查关节映射
+            if hasattr(self, '_joint_mapping') and self._joint_mapping:
+                joint_count = len(self._joint_mapping)
+                health_status["components"]["joints"] = f"available_{joint_count}"
+            else:
+                health_status["components"]["joints"] = "unavailable"
+            
+            # 检查传感器缓存
+            if hasattr(self, '_sensor_cache'):
+                sensor_count = len(self._sensor_cache)
+                health_status["components"]["sensors"] = f"available_{sensor_count}"
+            else:
+                health_status["components"]["sensors"] = "unavailable"
+            
+            return health_status
+            
+        except Exception as e:
+            logger.error(f"获取硬件健康状态失败: {e}")
+            health_status["status"] = "error"
+            health_status["message"] = f"健康状态检测失败: {e}"
+            return health_status
     
     def _start_sensor_thread(self):
         """启动传感器数据采集线程"""

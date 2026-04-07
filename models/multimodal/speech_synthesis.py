@@ -764,7 +764,30 @@ class SpeechSynthesisService:
         except Exception as e:
             logger.error(f"语音合成异常: {e}")
             return None  # 返回None
-    
+
+    def synthesize(self, text: str, language: str = "zh", voice: str = "default", speed: float = 1.0, pitch: float = 1.0, volume: float = 1.0) -> Optional[np.ndarray]:
+        """
+        语音合成接口（兼容路由API）
+        
+        参数:
+            text: 要合成的文本
+            language: 语言代码（目前仅支持中文）
+            voice: 音色名称
+            speed: 语速（0.5-2.0）
+            pitch: 音高（0.5-2.0）
+            volume: 音量（0.0-1.0）
+        
+        返回:
+            音频波形numpy数组，或None（如果失败）
+        """
+        # 记录未使用的参数（当前实现不支持这些调整）
+        logger.info(f"语音合成请求: text='{text[:50]}...', language={language}, voice={voice}, speed={speed}, pitch={pitch}, volume={volume}")
+        # 调用基础合成方法
+        audio = self.synthesize_text(text)
+        # 注意：当前实现不支持音高、语速、音量调整，返回原始音频
+        # 未来可以添加音频后处理来实现这些功能
+        return audio
+
     def synthesize_to_file(self, text: str, output_path: str):
         """
         合成文本并保存为音频文件

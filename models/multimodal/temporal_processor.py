@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # 导入其他模块的类
 from .text_encoder import IndustrialTextEncoder
 from .vision_encoder import IndustrialVisionEncoder
-from .audio_encoder import AudioEncoder
+from .industrial_audio_encoder import IndustrialAudioEncoder
 
 
 class TemporalMultimodalProcessor(nn.Module):
@@ -44,7 +44,7 @@ class TemporalMultimodalProcessor(nn.Module):
         # 基础编码器
         self.text_encoder = IndustrialTextEncoder(config)
         self.image_encoder = IndustrialVisionEncoder(config)
-        self.audio_encoder = AudioEncoder(config)
+        self.audio_encoder = IndustrialAudioEncoder(config, return_pooled_output=True)
         
         # 时序编码器 (LSTM/Transformer)
         self.temporal_hidden_dim = config.get("temporal_hidden_dim", 256)

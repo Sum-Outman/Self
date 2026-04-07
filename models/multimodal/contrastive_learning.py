@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # 导入其他模块的类
 from .text_encoder import IndustrialTextEncoder
 from .vision_encoder import IndustrialVisionEncoder
-from .audio_encoder import AudioEncoder
+from .industrial_audio_encoder import IndustrialAudioEncoder
 from .sensor_encoder import IndustrialSensorEncoder
 
 
@@ -66,7 +66,7 @@ class ContrastiveAlignmentModel(nn.Module):
         )
         self.image_embedding_dim = image_embedding_dim
         
-        self.audio_encoder = AudioEncoder(config)
+        self.audio_encoder = IndustrialAudioEncoder(config, return_pooled_output=True)
         self.audio_embedding_dim = config.get("audio_embedding_dim", 256)
         
         # 传感器编码器

@@ -39,6 +39,16 @@
     overflow-scrolling: touch;
   }
 
+  /* 移动端触摸目标优化 */
+  button,
+  a[role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
   /* 移动端表单元素优化 */
   input,
   select,
