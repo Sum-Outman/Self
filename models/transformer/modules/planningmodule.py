@@ -7,6 +7,9 @@ import torch.nn.functional as F
 from typing import Dict, Any, List, Optional, Union, Callable, Tuple
 import logging
 
+from ..self_agi_model import AGIModelConfig
+from ..cores.transformerblock import TransformerBlock
+
 class PlanningModule(nn.Module):
     """计划模块 - 真实规划算法实现
 

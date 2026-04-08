@@ -214,6 +214,7 @@ async def database_health_check(
                                 # 绝对路径，无需修改
                                 # 根据项目要求"禁止使用虚拟数据"，移除占位符
                                 # 绝对路径已准备好，无需额外处理
+                                pass
                             else:
                                 db_path = os.path.join(os.getcwd(), db_path)
                             

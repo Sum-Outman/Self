@@ -49,6 +49,17 @@ except ImportError as e:
     logger.warning(f"专业领域能力模块不可用: {e}")
     PROFESSIONAL_DOMAIN_AVAILABLE = False
 
+# 模块导入 - 从拆分后的模块文件导入
+try:
+    from .modules.planningmodule import PlanningModule
+    from .modules.reasoningmodule import ReasoningModule
+    from .modules.cognitivesciencealgorithms import CognitiveScienceAlgorithms
+    MODULES_AVAILABLE = True
+    logger.info("核心模块导入成功")
+except ImportError as e:
+    MODULES_AVAILABLE = False
+    logger.warning(f"核心模块导入失败，将使用内置定义: {e}")
+
 # 分词器导入
 try:
     from models.multimodal.tokenizer import IndustrialTokenizer
