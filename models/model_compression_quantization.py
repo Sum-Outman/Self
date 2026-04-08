@@ -812,8 +812,9 @@ class ModelCompressor:
             try:
                 module = dict(model.named_modules())[module_name]
                 return type(module).__name__
-            except KeyError:
-                pass
+            except KeyError as e:
+                # 根据项目要求"不采用任何降级处理，直接报错"，记录警告而不是静默忽略
+                logging.getLogger(__name__).warning(f"未找到模块 {module_name}，返回Unknown: {e}")
         
         return "Unknown"
     

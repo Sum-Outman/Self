@@ -21,9 +21,13 @@ from scipy import interpolate, optimize
 import math
 
 from .robot_controller import RobotJoint, JointState, HardwareInterface
-from .unified_interface import EnhancedHardwareInterface, OperationMode
 
 logger = logging.getLogger(__name__)
+
+# EnhancedHardwareInterface已移除，使用HardwareInterface作为替代
+# 根据项目要求"不重复生成功能重复的文件"
+EnhancedHardwareInterface = HardwareInterface
+OperationMode = None  # 占位符，如果不需要可以移除
 
 class ControlAlgorithm(Enum):
     """控制算法枚举"""

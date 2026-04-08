@@ -105,11 +105,14 @@ class RealHardwareInterface(ABC):
         
         返回:
             连接是否成功
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
         """
-        logger.warning(f"默认连接方法被调用，子类应重写此方法: {self.interface_name}")
-        # 模拟连接成功，真实硬件子类应实现具体连接逻辑
-        self.connection_status = ConnectionStatus.CONNECTED
-        return True
+        raise NotImplementedError(
+            f"真实硬件接口'{self.interface_name}'必须实现connect()方法。"
+            "根据项目要求'禁止使用虚拟数据'，不能提供默认模拟实现。"
+        )
     
     @abstractmethod
     def disconnect(self) -> bool:
@@ -118,11 +121,14 @@ class RealHardwareInterface(ABC):
         
         返回:
             断开是否成功
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
         """
-        logger.warning(f"默认断开连接方法被调用，子类应重写此方法: {self.interface_name}")
-        # 模拟断开成功，真实硬件子类应实现具体断开逻辑
-        self.connection_status = ConnectionStatus.DISCONNECTED
-        return True
+        raise NotImplementedError(
+            f"真实硬件接口'{self.interface_name}'必须实现disconnect()方法。"
+            "根据项目要求'禁止使用虚拟数据'，不能提供默认模拟实现。"
+        )
     
     @abstractmethod
     def is_connected(self) -> bool:
@@ -131,9 +137,14 @@ class RealHardwareInterface(ABC):
         
         返回:
             是否已连接
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
         """
-        # 默认返回当前连接状态，真实硬件子类应实现具体连接检查逻辑
-        return self.connection_status == ConnectionStatus.CONNECTED
+        raise NotImplementedError(
+            f"真实硬件接口'{self.interface_name}'必须实现is_connected()方法。"
+            "根据项目要求'禁止使用虚拟数据'，不能提供默认模拟实现。"
+        )
     
     @abstractmethod
     def get_hardware_info(self) -> Dict[str, Any]:
@@ -142,38 +153,37 @@ class RealHardwareInterface(ABC):
         
         返回:
             硬件信息字典
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
         """
-        # 返回基本硬件信息，真实硬件子类应实现具体信息获取逻辑
-        return {
-            "interface_name": self.interface_name,
-            "hardware_type": self.hardware_type.value,
-            "connection_status": self.connection_status.value,
-            "operation_count": self.operation_count,
-            "error_count": self.error_count,
-            "last_error": self.last_error,
-            "is_default_implementation": True
-        }
+        raise NotImplementedError(
+            f"真实硬件接口'{self.interface_name}'必须实现get_hardware_info()方法。"
+            "根据项目要求'禁止使用虚拟数据'，不能提供默认模拟实现。"
+        )
     
     def execute_operation(self, operation: str, **kwargs) -> Any:
         """
         执行硬件操作
         
-        根据用户要求"系统可以在没有硬件条件下单独运行AGI所有功能"，
-        当没有具体硬件实现时，返回None允许系统继续运行。
+        根据用户要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        当没有具体硬件实现时，抛出HardwareError。
         
         参数:
             operation: 操作名称
             **kwargs: 操作参数
         
         返回:
-            操作结果（无硬件时返回None）
+            操作结果
+        
+        抛出:
+            HardwareError: 硬件操作不可用
         """
-        logger.warning(
-            f"无硬件模式：无法执行硬件操作（接口: {self.interface_name}, "
-            f"硬件类型: {self.hardware_type.value}, 操作: {operation}），"
-            "系统将继续运行。"
+        raise HardwareError(
+            f"无法执行硬件操作（接口: {self.interface_name}, "
+            f"硬件类型: {self.hardware_type.value}, 操作: {operation}）。"
+            "根据项目要求'禁止使用虚拟数据'，硬件接口必须实现具体硬件操作。"
         )
-        return None
     
     def safe_execute(self, operation: str, **kwargs) -> Any:
         """

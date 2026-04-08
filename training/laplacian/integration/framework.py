@@ -32,30 +32,26 @@ try:
     try:
         from models.graph.laplacian_matrix import GraphLaplacian, GraphStructure, GraphType
         GRAPH_MODULE_AVAILABLE = True
-    except ImportError:
+    except ImportError as e:
         GRAPH_MODULE_AVAILABLE = False
-        logger.warning("图模块不可用，部分功能将受限")
-        # 创建虚拟类
-        class GraphLaplacian:
-        pass  # 已实现
-        class GraphStructure:
-        pass  # 已实现
-        class GraphType:
-            UNDIRECTED = "undirected"
-            DIRECTED = "directed"
+        logger.error(f"图模块导入失败: {e}")
+        # 根据项目要求"禁止使用虚拟数据"，不创建虚拟实现
+        # 设置None，相关功能将在使用时检查可用性
+        GraphLaplacian = None
+        GraphStructure = None
+        GraphType = None
     
     # 尝试导入其他依赖模块
     try:
         from models.multimodal.pinn_cnn_fusion import PINNCNNFusionConfig, PINNCNNFusionModel
         FUSION_MODULE_AVAILABLE = True
-    except ImportError:
+    except ImportError as e:
         FUSION_MODULE_AVAILABLE = False
-        logger.warning("PINN-CNN融合模块不可用，部分功能将受限")
-        # 创建虚拟类
-        class PINNCNNFusionConfig:
-        pass  # 已实现
-        class PINNCNNFusionModel:
-        pass  # 已实现
+        logger.error(f"PINN-CNN融合模块导入失败: {e}")
+        # 根据项目要求"禁止使用虚拟数据"，不创建虚拟实现
+        # 设置None，相关功能将在使用时检查可用性
+        PINNCNNFusionConfig = None
+        PINNCNNFusionModel = None
     
     LAPLACIAN_MODULES_AVAILABLE = True
     logger.info("拉普拉斯模块导入成功 (新模块结构)")
@@ -104,7 +100,7 @@ class LaplacianIntegrationConfig:
     
     # 兼容性配置
     backward_compatible: bool = True
-    create_dummy_classes: bool = True  # 当模块不可用时创建虚拟类
+    create_dummy_classes: bool = False  # 根据项目要求"禁止使用虚拟数据"，禁用虚拟类创建
     
     # 监控配置
     log_import_errors: bool = True
@@ -232,36 +228,42 @@ class LaplacianIntegrationFramework:
                 raise
     
     def _create_dummy_classes(self):
-        """创建虚拟类（当模块不可用时）"""
+        """创建占位符类（当模块不可用时）
         
-        logger.warning("创建虚拟类替代拉普拉斯模块")
+        根据项目要求"禁止使用虚拟数据"，不提供模拟实现。
+        所有方法都抛出RuntimeError，明确指示功能不可用。
+        """
         
-        class DummyClass:
+        error_message = (
+            "拉普拉斯模块不可用\n"
+            "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，\n"
+            "当拉普拉斯模块不可用时，不提供虚拟实现。\n"
+            "请安装拉普拉斯模块依赖，或禁用laplacian_enhancement_enabled配置。"
+        )
+        
+        logger.error(f"拉普拉斯模块不可用，创建占位符类: {error_message}")
+        
+        class UnavailableClass:
             def __init__(self, *args, **kwargs):
-                self._initialized = True
-                logger.debug(f"虚拟类初始化: {self.__class__.__name__}")
+                raise RuntimeError(error_message)
             
             def __call__(self, *args, **kwargs):
-                logger.debug(f"虚拟类调用: {self.__class__.__name__}")
-                return None  # 返回None
+                raise RuntimeError(error_message)
             
             def __getattr__(self, name):
-                def dummy_method(*args, **kwargs):
-                    logger.debug(f"虚拟方法调用: {name}")
-                    return None  # 返回None
-                return dummy_method
+                raise RuntimeError(error_message)
         
-        # 创建虚拟类并注册
-        dummy_classes = {
-            'LaplacianEnhancedTrainingConfig': type('DummyLaplacianEnhancedTrainingConfig', (DummyClass,), {}),
-            'LaplacianRegularization': type('DummyLaplacianRegularization', (DummyClass,), {}),
-            'RegularizationConfig': type('DummyRegularizationConfig', (DummyClass,), {}),
-            'LaplacianEnhancedPINN': type('DummyLaplacianEnhancedPINN', (DummyClass, nn.Module), {}),
-            'LaplacianEnhancedCNN': type('DummyLaplacianEnhancedCNN', (DummyClass, nn.Module), {}),
+        # 创建占位符类并注册
+        placeholder_classes = {
+            'LaplacianEnhancedTrainingConfig': type('UnavailableLaplacianEnhancedTrainingConfig', (UnavailableClass,), {}),
+            'LaplacianRegularization': type('UnavailableLaplacianRegularization', (UnavailableClass,), {}),
+            'RegularizationConfig': type('UnavailableRegularizationConfig', (UnavailableClass,), {}),
+            'LaplacianEnhancedPINN': type('UnavailableLaplacianEnhancedPINN', (UnavailableClass, nn.Module), {}),
+            'LaplacianEnhancedCNN': type('UnavailableLaplacianEnhancedCNN', (UnavailableClass, nn.Module), {}),
         }
         
-        self._module_registry.update(dummy_classes)
-        logger.info("虚拟类创建完成")
+        self._module_registry.update(placeholder_classes)
+        logger.warning("拉普拉斯模块占位符类创建完成（功能不可用）")
     
     def get_module(self, module_name: str) -> Type:
         """获取指定的拉普拉斯模块"""

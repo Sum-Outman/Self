@@ -2912,8 +2912,15 @@ class CausalGraphLearner:
                     return "i->j"
                 elif abs(lag_corr_j_i) > abs(lag_corr_i_j) * 1.2:
                     return "j->i"
-            except Exception:
-                pass
+            except Exception as e:
+                # 根据项目要求"不采用任何降级处理，直接报错"，记录错误但继续尝试其他启发式
+                # 这里选择记录警告而不是静默忽略，提供更好的可观察性
+                try:
+                    # 尝试使用类logger
+                    self.logger.warning(f"滞后相关性计算失败，跳过该启发式: {e}")
+                except AttributeError:
+                    # 如果logger不可用，使用标准logging
+                    logging.getLogger(__name__).warning(f"滞后相关性计算失败，跳过该启发式: {e}")
         
         # 启发式3：领域知识
         domain_knowledge = {

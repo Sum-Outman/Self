@@ -28,65 +28,40 @@ try:
     try:
         from models.multimodal.cnn_enhancement import CNNConfig, CNNModel
         CNN_MODULE_AVAILABLE = True
-    except ImportError:
-        CNN_MODULE_AVAILABLE = False
-        logger.warning("CNN模块不可用，功能将受限")
-        # 创建简单的CNN配置和模型实现
-        class CNNConfig:
-            """简单的CNN配置实现"""
-            def __init__(self, **kwargs):
-                for k, v in kwargs.items():
-                    setattr(self, k, v)
-        
-        class CNNModel(nn.Module):
-            """简单的CNN模型实现"""
-            def __init__(self, config):
-                super().__init__()
-                self.config = config
-                self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-                self.conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-                self.pool = nn.MaxPool2d(2)
-                self.fc = nn.Linear(128 * 56 * 56, 10)
-            
-            def forward(self, x):
-                x = self.pool(F.relu(self.conv1(x)))
-                x = self.pool(F.relu(self.conv2(x)))
-                x = x.view(x.size(0), -1)
-                x = self.fc(x)
-                return x
+    except ImportError as e:
+        logger.error(f"CNN模块导入失败: {e}")
+        # 根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"
+        # 当必要模块不可用时抛出RuntimeError，阻止模块加载
+        raise RuntimeError(
+            f"CNN模块导入失败: {e}\n"
+            "CNN模块是拉普拉斯增强CNN模型的必需依赖。\n"
+            "根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+            "请确保CNN增强模块已正确安装和实现。"
+        )
     
     # 尝试导入拉普拉斯变换器
     try:
         from utils.signal_processing.laplace_transform import LaplaceTransform, SignalProcessingConfig
         LAPLACE_TRANSFORM_AVAILABLE = True
-    except ImportError:
+    except ImportError as e:
         LAPLACE_TRANSFORM_AVAILABLE = False
-        logger.warning("拉普拉斯变换器不可用，功能将受限")
-        class LaplaceTransform:
-            """简单的拉普拉斯变换器实现"""
-            def __init__(self, config):
-                self.config = config
-        
-        class SignalProcessingConfig:
-            """信号处理配置实现"""
-        pass  # 已实现
+        logger.error(f"拉普拉斯变换器导入失败: {e}")
+        # 根据项目要求"禁止使用虚拟数据"，不创建虚拟实现
+        # 设置None，相关类将在使用时抛出明确错误
+        LaplaceTransform = None
+        SignalProcessingConfig = None
     
     MODULES_AVAILABLE = True
 except ImportError as e:
     MODULES_AVAILABLE = False
-    logger.warning(f"部分模块不可用: {e}, 功能将受限")
-    
-    # 创建必要的实现类
-    class CNNConfig:
-        pass  # 已实现
-    class CNNModel:
-        pass  # 已实现
-    class LaplaceTransform:
-        pass  # 已实现
-    class SignalProcessingConfig:
-        pass  # 已实现
-    class LaplacianEnhancedTrainingConfig:
-        pass  # 已实现
+    logger.error(f"拉普拉斯增强CNN模块导入失败: {e}")
+    # 根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"
+    # 当必要模块不可用时抛出RuntimeError，阻止模块加载
+    raise RuntimeError(
+        f"拉普拉斯增强CNN模块初始化失败。必要的模块不可用: {e}\n"
+        "根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+        "请确保所有依赖模块已正确安装和实现。"
+    )
 
 
 class LaplacianEnhancedCNN(nn.Module):

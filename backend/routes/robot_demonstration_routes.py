@@ -174,21 +174,19 @@ async def pause_robot_demonstration_recording(
         integration_service = RobotDemonstrationIntegration(db)
         
         # 尝试暂停录制
-        try:
-            # 检查服务是否有暂停方法
-            if hasattr(integration_service, 'pause_demonstration_recording'):
-                result = await integration_service.pause_demonstration_recording(
-                    robot_id=robot_id
-                )
-                frames_recorded = result.get('frames_recorded', 0) if result else 0
-            else:
-                # 服务层已实现，返回模拟响应
-                frames_recorded = 42  # 模拟帧数
-                logger.warning(f"暂停录制功能在服务层已实现，返回真实数据 (机器人ID: {robot_id})")
-        except NotImplementedError:
-            # 服务层明确抛出已实现错误
-            frames_recorded = 42
-            logger.warning(f"暂停录制功能已实现 (机器人ID: {robot_id})")
+        # 根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"
+        # 检查服务是否有暂停方法
+        if not hasattr(integration_service, 'pause_demonstration_recording'):
+            raise NotImplementedError(
+                f"机器人示范集成服务缺少pause_demonstration_recording方法\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，未实现的功能直接报错。\n"
+                "请实现RobotDemonstrationIntegration.pause_demonstration_recording方法。"
+            )
+        
+        result = await integration_service.pause_demonstration_recording(
+            robot_id=robot_id
+        )
+        frames_recorded = result.get('frames_recorded', 0) if result else 0
         
         return {
             "success": True,
@@ -236,21 +234,19 @@ async def resume_robot_demonstration_recording(
         integration_service = RobotDemonstrationIntegration(db)
         
         # 尝试恢复录制
-        try:
-            # 检查服务是否有恢复方法
-            if hasattr(integration_service, 'resume_demonstration_recording'):
-                result = await integration_service.resume_demonstration_recording(
-                    robot_id=robot_id
-                )
-                frames_recorded = result.get('frames_recorded', 0) if result else 0
-            else:
-                # 服务层已实现，返回模拟响应
-                frames_recorded = 42  # 模拟帧数
-                logger.warning(f"恢复录制功能在服务层已实现，返回真实数据 (机器人ID: {robot_id})")
-        except NotImplementedError:
-            # 服务层明确抛出已实现错误
-            frames_recorded = 42
-            logger.warning(f"恢复录制功能已实现 (机器人ID: {robot_id})")
+        # 根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"
+        # 检查服务是否有恢复方法
+        if not hasattr(integration_service, 'resume_demonstration_recording'):
+            raise NotImplementedError(
+                f"机器人示范集成服务缺少resume_demonstration_recording方法\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，未实现的功能直接报错。\n"
+                "请实现RobotDemonstrationIntegration.resume_demonstration_recording方法。"
+            )
+        
+        result = await integration_service.resume_demonstration_recording(
+            robot_id=robot_id
+        )
+        frames_recorded = result.get('frames_recorded', 0) if result else 0
         
         return {
             "success": True,
@@ -428,21 +424,19 @@ async def pause_robot_demonstration_playback(
         integration_service = RobotDemonstrationIntegration(db)
         
         # 尝试暂停播放
-        try:
-            # 检查服务是否有暂停方法
-            if hasattr(integration_service, 'pause_demonstration_playback'):
-                result = await integration_service.pause_demonstration_playback(
-                    robot_id=robot_id
-                )
-                paused = result.get('playback_paused', True) if result else True
-            else:
-                # 服务层已实现，返回模拟响应
-                paused = True
-                logger.warning(f"暂停播放功能在服务层已实现，返回真实数据 (机器人ID: {robot_id})")
-        except NotImplementedError:
-            # 服务层明确抛出已实现错误
-            paused = True
-            logger.warning(f"暂停播放功能已实现 (机器人ID: {robot_id})")
+        # 根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"
+        # 检查服务是否有暂停播放方法
+        if not hasattr(integration_service, 'pause_demonstration_playback'):
+            raise NotImplementedError(
+                f"机器人示范集成服务缺少pause_demonstration_playback方法\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，未实现的功能直接报错。\n"
+                "请实现RobotDemonstrationIntegration.pause_demonstration_playback方法。"
+            )
+        
+        result = await integration_service.pause_demonstration_playback(
+            robot_id=robot_id
+        )
+        paused = result.get('playback_paused', True) if result else True
         
         return {
             "success": True,

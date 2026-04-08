@@ -36,66 +36,102 @@ try:
     except ImportError:
         PINN_MODULE_AVAILABLE = False
         logger.warning("PINN模块不可用，功能将受限")
-        # 创建简单的PINN配置和模型实现
+        # PINN模块不可用，不提供虚拟实现
+        PINN_MODULE_AVAILABLE = False
+        logger.error("PINN模块不可用。根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。")
+        
+        # 创建抛出异常的占位符类
         class PINNConfig:
-            """简单的PINN配置实现"""
+            """PINN配置占位符 - 模块不可用时抛出异常"""
             def __init__(self, **kwargs):
-                for k, v in kwargs.items():
-                    setattr(self, k, v)
+                raise RuntimeError(
+                    "PINNConfig不可用。PINN模块导入失败，根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+                    "请确保models.physics.pinn_framework模块已正确实现。"
+                )
         
         class PINNModel(nn.Module):
-            """简单的PINN模型实现"""
+            """PINN模型占位符 - 模块不可用时抛出异常"""
             def __init__(self, config):
                 super().__init__()
-                self.config = config
-                self.net = nn.Sequential(
-                    nn.Linear(config.input_dim, config.hidden_dim),
-                    nn.Tanh(),
-                    nn.Linear(config.hidden_dim, config.hidden_dim),
-                    nn.Tanh(),
-                    nn.Linear(config.hidden_dim, config.output_dim)
+                raise RuntimeError(
+                    "PINNModel不可用。PINN模块导入失败，根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+                    "请确保models.physics.pinn_framework模块已正确实现。"
                 )
-            
-            def forward(self, x):
-                return self.net(x)
-            
-            def compute_total_loss(self, inputs, targets=None, iteration=0):
-                outputs = self(inputs)
-                if targets is not None:
-                    loss = F.mse_loss(outputs, targets)
-                else:
-                    loss = F.mse_loss(outputs, torch.zeros_like(outputs))
-                
-                loss_dict = {
-                    "pde_residual": loss.item(),
-                    "boundary_loss": 0.0,
-                    "data_loss": 0.0 if targets is None else loss.item()
-                }
-                return loss, loss_dict
     
     MODULES_AVAILABLE = True
 except ImportError as e:
     MODULES_AVAILABLE = False
     logger.warning(f"部分模块不可用: {e}, 功能将受限")
     
-    # 创建必要的实现类
+    # 根据项目要求"禁止使用虚拟数据"，模块导入失败时不提供虚拟实现
+    # 所有类都定义为抛出异常的占位符
+    
     class PINNConfig:
-        pass  # 已实现
+        """PINN配置占位符 - 模块不可用时抛出异常"""
+        def __init__(self, **kwargs):
+            raise RuntimeError(
+                "PINNConfig不可用。必要的模块导入失败，根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+                "请确保models.graph.laplacian_matrix模块已正确实现。"
+            )
+    
     class PINNModel:
-        pass  # 已实现
+        """PINN模型占位符 - 模块不可用时抛出异常"""
+        def __init__(self, config):
+            super().__init__()
+            raise RuntimeError(
+                "PINNModel不可用。必要的模块导入失败，根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+                "请确保models.graph.laplacian_matrix模块已正确实现。"
+            )
+    
     class GraphLaplacian:
-        pass  # 已实现
+        """图拉普拉斯占位符 - 模块不可用时抛出异常"""
+        def __init__(self, **kwargs):
+            raise RuntimeError(
+                "GraphLaplacian不可用。必要的模块导入失败，根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+                "请确保models.graph.laplacian_matrix模块已正确实现。"
+            )
+    
     class GraphStructure:
-        pass  # 已实现
+        """图结构占位符 - 模块不可用时抛出异常"""
+        def __init__(self, **kwargs):
+            raise RuntimeError(
+                "GraphStructure不可用。必要的模块导入失败，根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+                "请确保models.graph.laplacian_matrix模块已正确实现。"
+            )
+    
     class GraphType:
+        """图类型占位符 - 模块不可用时抛出异常"""
+        def __init__(self, **kwargs):
+            raise RuntimeError(
+                "GraphType不可用。必要的模块导入失败，根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+                "请确保models.graph.laplacian_matrix模块已正确实现。"
+            )
         UNDIRECTED = "undirected"
         DIRECTED = "directed"
+    
     class LaplacianRegularization:
-        pass  # 已实现
+        """拉普拉斯正则化占位符 - 模块不可用时抛出异常"""
+        def __init__(self, **kwargs):
+            raise RuntimeError(
+                "LaplacianRegularization不可用。必要的模块导入失败，根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+                "请确保training.laplacian.core.regularization模块已正确实现。"
+            )
+    
     class RegularizationConfig:
-        pass  # 已实现
+        """正则化配置占位符 - 模块不可用时抛出异常"""
+        def __init__(self, **kwargs):
+            raise RuntimeError(
+                "RegularizationConfig不可用。必要的模块导入失败，根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+                "请确保training.laplacian.core.regularization模块已正确实现。"
+            )
+    
     class LaplacianEnhancedTrainingConfig:
-        pass  # 已实现
+        """拉普拉斯增强训练配置占位符 - 模块不可用时抛出异常"""
+        def __init__(self, **kwargs):
+            raise RuntimeError(
+                "LaplacianEnhancedTrainingConfig不可用。必要的模块导入失败，根据项目要求'禁止使用虚拟数据'，不能提供虚拟实现。\n"
+                "请确保training.laplacian.utils.config模块已正确实现。"
+            )
 
 
 class LaplacianEnhancedPINN(nn.Module):

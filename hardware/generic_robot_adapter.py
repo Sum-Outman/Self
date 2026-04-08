@@ -27,16 +27,17 @@ import numpy as np
 # 导入硬件接口相关类型
 try:
     from hardware.robot_controller import RobotJoint, JointState, HardwareInterface
-except ImportError:
-    # 如果导入失败，创建虚拟类型以支持类型检查
-    class RobotJoint(Enum):
-        pass
+    HARDWARE_MODULES_AVAILABLE = True
+except ImportError as e:
+    # 根据项目要求"禁止使用虚拟数据"，导入失败时不创建虚拟类型
+    logger.error(f"硬件模块导入失败: {e}")
+    logger.error("根据项目要求'禁止使用虚拟数据'，硬件模块不可用时，通用机器人适配器功能将受限。")
     
-    class JointState:
-        pass
-    
-    class HardwareInterface:
-        pass
+    # 设置占位符类型为None，相关功能将在使用时抛出异常
+    RobotJoint = None
+    JointState = None
+    HardwareInterface = None
+    HARDWARE_MODULES_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -314,43 +315,49 @@ class NAOAdapter(RobotAdapter):
         }
         
         # 通用关节类型 -> RobotJoint枚举映射
-        self.generic_to_robot_joint = {
-            # 头部关节
-            (GenericJointType.HEAD_YAW, "center"): RobotJoint.HEAD_YAW,
-            (GenericJointType.HEAD_PITCH, "center"): RobotJoint.HEAD_PITCH,
-            
-            # 左臂关节
-            (GenericJointType.SHOULDER_PITCH, "left"): RobotJoint.L_SHOULDER_PITCH,
-            (GenericJointType.SHOULDER_ROLL, "left"): RobotJoint.L_SHOULDER_ROLL,
-            (GenericJointType.ELBOW_YAW, "left"): RobotJoint.L_ELBOW_YAW,
-            (GenericJointType.ELBOW_ROLL, "left"): RobotJoint.L_ELBOW_ROLL,
-            (GenericJointType.WRIST_YAW, "left"): RobotJoint.L_WRIST_YAW,
-            (GenericJointType.HAND, "left"): RobotJoint.L_HAND,
-            
-            # 右臂关节
-            (GenericJointType.SHOULDER_PITCH, "right"): RobotJoint.R_SHOULDER_PITCH,
-            (GenericJointType.SHOULDER_ROLL, "right"): RobotJoint.R_SHOULDER_ROLL,
-            (GenericJointType.ELBOW_YAW, "right"): RobotJoint.R_ELBOW_YAW,
-            (GenericJointType.ELBOW_ROLL, "right"): RobotJoint.R_ELBOW_ROLL,
-            (GenericJointType.WRIST_YAW, "right"): RobotJoint.R_WRIST_YAW,
-            (GenericJointType.HAND, "right"): RobotJoint.R_HAND,
-            
-            # 左腿关节
-            (GenericJointType.HIP_YAW_PITCH, "left"): RobotJoint.L_HIP_YAW_PITCH,
-            (GenericJointType.HIP_ROLL, "left"): RobotJoint.L_HIP_ROLL,
-            (GenericJointType.HIP_PITCH, "left"): RobotJoint.L_HIP_PITCH,
-            (GenericJointType.KNEE_PITCH, "left"): RobotJoint.L_KNEE_PITCH,
-            (GenericJointType.ANKLE_PITCH, "left"): RobotJoint.L_ANKLE_PITCH,
-            (GenericJointType.ANKLE_ROLL, "left"): RobotJoint.L_ANKLE_ROLL,
-            
-            # 右腿关节
-            (GenericJointType.HIP_YAW_PITCH, "right"): RobotJoint.R_HIP_YAW_PITCH,
-            (GenericJointType.HIP_ROLL, "right"): RobotJoint.R_HIP_ROLL,
-            (GenericJointType.HIP_PITCH, "right"): RobotJoint.R_HIP_PITCH,
-            (GenericJointType.KNEE_PITCH, "right"): RobotJoint.R_KNEE_PITCH,
-            (GenericJointType.ANKLE_PITCH, "right"): RobotJoint.R_ANKLE_PITCH,
-            (GenericJointType.ANKLE_ROLL, "right"): RobotJoint.R_ANKLE_ROLL,
-        }
+        # 根据项目要求"禁止使用虚拟数据"，如果硬件模块不可用，设置空映射
+        if RobotJoint is None:
+            self.logger.error("RobotJoint枚举不可用，硬件模块导入失败")
+            self.logger.error("根据项目要求'禁止使用虚拟数据'，通用机器人适配器无法提供硬件控制功能")
+            self.generic_to_robot_joint = {}
+        else:
+            self.generic_to_robot_joint = {
+                # 头部关节
+                (GenericJointType.HEAD_YAW, "center"): RobotJoint.HEAD_YAW,
+                (GenericJointType.HEAD_PITCH, "center"): RobotJoint.HEAD_PITCH,
+                
+                # 左臂关节
+                (GenericJointType.SHOULDER_PITCH, "left"): RobotJoint.L_SHOULDER_PITCH,
+                (GenericJointType.SHOULDER_ROLL, "left"): RobotJoint.L_SHOULDER_ROLL,
+                (GenericJointType.ELBOW_YAW, "left"): RobotJoint.L_ELBOW_YAW,
+                (GenericJointType.ELBOW_ROLL, "left"): RobotJoint.L_ELBOW_ROLL,
+                (GenericJointType.WRIST_YAW, "left"): RobotJoint.L_WRIST_YAW,
+                (GenericJointType.HAND, "left"): RobotJoint.L_HAND,
+                
+                # 右臂关节
+                (GenericJointType.SHOULDER_PITCH, "right"): RobotJoint.R_SHOULDER_PITCH,
+                (GenericJointType.SHOULDER_ROLL, "right"): RobotJoint.R_SHOULDER_ROLL,
+                (GenericJointType.ELBOW_YAW, "right"): RobotJoint.R_ELBOW_YAW,
+                (GenericJointType.ELBOW_ROLL, "right"): RobotJoint.R_ELBOW_ROLL,
+                (GenericJointType.WRIST_YAW, "right"): RobotJoint.R_WRIST_YAW,
+                (GenericJointType.HAND, "right"): RobotJoint.R_HAND,
+                
+                # 左腿关节
+                (GenericJointType.HIP_YAW_PITCH, "left"): RobotJoint.L_HIP_YAW_PITCH,
+                (GenericJointType.HIP_ROLL, "left"): RobotJoint.L_HIP_ROLL,
+                (GenericJointType.HIP_PITCH, "left"): RobotJoint.L_HIP_PITCH,
+                (GenericJointType.KNEE_PITCH, "left"): RobotJoint.L_KNEE_PITCH,
+                (GenericJointType.ANKLE_PITCH, "left"): RobotJoint.L_ANKLE_PITCH,
+                (GenericJointType.ANKLE_ROLL, "left"): RobotJoint.L_ANKLE_ROLL,
+                
+                # 右腿关节
+                (GenericJointType.HIP_YAW_PITCH, "right"): RobotJoint.R_HIP_YAW_PITCH,
+                (GenericJointType.HIP_ROLL, "right"): RobotJoint.R_HIP_ROLL,
+                (GenericJointType.HIP_PITCH, "right"): RobotJoint.R_HIP_PITCH,
+                (GenericJointType.KNEE_PITCH, "right"): RobotJoint.R_KNEE_PITCH,
+                (GenericJointType.ANKLE_PITCH, "right"): RobotJoint.R_ANKLE_PITCH,
+                (GenericJointType.ANKLE_ROLL, "right"): RobotJoint.R_ANKLE_ROLL,
+            }
         
         # 关节限制（弧度）- NAO机器人关节限制
         self.joint_limits = {
@@ -407,6 +414,14 @@ class NAOAdapter(RobotAdapter):
         2. 硬件不可用时直接报错，不进行降级处理
         3. 支持部分硬件连接工作模式
         """
+        # 检查硬件模块是否可用
+        if not self.generic_to_robot_joint:
+            raise RuntimeError(
+                "硬件模块不可用，无法获取机器人状态。\n"
+                "根据项目要求'禁止使用虚拟数据'，硬件模块导入失败时不能提供机器人状态数据。\n"
+                "请确保hardware.robot_controller模块可用且正确导入。"
+            )
+        
         state = GenericRobotState(self.robot_model)
         state.timestamp = time.time()
         
@@ -456,6 +471,14 @@ class NAOAdapter(RobotAdapter):
         2. 硬件不可用时直接报错，不进行降级处理
         3. 支持部分硬件连接工作模式
         """
+        # 检查硬件模块是否可用
+        if not self.generic_to_robot_joint:
+            raise RuntimeError(
+                "硬件模块不可用，无法发送机器人命令。\n"
+                "根据项目要求'禁止使用虚拟数据'，硬件模块导入失败时不能发送控制命令。\n"
+                "请确保hardware.robot_controller模块可用且正确导入。"
+            )
+        
         success = True
         
         # 将通用命令映射到NAO特定命令
@@ -508,6 +531,593 @@ class NAOAdapter(RobotAdapter):
         return success
 
 
+class PepperAdapter(RobotAdapter):
+    """Pepper机器人适配器
+    
+    SoftBank Pepper机器人适配器，支持轮式移动和上半身控制。
+    Pepper没有腿部，但有轮子用于移动。
+    """
+    
+    def __init__(self, base_interface: Any):
+        super().__init__(RobotModel.PEPPER, base_interface)
+    
+    def _init_mappings(self) -> None:
+        """初始化Pepper机器人的映射关系
+        
+        Pepper机器人特点：
+        1. 有轮子，无腿部关节
+        2. 有手臂、手部、头部
+        3. 支持移动底座
+        4. 有触觉传感器和摄像头
+        
+        根据项目要求"一次训练成功可以兼容控制所有不同型号人形机器人"，
+        建立完整的通用关节类型到Pepper关节名称的映射。
+        """
+        # Pepper关节映射：通用关节类型 -> Pepper关节名称
+        # 使用元组键(通用关节类型, 左右标识)来支持对称关节
+        self.joint_mapping = {
+            # 头部关节
+            (GenericJointType.HEAD_YAW, "center"): "HeadYaw",
+            (GenericJointType.HEAD_PITCH, "center"): "HeadPitch",
+            
+            # 左臂关节
+            (GenericJointType.SHOULDER_PITCH, "left"): "LShoulderPitch",
+            (GenericJointType.SHOULDER_ROLL, "left"): "LShoulderRoll",
+            (GenericJointType.ELBOW_YAW, "left"): "LElbowYaw",
+            (GenericJointType.ELBOW_ROLL, "left"): "LElbowRoll",
+            (GenericJointType.WRIST_YAW, "left"): "LWristYaw",
+            (GenericJointType.HAND, "left"): "LHand",
+            
+            # 右臂关节
+            (GenericJointType.SHOULDER_PITCH, "right"): "RShoulderPitch",
+            (GenericJointType.SHOULDER_ROLL, "right"): "RShoulderRoll",
+            (GenericJointType.ELBOW_YAW, "right"): "RElbowYaw",
+            (GenericJointType.ELBOW_ROLL, "right"): "RElbowRoll",
+            (GenericJointType.WRIST_YAW, "right"): "RWristYaw",
+            (GenericJointType.HAND, "right"): "RHand",
+            
+            # Pepper没有腿部关节，使用特殊标记
+            # 轮子控制使用特殊接口，不是关节控制
+        }
+        
+        # 通用关节类型 -> RobotJoint枚举映射
+        # 根据项目要求"禁止使用虚拟数据"，如果硬件模块不可用，设置空映射
+        if RobotJoint is None:
+            self.logger.error("RobotJoint枚举不可用，硬件模块导入失败")
+            self.logger.error("根据项目要求'禁止使用虚拟数据'，通用机器人适配器无法提供硬件控制功能")
+            self.generic_to_robot_joint = {}
+        else:
+            self.generic_to_robot_joint = {
+                # 头部关节
+                (GenericJointType.HEAD_YAW, "center"): RobotJoint.HEAD_YAW,
+                (GenericJointType.HEAD_PITCH, "center"): RobotJoint.HEAD_PITCH,
+                
+                # 左臂关节
+                (GenericJointType.SHOULDER_PITCH, "left"): RobotJoint.L_SHOULDER_PITCH,
+                (GenericJointType.SHOULDER_ROLL, "left"): RobotJoint.L_SHOULDER_ROLL,
+                (GenericJointType.ELBOW_YAW, "left"): RobotJoint.L_ELBOW_YAW,
+                (GenericJointType.ELBOW_ROLL, "left"): RobotJoint.L_ELBOW_ROLL,
+                (GenericJointType.WRIST_YAW, "left"): RobotJoint.L_WRIST_YAW,
+                (GenericJointType.HAND, "left"): RobotJoint.L_HAND,
+                
+                # 右臂关节
+                (GenericJointType.SHOULDER_PITCH, "right"): RobotJoint.R_SHOULDER_PITCH,
+                (GenericJointType.SHOULDER_ROLL, "right"): RobotJoint.R_SHOULDER_ROLL,
+                (GenericJointType.ELBOW_YAW, "right"): RobotJoint.R_ELBOW_YAW,
+                (GenericJointType.ELBOW_ROLL, "right"): RobotJoint.R_ELBOW_ROLL,
+                (GenericJointType.WRIST_YAW, "right"): RobotJoint.R_WRIST_YAW,
+                (GenericJointType.HAND, "right"): RobotJoint.R_HAND,
+                
+                # Pepper没有腿部，但保留映射为None
+                (GenericJointType.HIP_YAW_PITCH, "left"): None,
+                (GenericJointType.HIP_ROLL, "left"): None,
+                (GenericJointType.HIP_PITCH, "left"): None,
+                (GenericJointType.KNEE_PITCH, "left"): None,
+                (GenericJointType.ANKLE_PITCH, "left"): None,
+                (GenericJointType.ANKLE_ROLL, "left"): None,
+                
+                (GenericJointType.HIP_YAW_PITCH, "right"): None,
+                (GenericJointType.HIP_ROLL, "right"): None,
+                (GenericJointType.HIP_PITCH, "right"): None,
+                (GenericJointType.KNEE_PITCH, "right"): None,
+                (GenericJointType.ANKLE_PITCH, "right"): None,
+                (GenericJointType.ANKLE_ROLL, "right"): None,
+            }
+        
+        # 关节限制（弧度）- Pepper机器人关节限制
+        self.joint_limits = {
+            # 头部关节限制
+            (GenericJointType.HEAD_YAW, "center"): (-2.0857, 2.0857),
+            (GenericJointType.HEAD_PITCH, "center"): (-0.6720, 0.5149),
+            
+            # 左臂关节限制
+            (GenericJointType.SHOULDER_PITCH, "left"): (-2.0857, 2.0857),
+            (GenericJointType.SHOULDER_ROLL, "left"): (-0.3142, 1.3265),
+            (GenericJointType.ELBOW_YAW, "left"): (-2.0857, 2.0857),
+            (GenericJointType.ELBOW_ROLL, "left"): (-1.5446, 1.5446),
+            (GenericJointType.WRIST_YAW, "left"): (-1.8238, 1.8238),
+            (GenericJointType.HAND, "left"): (0.0, 1.0),
+            
+            # 右臂关节限制（与左臂对称）
+            (GenericJointType.SHOULDER_PITCH, "right"): (-2.0857, 2.0857),
+            (GenericJointType.SHOULDER_ROLL, "right"): (-1.3265, 0.3142),  # 注意：符号相反
+            (GenericJointType.ELBOW_YAW, "right"): (-2.0857, 2.0857),
+            (GenericJointType.ELBOW_ROLL, "right"): (-1.5446, 1.5446),
+            (GenericJointType.WRIST_YAW, "right"): (-1.8238, 1.8238),
+            (GenericJointType.HAND, "right"): (0.0, 1.0),
+        }
+        
+        # 反向映射：Pepper关节名称 -> (通用关节类型, 左右标识)
+        self.pepper_to_generic = {
+            pepper_joint: (generic_joint, side) 
+            for (generic_joint, side), pepper_joint in self.joint_mapping.items()
+        }
+        
+        self.logger.info(f"Pepper关节映射初始化完成，共映射 {len(self.joint_mapping)} 个关节")
+        self.logger.info("注意：Pepper机器人没有腿部关节，使用轮子移动")
+    
+    def get_state(self) -> GenericRobotState:
+        """获取Pepper机器人状态
+        
+        根据项目要求:
+        1. 使用真实硬件数据，禁止使用虚拟数据
+        2. 硬件不可用时直接报错，不进行降级处理
+        3. 支持部分硬件连接工作模式
+        """
+        # 检查硬件模块是否可用
+        if not self.generic_to_robot_joint:
+            raise RuntimeError(
+                "硬件模块不可用，无法获取机器人状态。\n"
+                "根据项目要求'禁止使用虚拟数据'，硬件模块导入失败时不能提供机器人状态数据。\n"
+                "请确保hardware.robot_controller模块可用且正确导入。"
+            )
+        
+        state = GenericRobotState(self.robot_model)
+        state.timestamp = time.time()
+        
+        # 从基础硬件接口获取真实数据
+        for (generic_joint, side), pepper_joint in self.joint_mapping.items():
+            # 将通用关节类型映射到RobotJoint枚举
+            key = (generic_joint, side)
+            if key in self.generic_to_robot_joint:
+                robot_joint = self.generic_to_robot_joint[key]
+                
+                # 如果关节不存在于Pepper机器人上（如腿部关节），跳过
+                if robot_joint is None:
+                    continue
+                
+                try:
+                    # 从硬件接口获取关节状态
+                    joint_state = self.base_interface.get_joint_state(robot_joint)
+                    
+                    if joint_state is None:
+                        # 根据项目要求"不采用任何降级处理，直接报错"
+                        raise RuntimeError(
+                            f"无法获取关节状态: {generic_joint.value}({side})\n"
+                            "根据项目要求'禁止使用虚拟数据'，硬件接口返回None时直接报错。\n"
+                            "请检查硬件连接或使用真实的硬件数据源。"
+                        )
+                    
+                    # 使用真实硬件数据
+                    state.joint_positions[key] = joint_state.position
+                    state.joint_velocities[key] = joint_state.velocity
+                    
+                except Exception as e:
+                    # 根据项目要求"不采用任何降级处理，直接报错"
+                    raise RuntimeError(
+                        f"获取Pepper关节状态失败: {generic_joint.value}({side})\n"
+                        f"错误: {e}\n"
+                        "根据项目要求'禁止使用虚拟数据'，硬件接口错误时直接报错。\n"
+                        "请检查硬件连接或使用真实的硬件数据源。"
+                    )
+        
+        # Pepper机器人没有腿部，但有轮子状态
+        # 这里添加轮子状态（如果需要）
+        # 注意：轮子不是关节，需要特殊处理
+        
+        self.logger.debug(f"Pepper机器人状态获取完成，包含 {len(state.joint_positions)} 个关节位置")
+        return state
+    
+    def send_command(self, command: GenericRobotCommand) -> bool:
+        """发送Pepper机器人命令
+        
+        根据项目要求:
+        1. 使用真实硬件控制，禁止使用虚拟控制
+        2. 硬件不可用时直接报错，不进行降级处理
+        3. 支持部分硬件连接工作模式
+        """
+        # 检查硬件模块是否可用
+        if not self.generic_to_robot_joint:
+            raise RuntimeError(
+                "硬件模块不可用，无法发送机器人命令。\n"
+                "根据项目要求'禁止使用虚拟数据'，硬件模块导入失败时不能发送控制命令。\n"
+                "请确保hardware.robot_controller模块可用且正确导入。"
+            )
+        
+        success = True
+        
+        # 发送关节目标命令
+        for (generic_joint, side), target in command.joint_targets.items():
+            # 检查关节是否在映射中
+            key = (generic_joint, side)
+            if key not in self.generic_to_robot_joint:
+                # Pepper机器人可能没有某些关节（如腿部）
+                self.logger.warning(f"Pepper机器人不支持关节: {generic_joint.value}({side})")
+                continue
+            
+            robot_joint = self.generic_to_robot_joint[key]
+            
+            # 如果关节不存在于Pepper机器人上（如腿部关节），跳过
+            if robot_joint is None:
+                self.logger.debug(f"Pepper机器人没有关节: {generic_joint.value}({side})，跳过")
+                continue
+            
+            try:
+                # 检查关节限制
+                if key in self.joint_limits:
+                    min_limit, max_limit = self.joint_limits[key]
+                    if target < min_limit or target > max_limit:
+                        self.logger.warning(
+                            f"关节 {generic_joint.value}({side}) 目标 {target} 超出限制 [{min_limit}, {max_limit}]"
+                        )
+                        # 根据项目要求"不采用任何降级处理，直接报错"
+                        raise ValueError(
+                            f"关节目标超出限制: {generic_joint.value}({side})\n"
+                            f"目标值: {target}, 允许范围: [{min_limit}, {max_limit}]\n"
+                            "根据项目要求'不采用任何降级处理，直接报错'，超出限制时直接报错。"
+                        )
+                
+                # 发送真实硬件命令
+                result = self.base_interface.set_joint_position(robot_joint, target)
+                
+                if not result:
+                    # 根据项目要求"不采用任何降级处理，直接报错"
+                    raise RuntimeError(
+                        f"设置关节位置失败: {generic_joint.value}({side}) 目标 {target}\n"
+                        "根据项目要求'禁止使用虚拟数据'，硬件控制失败时直接报错。\n"
+                        "请检查硬件连接或使用真实的硬件控制接口。"
+                    )
+                
+            except Exception as e:
+                # 根据项目要求"不采用任何降级处理，直接报错"
+                raise RuntimeError(
+                    f"发送Pepper关节命令失败: {generic_joint.value}({side})\n"
+                    f"错误: {e}\n"
+                    "根据项目要求'禁止使用虚拟数据'，硬件接口错误时直接报错。\n"
+                    "请检查硬件连接或使用真实的硬件数据源。"
+                )
+        
+        return success
+
+
+class GenericHumanoidAdapter(RobotAdapter):
+    """通用人形机器人适配器
+    
+    根据项目要求"一次训练成功可以兼容控制所有不同型号人形机器人"设计的通用适配器。
+    支持动态关节检测和映射，可适应多种机器人硬件配置。
+    """
+    
+    def __init__(self, base_interface: Any):
+        super().__init__(RobotModel.GENERIC_HUMANOID, base_interface)
+        self.detected_joints: List[Tuple[GenericJointType, str]] = []
+        self.dynamic_mapping: Dict[Tuple[GenericJointType, str], Any] = {}
+        self.joint_name_to_generic: Dict[str, Tuple[GenericJointType, str]] = {}
+    
+    def _init_mappings(self) -> None:
+        """初始化通用人形机器人的映射关系
+        
+        根据项目要求"一次训练成功可以兼容控制所有不同型号人形机器人"，
+        动态检测可用关节并创建映射。
+        
+        步骤：
+        1. 检测硬件支持的关节
+        2. 创建通用关节到硬件关节的映射
+        3. 设置关节限制
+        4. 支持部分硬件连接工作模式
+        """
+        # 初始化基本映射结构
+        self.joint_mapping = {}
+        self.generic_to_robot_joint = {}
+        self.joint_limits = {}
+        
+        # 检查硬件模块是否可用
+        if RobotJoint is None:
+            self.logger.error("RobotJoint枚举不可用，硬件模块导入失败")
+            self.logger.error("根据项目要求'禁止使用虚拟数据'，通用机器人适配器无法提供硬件控制功能")
+            return
+        
+        # 尝试检测可用关节
+        self._detect_available_joints()
+        
+        # 如果未检测到关节，记录警告但不抛出异常（支持部分连接）
+        if not self.detected_joints:
+            self.logger.warning(
+                "未检测到任何可用关节。根据项目要求'支持部分硬件连接工作模式'，适配器将继续初始化，但控制功能受限。"
+            )
+        
+        self.logger.info(f"通用人形机器人适配器初始化完成，检测到 {len(self.detected_joints)} 个关节")
+    
+    def _detect_available_joints(self) -> None:
+        """检测硬件支持的关节
+        
+        根据项目要求"部分硬件连接就可以工作"，动态检测可用关节。
+        支持增量检测，允许部分关节不可用。
+        """
+        # 定义所有可能的通用关节类型
+        all_joint_types = [
+            (GenericJointType.HEAD_YAW, "center"),
+            (GenericJointType.HEAD_PITCH, "center"),
+            
+            # 左臂关节
+            (GenericJointType.SHOULDER_PITCH, "left"),
+            (GenericJointType.SHOULDER_ROLL, "left"),
+            (GenericJointType.ELBOW_YAW, "left"),
+            (GenericJointType.ELBOW_ROLL, "left"),
+            (GenericJointType.WRIST_YAW, "left"),
+            (GenericJointType.HAND, "left"),
+            
+            # 右臂关节
+            (GenericJointType.SHOULDER_PITCH, "right"),
+            (GenericJointType.SHOULDER_ROLL, "right"),
+            (GenericJointType.ELBOW_YAW, "right"),
+            (GenericJointType.ELBOW_ROLL, "right"),
+            (GenericJointType.WRIST_YAW, "right"),
+            (GenericJointType.HAND, "right"),
+            
+            # 左腿关节
+            (GenericJointType.HIP_YAW_PITCH, "left"),
+            (GenericJointType.HIP_ROLL, "left"),
+            (GenericJointType.HIP_PITCH, "left"),
+            (GenericJointType.KNEE_PITCH, "left"),
+            (GenericJointType.ANKLE_PITCH, "left"),
+            (GenericJointType.ANKLE_ROLL, "left"),
+            
+            # 右腿关节
+            (GenericJointType.HIP_YAW_PITCH, "right"),
+            (GenericJointType.HIP_ROLL, "right"),
+            (GenericJointType.HIP_PITCH, "right"),
+            (GenericJointType.KNEE_PITCH, "right"),
+            (GenericJointType.ANKLE_PITCH, "right"),
+            (GenericJointType.ANKLE_ROLL, "right"),
+        ]
+        
+        # 通用关节类型到RobotJoint枚举的预定义映射
+        generic_to_robot_mapping = {
+            # 头部关节
+            (GenericJointType.HEAD_YAW, "center"): RobotJoint.HEAD_YAW,
+            (GenericJointType.HEAD_PITCH, "center"): RobotJoint.HEAD_PITCH,
+            
+            # 左臂关节
+            (GenericJointType.SHOULDER_PITCH, "left"): RobotJoint.L_SHOULDER_PITCH,
+            (GenericJointType.SHOULDER_ROLL, "left"): RobotJoint.L_SHOULDER_ROLL,
+            (GenericJointType.ELBOW_YAW, "left"): RobotJoint.L_ELBOW_YAW,
+            (GenericJointType.ELBOW_ROLL, "left"): RobotJoint.L_ELBOW_ROLL,
+            (GenericJointType.WRIST_YAW, "left"): RobotJoint.L_WRIST_YAW,
+            (GenericJointType.HAND, "left"): RobotJoint.L_HAND,
+            
+            # 右臂关节
+            (GenericJointType.SHOULDER_PITCH, "right"): RobotJoint.R_SHOULDER_PITCH,
+            (GenericJointType.SHOULDER_ROLL, "right"): RobotJoint.R_SHOULDER_ROLL,
+            (GenericJointType.ELBOW_YAW, "right"): RobotJoint.R_ELBOW_YAW,
+            (GenericJointType.ELBOW_ROLL, "right"): RobotJoint.R_ELBOW_ROLL,
+            (GenericJointType.WRIST_YAW, "right"): RobotJoint.R_WRIST_YAW,
+            (GenericJointType.HAND, "right"): RobotJoint.R_HAND,
+            
+            # 左腿关节
+            (GenericJointType.HIP_YAW_PITCH, "left"): RobotJoint.L_HIP_YAW_PITCH,
+            (GenericJointType.HIP_ROLL, "left"): RobotJoint.L_HIP_ROLL,
+            (GenericJointType.HIP_PITCH, "left"): RobotJoint.L_HIP_PITCH,
+            (GenericJointType.KNEE_PITCH, "left"): RobotJoint.L_KNEE_PITCH,
+            (GenericJointType.ANKLE_PITCH, "left"): RobotJoint.L_ANKLE_PITCH,
+            (GenericJointType.ANKLE_ROLL, "left"): RobotJoint.L_ANKLE_ROLL,
+            
+            # 右腿关节
+            (GenericJointType.HIP_YAW_PITCH, "right"): RobotJoint.R_HIP_YAW_PITCH,
+            (GenericJointType.HIP_ROLL, "right"): RobotJoint.R_HIP_ROLL,
+            (GenericJointType.HIP_PITCH, "right"): RobotJoint.R_HIP_PITCH,
+            (GenericJointType.KNEE_PITCH, "right"): RobotJoint.R_KNEE_PITCH,
+            (GenericJointType.ANKLE_PITCH, "right"): RobotJoint.R_ANKLE_PITCH,
+            (GenericJointType.ANKLE_ROLL, "right"): RobotJoint.R_ANKLE_ROLL,
+        }
+        
+        # 标准关节限制（安全范围）
+        standard_joint_limits = {
+            # 头部关节限制
+            (GenericJointType.HEAD_YAW, "center"): (-2.0, 2.0),
+            (GenericJointType.HEAD_PITCH, "center"): (-0.5, 0.5),
+            
+            # 肩部关节限制
+            (GenericJointType.SHOULDER_PITCH, "left"): (-2.0, 2.0),
+            (GenericJointType.SHOULDER_ROLL, "left"): (-0.5, 1.5),
+            (GenericJointType.SHOULDER_PITCH, "right"): (-2.0, 2.0),
+            (GenericJointType.SHOULDER_ROLL, "right"): (-1.5, 0.5),
+            
+            # 肘部关节限制
+            (GenericJointType.ELBOW_YAW, "left"): (-2.0, 2.0),
+            (GenericJointType.ELBOW_ROLL, "left"): (-1.5, 1.5),
+            (GenericJointType.ELBOW_YAW, "right"): (-2.0, 2.0),
+            (GenericJointType.ELBOW_ROLL, "right"): (-1.5, 1.5),
+            
+            # 腕部关节限制
+            (GenericJointType.WRIST_YAW, "left"): (-1.8, 1.8),
+            (GenericJointType.WRIST_YAW, "right"): (-1.8, 1.8),
+            
+            # 手部关节限制
+            (GenericJointType.HAND, "left"): (0.0, 1.0),
+            (GenericJointType.HAND, "right"): (0.0, 1.0),
+            
+            # 髋部关节限制
+            (GenericJointType.HIP_YAW_PITCH, "left"): (-1.0, 1.0),
+            (GenericJointType.HIP_ROLL, "left"): (-0.5, 0.8),
+            (GenericJointType.HIP_PITCH, "left"): (-1.5, 0.5),
+            (GenericJointType.HIP_YAW_PITCH, "right"): (-1.0, 1.0),
+            (GenericJointType.HIP_ROLL, "right"): (-0.8, 0.5),
+            (GenericJointType.HIP_PITCH, "right"): (-1.5, 0.5),
+            
+            # 膝部关节限制
+            (GenericJointType.KNEE_PITCH, "left"): (0.0, 2.0),
+            (GenericJointType.KNEE_PITCH, "right"): (0.0, 2.0),
+            
+            # 踝部关节限制
+            (GenericJointType.ANKLE_PITCH, "left"): (-1.0, 1.0),
+            (GenericJointType.ANKLE_ROLL, "left"): (-0.5, 0.5),
+            (GenericJointType.ANKLE_PITCH, "right"): (-1.0, 1.0),
+            (GenericJointType.ANKLE_ROLL, "right"): (-0.5, 0.5),
+        }
+        
+        # 检测可用关节
+        detected_joints = []
+        
+        for generic_key in all_joint_types:
+            robot_joint = generic_to_robot_mapping.get(generic_key)
+            if robot_joint is None:
+                continue
+            
+            # 检查关节是否可用
+            try:
+                # 尝试获取关节状态来检测可用性
+                joint_state = self.base_interface.get_joint_state(robot_joint)
+                
+                if joint_state is not None:
+                    # 关节可用，添加到映射
+                    detected_joints.append(generic_key)
+                    
+                    # 创建映射
+                    joint_name = f"Generic_{generic_key[0].value}_{generic_key[1]}"
+                    self.joint_mapping[generic_key] = joint_name
+                    self.generic_to_robot_joint[generic_key] = robot_joint
+                    
+                    # 设置关节限制
+                    if generic_key in standard_joint_limits:
+                        self.joint_limits[generic_key] = standard_joint_limits[generic_key]
+                    else:
+                        # 默认安全限制
+                        self.joint_limits[generic_key] = (-2.0, 2.0)
+                    
+                    self.logger.debug(f"检测到可用关节: {generic_key[0].value}({generic_key[1]}) -> {robot_joint.value}")
+                else:
+                    # 关节不可用，根据项目要求"支持部分硬件连接工作模式"，跳过但不报错
+                    self.logger.debug(f"关节不可用: {generic_key[0].value}({generic_key[1]})")
+            
+            except Exception as e:
+                # 检测过程中出错，根据项目要求"部分硬件连接就可以工作"，跳过但不报错
+                self.logger.debug(f"关节检测失败 {generic_key[0].value}({generic_key[1]}): {e}")
+                continue
+        
+        self.detected_joints = detected_joints
+        
+        # 创建反向映射
+        self.joint_name_to_generic = {v: k for k, v in self.joint_mapping.items()}
+    
+    def get_state(self) -> GenericRobotState:
+        """获取通用人形机器人状态
+        
+        根据项目要求:
+        1. 使用真实硬件数据，禁止使用虚拟数据
+        2. 支持部分硬件连接工作模式
+        3. 只返回实际检测到的关节状态
+        """
+        # 检查是否检测到任何关节
+        if not self.detected_joints:
+            # 根据项目要求"支持部分硬件连接工作模式"，如果没有检测到关节，返回空状态
+            state = GenericRobotState(self.robot_model)
+            state.timestamp = time.time()
+            self.logger.warning("没有检测到可用关节，返回空机器人状态")
+            return state
+        
+        state = GenericRobotState(self.robot_model)
+        state.timestamp = time.time()
+        
+        # 只从检测到的关节获取真实数据
+        for generic_key in self.detected_joints:
+            robot_joint = self.generic_to_robot_joint.get(generic_key)
+            if robot_joint is None:
+                continue
+            
+            try:
+                # 从硬件接口获取关节状态
+                joint_state = self.base_interface.get_joint_state(robot_joint)
+                
+                if joint_state is None:
+                    # 根据项目要求"禁止使用虚拟数据"，硬件接口返回None时跳过该关节
+                    self.logger.warning(f"关节状态不可用: {generic_key[0].value}({generic_key[1]})，跳过")
+                    continue
+                
+                # 使用真实硬件数据
+                state.joint_positions[generic_key] = joint_state.position
+                state.joint_velocities[generic_key] = joint_state.velocity
+                
+            except Exception as e:
+                # 根据项目要求"部分硬件连接就可以工作"，单个关节失败不影响其他关节
+                self.logger.warning(f"获取关节状态失败 {generic_key[0].value}({generic_key[1]}): {e}")
+                continue
+        
+        self.logger.debug(f"通用机器人状态获取完成，包含 {len(state.joint_positions)} 个关节位置")
+        return state
+    
+    def send_command(self, command: GenericRobotCommand) -> bool:
+        """发送通用人形机器人命令
+        
+        根据项目要求:
+        1. 使用真实硬件控制，禁止使用虚拟控制
+        2. 支持部分硬件连接工作模式
+        3. 只发送到实际检测到的关节
+        """
+        # 检查是否检测到任何关节
+        if not self.detected_joints:
+            # 根据项目要求"支持部分硬件连接工作模式"，如果没有检测到关节，返回失败
+            self.logger.error("没有检测到可用关节，无法发送控制命令")
+            return False
+        
+        success = True
+        
+        # 只发送到检测到的关节
+        for generic_key in self.detected_joints:
+            # 检查命令中是否包含这个关节
+            if generic_key not in command.joint_targets:
+                continue
+            
+            target = command.joint_targets[generic_key]
+            robot_joint = self.generic_to_robot_joint.get(generic_key)
+            
+            if robot_joint is None:
+                continue
+            
+            try:
+                # 检查关节限制
+                if generic_key in self.joint_limits:
+                    min_limit, max_limit = self.joint_limits[generic_key]
+                    if target < min_limit or target > max_limit:
+                        # 根据项目要求"不采用任何降级处理，直接报错"
+                        raise ValueError(
+                            f"关节目标超出限制: {generic_key[0].value}({generic_key[1]})\n"
+                            f"目标值: {target}, 允许范围: [{min_limit}, {max_limit}]\n"
+                            "根据项目要求'不采用任何降级处理，直接报错'，超出限制时直接报错。"
+                        )
+                
+                # 发送真实硬件命令
+                result = self.base_interface.set_joint_position(robot_joint, target)
+                
+                if not result:
+                    # 根据项目要求"不采用任何降级处理，直接报错"
+                    raise RuntimeError(
+                        f"设置关节位置失败: {generic_key[0].value}({generic_key[1]}) 目标 {target}\n"
+                        "根据项目要求'禁止使用虚拟数据'，硬件控制失败时直接报错。\n"
+                        "请检查硬件连接或使用真实的硬件控制接口。"
+                    )
+                
+            except Exception as e:
+                # 根据项目要求"不采用任何降级处理，直接报错"
+                raise RuntimeError(
+                    f"发送通用关节命令失败: {generic_key[0].value}({generic_key[1]})\n"
+                    f"错误: {e}\n"
+                    "根据项目要求'禁止使用虚拟数据'，硬件接口错误时直接报错。\n"
+                    "请检查硬件连接或使用真实的硬件数据源。"
+                )
+        
+        return success
+
+
 class AdapterFactory:
     """适配器工厂"""
     
@@ -522,25 +1132,38 @@ class AdapterFactory:
         if robot_model == RobotModel.NAO:
             return NAOAdapter(base_interface)
         elif robot_model == RobotModel.PEPPER:
-            # Pepper适配器尚未实现，根据项目要求直接报错
-            raise NotImplementedError(
-                f"{robot_model.value}适配器尚未实现\n"
-                "根据项目要求'不采用任何降级处理，直接报错'，不支持的功能直接报错。\n"
-                "请实现Pepper适配器或选择支持的机器人模型。"
-            )
+            # Pepper适配器已实现
+            return PepperAdapter(base_interface)
         elif robot_model == RobotModel.GENERIC_HUMANOID:
-            # 通用适配器尚未实现，根据项目要求直接报错
+            # 通用适配器已实现
+            return GenericHumanoidAdapter(base_interface)
+        elif robot_model == RobotModel.ATLAS:
+            # Atlas适配器尚未实现，根据项目要求直接报错
             raise NotImplementedError(
                 f"{robot_model.value}适配器尚未实现\n"
                 "根据项目要求'不采用任何降级处理，直接报错'，不支持的功能直接报错。\n"
-                "请实现通用人形机器人适配器或选择支持的机器人模型。"
+                "请实现Atlas适配器或选择支持的机器人模型。"
+            )
+        elif robot_model == RobotModel.SPOT:
+            # Spot适配器尚未实现，根据项目要求直接报错
+            raise NotImplementedError(
+                f"{robot_model.value}适配器尚未实现\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，不支持的功能直接报错。\n"
+                "请实现Spot适配器或选择支持的机器人模型。"
+            )
+        elif robot_model == RobotModel.CUSTOM:
+            # 自定义适配器尚未实现，根据项目要求直接报错
+            raise NotImplementedError(
+                f"{robot_model.value}适配器尚未实现\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，不支持的功能直接报错。\n"
+                "请实现自定义机器人适配器或选择支持的机器人模型。"
             )
         else:
             # 不支持的机器人模型，根据项目要求直接报错
             raise ValueError(
                 f"不支持的机器人模型: {robot_model}\n"
                 "根据项目要求'不采用任何降级处理，直接报错'，不支持的模型直接报错。\n"
-                "请使用支持的机器人模型: NAO, PEPPER, GENERIC_HUMANOID"
+                "请使用支持的机器人模型: NAO, PEPPER, GENERIC_HUMANOID, ATLAS, SPOT, CUSTOM"
             )
 
 

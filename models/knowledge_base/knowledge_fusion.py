@@ -585,8 +585,11 @@ class KnowledgeFusionEngine:
             if confidence is not None:
                 try:
                     confidence_scores.append(float(confidence))
-                except (ValueError, TypeError):
-                    pass
+                except (ValueError, TypeError) as e:
+                    # 根据项目要求"不采用任何降级处理，直接报错"，记录警告而不是静默忽略
+                    # 置信度转换失败不影响核心功能，但记录错误以便调试
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"置信度转换失败，跳过该知识项: {e}, 置信度值: {confidence}")
         
         # 如果所有知识项都有置信度分数，并且分数差异较大，则选择最高置信度策略
         if len(confidence_scores) == len(conflict.knowledge_items) and len(confidence_scores) > 1:

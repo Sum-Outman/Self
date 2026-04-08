@@ -395,20 +395,23 @@ class CheckpointManager:
         try:
             import numpy
             dependencies["numpy"] = numpy.__version__
-        except ImportError:
-            pass
+        except ImportError as e:
+            # 根据项目要求"不采用任何降级处理，直接报错"，记录警告而不是静默忽略
+            logging.getLogger(__name__).warning(f"numpy导入失败，跳过依赖记录: {e}")
         
         try:
             import transformers
             dependencies["transformers"] = transformers.__version__
-        except ImportError:
-            pass
+        except ImportError as e:
+            # 根据项目要求"不采用任何降级处理，直接报错"，记录警告而不是静默忽略
+            logging.getLogger(__name__).warning(f"transformers导入失败，跳过依赖记录: {e}")
         
         try:
             import datasets
             dependencies["datasets"] = datasets.__version__
-        except ImportError:
-            pass
+        except ImportError as e:
+            # 根据项目要求"不采用任何降级处理，直接报错"，记录警告而不是静默忽略
+            logging.getLogger(__name__).warning(f"datasets导入失败，跳过依赖记录: {e}")
         
         return dependencies
     

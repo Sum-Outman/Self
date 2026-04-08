@@ -153,128 +153,55 @@ try:
     
 except Exception as e:
     LAPLACIAN_MODULES_AVAILABLE = False
-    logger.warning(f"拉普拉斯模块导入失败: {e}, 集成功能将受限")
+    logger.error(f"拉普拉斯模块导入失败: {e}")
     
-    # 创建虚拟类以避免NameError
-    class DummyClass:
-        """拉普拉斯模块不可用时的虚拟类
+    # 根据项目要求"禁止使用虚拟数据"，不创建虚拟类
+    # 而是抛出RuntimeError，明确指示功能不可用
+    error_message = (
+        f"拉普拉斯模块导入失败: {e}\n"
+        "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，\n"
+        "当拉普拉斯模块不可用时，不提供虚拟实现。\n"
+        "请安装必要的拉普拉斯模块依赖：\n"
+        "1. 确保拉普拉斯增强训练模块可用\n"
+        "2. 检查training/laplacian_enhanced_training.py是否存在\n"
+        "3. 或者禁用laplacian_enhancement_enabled配置选项"
+    )
+    
+    # 创建占位符类，所有方法都抛出RuntimeError
+    class UnavailableClass:
+        """拉普拉斯模块不可用时的占位符类
         
-        提供模拟实现以避免运行时错误，但功能受限
-        当拉普拉斯模块不可用时，使用此虚拟类作为实现
+        根据项目要求"禁止使用虚拟数据"，不提供任何模拟实现。
+        所有方法都抛出RuntimeError，明确指示功能不可用。
         """
         
         def __init__(self, *args, **kwargs):
-            """初始化虚拟类
-            
-            记录警告信息，但不会抛出异常，允许程序继续运行
-            """
-            self._initialized = True
-            self._args = args
-            self._kwargs = kwargs
-            self._dummy_value = None
-            
-            # 记录警告日志
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"使用虚拟类替代拉普拉斯模块: {e}")
-            logger.info(f"虚拟类初始化参数: args={args}, kwargs={kwargs}")
-            
-            # 设置基本属性
-            self.config = kwargs.get('config', {})
-            self.device = kwargs.get('device', 'cpu')
-            self.training = False
-            self._modules = {}
+            """初始化占位符类，直接抛出错误"""
+            raise RuntimeError(error_message)
         
         def __call__(self, *args, **kwargs):
-            """模拟调用行为，返回虚拟值"""
-            logger = logging.getLogger(__name__)
-            logger.debug(f"虚拟类被调用: args={args}, kwargs={kwargs}")
-            return self._dummy_value
+            """调用占位符类，直接抛出错误"""
+            raise RuntimeError(error_message)
         
         def __getattr__(self, name):
-            """处理未知属性访问，返回虚拟方法或值"""
-            logger = logging.getLogger(__name__)
-            logger.debug(f"访问虚拟类属性: {name}")
-            
-            # 返回一个虚拟方法
-            def dummy_method(*args, **kwargs):
-                logger.warning(f"调用虚拟方法: {name}, 拉普拉斯模块不可用")
-                return None  # 返回None
-            
-            # 对于一些常见属性返回适当的值
-            if name in ['weight', 'bias']:
-                return None  # 返回None
-            elif name in ['state_dict', 'parameters', 'named_parameters']:
-                # 返回空的迭代器或字典
-                return dummy_method
-            elif name in ['train', 'eval', 'forward', 'backward']:
-                return dummy_method
-            
-            return dummy_method
+            """访问属性，直接抛出错误"""
+            raise RuntimeError(error_message)
         
         def __setattr__(self, name, value):
-            """设置属性，支持特殊属性"""
+            """设置属性，直接抛出错误"""
+            # 允许设置内部属性
             if name.startswith('_'):
                 super().__setattr__(name, value)
             else:
-                logger = logging.getLogger(__name__)
-                logger.debug(f"设置虚拟类属性: {name} = {value}")
-                super().__setattr__(name, value)
-        
-        def train(self, mode=True):
-            """模拟训练模式设置"""
-            self.training = mode
-            logger = logging.getLogger(__name__)
-            logger.debug(f"设置虚拟类训练模式: {mode}")
-            return self
-        
-        def eval(self):
-            """模拟评估模式"""
-            self.training = False
-            logger = logging.getLogger(__name__)
-            logger.debug("设置虚拟类评估模式")
-            return self
-        
-        def to(self, device):
-            """模拟设备移动"""
-            self.device = device
-            logger = logging.getLogger(__name__)
-            logger.debug(f"移动虚拟类到设备: {device}")
-            return self
-        
-        def state_dict(self):
-            """返回空状态字典"""
-            return {}  # 返回空字典
-        
-        def load_state_dict(self, state_dict, strict=True):
-            """模拟加载状态字典"""
-            logger = logging.getLogger(__name__)
-            logger.debug(f"加载虚拟类状态字典，参数: strict={strict}")
-            return
-        
-        def parameters(self, recurse=True):
-            """返回空的参数迭代器"""
-            return iter([])
-        
-        def named_parameters(self, prefix='', recurse=True):
-            """返回空的命名参数迭代器"""
-            return iter([])
-        
-        def modules(self):
-            """返回空的模块迭代器"""
-            return iter([])
-        
-        def children(self):
-            """返回空的子模块迭代器"""
-            return iter([])
+                raise RuntimeError(error_message)
         
         def __repr__(self):
-            return f"DummyClass(拉普拉斯模块不可用: {e})"
+            return f"UnavailableClass(拉普拉斯模块不可用，请安装依赖)"
     
-    # 为每个需要的类创建虚拟版本
+    # 为每个需要的类创建不可用版本
     for class_list in modules_to_import.values():
         for class_name in class_list:
-            globals()[class_name] = type(class_name, (DummyClass,), {})
+            globals()[class_name] = type(class_name, (UnavailableClass,), {})
 
 
 @dataclass

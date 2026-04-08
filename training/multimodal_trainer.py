@@ -270,10 +270,15 @@ class MultimodalDataset(Dataset):
         input_ids = torch.tensor(text_tokens, dtype=torch.long)
         attention_mask = torch.ones(self.max_sequence_length, dtype=torch.long)
         
-        # 添加警告注释
+        # 根据项目要求"不采用任何降级处理，直接报错"，检查逻辑一致性
         if not self.allow_synthetic:
             # 这不应该发生，因为allow_synthetic=False时会抛出异常
-            pass
+            # 根据项目要求"禁止使用虚拟数据"，发现逻辑错误时直接报错
+            raise RuntimeError(
+                "检测到逻辑错误：allow_synthetic=False时不应执行合成数据处理\n"
+                "根据项目要求'禁止使用虚拟数据'，发现合成数据处理路径被错误调用。\n"
+                "请检查数据加载逻辑和allow_synthetic标志的设置。"
+            )
         
         # 处理图像
         image = item["image"]

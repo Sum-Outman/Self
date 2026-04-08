@@ -111,7 +111,7 @@ class AGIModelConfig:
     state_space_dim: int = 16  # 状态空间维度
     state_space_expand: int = 2  # 状态空间扩展因子
     conv_kernel_size: int = 4  # 卷积核大小 (状态空间模型)
-    use_retention: bool = False  # 是否使用RetNet保留机制
+    use_retention: bool = True  # 是否使用RetNet保留机制
     retention_heads: int = 4  # RetNet保留头数
     retention_gate_fn: str = "swish"  # 保留门函数
 
@@ -129,19 +129,19 @@ class AGIModelConfig:
     mamba2_enabled: bool = True  # 是否启用Mamba-2架构
     selective_scanning_enabled: bool = True  # 选择性扫描机制
     parallel_scan_enabled: bool = False  # 并行扫描（实验性）
-    hyena_conv_enabled: bool = False  # Hyena卷积支持
+    hyena_conv_enabled: bool = True  # Hyena卷积支持
     hyena_order: int = 4  # Hyena卷积阶数
     hyena_max_length: int = 8192  # Hyena最大序列长度
 
     # StripedHyena混合架构配置
-    stripedhyena_enabled: bool = False  # 是否启用StripedHyena混合架构
+    stripedhyena_enabled: bool = True  # 是否启用StripedHyena混合架构
     num_hyena_layers: int = 6  # Hyena层数
     num_attention_layers: int = 6  # 注意力层数
     stripedhyena_pattern: str = "alternating"  # 交替模式: alternating, grouped
 
     # Switch Transformers配置 - 基于Switch Transformers论文
     # 参考论文: "Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity" (Fedus et al., 2021)
-    switch_transformer_enabled: bool = False  # 是否启用Switch Transformers
+    switch_transformer_enabled: bool = True  # 是否启用Switch Transformers
     switch_capacity_factor: float = 1.25  # Switch容量因子
     switch_jitter_epsilon: float = 0.01  # Switch抖动epsilon
 
@@ -153,30 +153,30 @@ class AGIModelConfig:
 
     # DoRA配置 - 权重分解的低秩适应
     # 参考论文: "DoRA: Weight-Decomposed Low-Rank Adaptation" (Liu et al., 2024)
-    dora_enabled: bool = False  # 是否启用DoRA
+    dora_enabled: bool = True  # 是否启用DoRA
     dora_rank: int = 8  # DoRA秩
     dora_alpha: float = 16.0  # DoRA alpha参数
 
     # 高效注意力配置
     efficient_attention_enabled: bool = True  # 是否启用高效注意力
     attention_type: str = "flash"  # 注意力类型: vanilla, linear, flash, local
-    attnres_enabled: bool = False  # 是否启用Attention Residuals (Kimi 2026论文技术)
+    attnres_enabled: bool = True  # 是否启用Attention Residuals (Kimi 2026论文技术)
     sliding_window_size: int = 2048  # 滑动窗口大小 (局部注意力)，适配8192上下文窗口
     linear_attention_feature_dim: int = 512  # 线性注意力特征维度，适应更大上下文
 
     # 上下文压缩配置 - 基于审核报告的进一步增强方案
-    context_compression_enabled: bool = False  # 是否启用上下文压缩技术
-    hierarchical_attention_enabled: bool = False  # 是否启用层次化注意力
+    context_compression_enabled: bool = True  # 是否启用上下文压缩技术
+    hierarchical_attention_enabled: bool = True  # 是否启用层次化注意力
     hierarchical_levels: int = 3  # 层次化级别: 文档级(1), 段落级(2), 句子级(3)
-    incremental_context_update_enabled: bool = False  # 是否启用增量式上下文更新
-    diff_encoding_enabled: bool = False  # 是否启用差分编码
-    selective_memory_enabled: bool = False  # 是否启用选择性记忆机制
+    incremental_context_update_enabled: bool = True  # 是否启用增量式上下文更新
+    diff_encoding_enabled: bool = True  # 是否启用差分编码
+    selective_memory_enabled: bool = True  # 是否启用选择性记忆机制
     importance_threshold: float = 0.7  # 重要性阈值
     forgetting_rate: float = 0.05  # 遗忘率
 
     # 激活函数配置
     activation_fn: str = "gelu"  # 激活函数: gelu, silu, relu, swish
-    gated_activation_enabled: bool = False  # 是否启用门控激活 (GLU)
+    gated_activation_enabled: bool = True  # 是否启用门控激活 (GLU)
     glu_dim: int = 768  # GLU维度
 
     # 多模态配置
@@ -209,7 +209,7 @@ class AGIModelConfig:
     speech_enabled: bool = True  # 语音功能
     vision_enabled: bool = True  # 图像功能
     autonomous_evolution_enabled: bool = True  # 自主演化能力
-    quaternion_neural_network_enabled: bool = False  # 四元数神经网络层（高级旋转表示）
+    quaternion_neural_network_enabled: bool = True  # 四元数神经网络层（高级旋转表示）
     self_consciousness_enabled: bool = True  # 自主意识
     mathematics_enabled: bool = True  # 数学能力
     physics_enabled: bool = True  # 物理能力
@@ -11098,9 +11098,10 @@ class SelfAGIModel(nn.Module):
 
                 if module.bias is not None:
                     module.bias.data.zero_()
-            except RuntimeError:
+            except RuntimeError as e:
                 # LazyLinear未初始化权重，跳过初始化，让它在第一次前向传播时自动初始化
-                pass
+                # 根据项目要求"不采用任何降级处理，直接报错"，记录警告而不是静默忽略
+                logger.warning(f"LazyLinear权重初始化跳过，等待第一次前向传播自动初始化: {e}")
         elif isinstance(module, nn.Embedding):
             # 嵌入层使用正态分布初始化，标准差适当缩小
             module.weight.data.normal_(

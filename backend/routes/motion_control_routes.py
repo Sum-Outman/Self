@@ -17,6 +17,7 @@ from backend.dependencies.auth import get_current_user
 from backend.db_models.user import User
 
 # 导入仿真管理器 - 多种导入方式尝试
+# 根据项目要求"禁止使用虚拟数据"，导入失败时不提供模拟实现
 try:
     # 方式1：绝对导入（从项目根目录）
     from hardware.simulation import get_global_simulation_manager
@@ -37,30 +38,10 @@ except ImportError:
         except ImportError as e:
             logger = logging.getLogger(__name__)
             logger.error(f"导入仿真模块失败: {e}")
-            # 创建模拟函数以防导入失败
-            def get_global_simulation_manager():
-                class MockSimulationManager:
-                    def get_simulation(self, name):
-                        return None  # 返回None
-                    def create_simulation(self, name, **kwargs):
-                        return None  # 返回None
-                return MockSimulationManager()
-            
-            class GazeboSimulation:
-                def __init__(self, **kwargs):
-                    pass  # 已修复: 实现函数功能
-                def connect(self):
-                    return False
-                def is_connected(self):
-                    return False
-                def plan_path(self, **kwargs):
-                    return {"success": False, "message": "Gazebo仿真不可用"}
-                def execute_path(self, **kwargs):
-                    return False
-                def move_to_position(self, **kwargs):
-                    return False
-                def get_interface_info(self):
-                    return {}  # 返回空字典
+            logger.error("根据项目要求'禁止使用虚拟数据'，仿真模块不可用时将无法提供仿真功能。")
+            # 导入失败时设置为None，相关功能将不可用
+            get_global_simulation_manager = None
+            GazeboSimulation = None
 
 router = APIRouter(prefix="/api/motion-control", tags=["运动控制"])
 logger = logging.getLogger(__name__)
@@ -68,6 +49,10 @@ logger = logging.getLogger(__name__)
 
 def get_simulation_manager():
     """获取全局仿真管理器"""
+    if get_global_simulation_manager is None:
+        raise RuntimeError(
+            "仿真管理器不可用。根据项目要求'禁止使用虚拟数据'，仿真模块导入失败时无法提供仿真功能。"
+        )
     return get_global_simulation_manager()
 
 
@@ -100,6 +85,11 @@ async def plan_path(
                     simulation.connect()
         elif simulation_type == "gazebo":
             # 创建Gazebo仿真实例
+            if GazeboSimulation is None:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Gazebo仿真模块不可用。根据项目要求'禁止使用虚拟数据'，仿真模块导入失败时无法提供仿真功能。"
+                )
             simulation = GazeboSimulation(gui_enabled=False)
             simulation.connect()
         else:
@@ -183,6 +173,11 @@ async def execute_path(
                 )
         elif simulation_type == "gazebo":
             # 创建Gazebo仿真实例
+            if GazeboSimulation is None:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Gazebo仿真模块不可用。根据项目要求'禁止使用虚拟数据'，仿真模块导入失败时无法提供仿真功能。"
+                )
             simulation = GazeboSimulation(gui_enabled=False)
             simulation.connect()
         else:

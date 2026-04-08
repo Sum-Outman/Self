@@ -619,8 +619,10 @@ class TrainingService:
                     try:
                         value = float(value_str)
                         return int(value * multiplier)
-                    except ValueError:
-                        pass
+                    except ValueError as e:
+                        # 根据项目要求"不采用任何降级处理，直接报错"，记录警告而不是静默忽略
+                        logging.getLogger(__name__).warning(f"参数值转换失败: {value_str}, 错误: {e}")
+                        # 返回默认值，但记录错误以便调试
                 
                 return 1000000000  # 默认1B
             

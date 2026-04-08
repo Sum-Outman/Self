@@ -352,81 +352,36 @@ class RobotService(BaseService):
         }
 
     def _initialize_joint_states(self) -> Dict[str, Dict[str, Any]]:
-        """初始化关节状态 - 使用合理的默认值，禁止随机虚拟数据
+        """初始化关节状态 - 根据项目要求"禁止使用虚拟数据"，不提供默认值
         
-        根据项目要求"禁止使用虚假的实现和虚拟实现、占位符"，
-        这里返回基于物理模型的合理默认值。实际运行时，如果硬件接口可用，
-        应从硬件获取真实数据（包括物理仿真数据）。
+        根据项目要求：
+        1. 禁止使用任何假数据和虚拟数据
+        2. 不采用任何降级处理，直接报错
+        3. 部分硬件连接就可以工作
+        
+        此方法返回空字典，表示没有初始化数据。实际关节数据必须从硬件接口实时获取。
+        如果硬件接口可用，关节数据将在运行时从硬件获取。
+        如果硬件不可用，相关方法将抛出明确错误或返回空数据。
         """
-        # 获取配置中的站立姿势
-        extra_config = self.config.extra_config
-        standing_pose = extra_config.get("default_standing_pose", {})
-
-        # 如果没有配置，使用默认姿势
-        if not standing_pose:
-            standing_pose = {
-                "head_yaw": 0.0,
-                "head_pitch": 0.0,
-                "l_shoulder_pitch": 1.4,
-                "l_shoulder_roll": 0.15,
-                "l_elbow_yaw": 0.0,
-                "l_elbow_roll": -0.4,
-                "l_wrist_yaw": 0.0,
-                "l_hand": 0.0,
-                "r_shoulder_pitch": 1.4,
-                "r_shoulder_roll": -0.15,
-                "r_elbow_yaw": 0.0,
-                "r_elbow_roll": 0.4,
-                "r_wrist_yaw": 0.0,
-                "r_hand": 0.0,
-                "l_hip_yaw_pitch": 0.0,
-                "l_hip_roll": 0.0,
-                "l_hip_pitch": -0.3,
-                "l_knee_pitch": 0.6,
-                "l_ankle_pitch": -0.3,
-                "l_ankle_roll": 0.0,
-                "r_hip_yaw_pitch": 0.0,
-                "r_hip_roll": 0.0,
-                "r_hip_pitch": -0.3,
-                "r_knee_pitch": 0.6,
-                "r_ankle_pitch": -0.3,
-                "r_ankle_roll": 0.0,
-            }
-
-        joints = list(standing_pose.keys())
-        joint_states = {}
-        current_time = datetime.now(timezone.utc).isoformat()
-
-        for joint in joints:
-            base_position = standing_pose[joint]
-            
-            # 静止站立状态下的合理默认值（无随机变化）
-            joint_states[joint] = {
-                "name": joint,
-                "position": base_position,  # 精确站立姿势，无随机变化
-                "velocity": 0.0,  # 静止状态，速度为0
-                "torque": 1.5,  # 支撑体重的合理扭矩（基于物理模型）
-                "temperature": 30.0,  # 正常工作温度
-                "voltage": 12.0,  # 标准电源电压
-                "current": 0.3,  # 静止状态工作电流
-                "target_position": base_position,  # 目标位置为站立姿势
-                "control_mode": "position",
-                "status": "operational",
-                "timestamp": current_time,
-                "data_source": "default_physics_model",
-                "note": "基于物理模型的默认值，非随机虚拟数据"
-            }
-
-        return joint_states
+        self.logger.info("关节状态初始化：返回空字典（根据'禁止使用虚拟数据'要求）")
+        self.logger.info("实际关节数据将从硬件接口实时获取，支持部分硬件连接工作模式")
+        return {}
 
     def _initialize_sensor_data(self) -> Dict[str, Dict[str, Any]]:
-        """初始化传感器数据 - 使用合理的默认值，禁止随机虚拟数据
+        """初始化传感器数据 - 根据项目要求"禁止使用虚拟数据"，不提供默认值
         
-        根据项目要求"禁止使用虚假的实现和虚拟实现、占位符"，
-        这里返回基于物理模型的合理默认值。实际运行时，如果硬件接口可用，
-        应从硬件获取真实数据（包括物理仿真数据）。
+        根据项目要求：
+        1. 禁止使用任何假数据和虚拟数据
+        2. 不采用任何降级处理，直接报错
+        3. 部分硬件连接就可以工作
+        
+        此方法返回空字典，表示没有初始化数据。实际传感器数据必须从硬件接口实时获取。
+        如果硬件接口可用，传感器数据将在运行时从硬件获取。
+        如果硬件不可用，相关方法将抛出明确错误或返回空数据。
         """
-        current_time = datetime.now(timezone.utc).isoformat()
+        self.logger.info("传感器数据初始化：返回空字典（根据'禁止使用虚拟数据'要求）")
+        self.logger.info("实际传感器数据将从硬件接口实时获取，支持部分硬件连接工作模式")
+        return {}
         
         # 标准物理模型默认值（无随机变化）
         # 假设机器人静止站立在地面上
@@ -691,12 +646,19 @@ class RobotService(BaseService):
         return False
 
     def _setup_simulation_only(self) -> bool:
-        """设置纯模拟模式（无硬件）"""
-        self._robot_status["hardware_available"] = False
-        self._robot_status["simulation_enabled"] = True
-        self._robot_status["operation_mode"] = "pure_simulation"
-        self.logger.info("使用纯模拟模式（无硬件接口）")
-        return True
+        """设置纯模拟模式（无硬件）- 根据项目要求"禁止使用虚拟数据"，此模式已禁用
+        
+        根据项目要求：
+        1. 禁止使用任何假数据和虚拟数据
+        2. 不采用任何降级处理，直接报错
+        3. 部分硬件连接就可以工作
+        
+        此方法现在抛出异常，禁止使用纯模拟模式。
+        """
+        raise RuntimeError(
+            "纯模拟模式已禁用。根据项目要求'禁止使用任何假数据和虚拟数据'，不能使用模拟数据。\n"
+            "请确保硬件连接正常，或系统配置为支持部分硬件连接工作模式。"
+        )
 
     def _update_simulated_data(self):
         """更新时间戳 - 不再生成真实数据，只更新时间戳"""

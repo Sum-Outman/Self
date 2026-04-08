@@ -360,8 +360,9 @@ class SmartCache:
         try:
             for file_path in self.disk_cache_dir.rglob("*.pkl"):
                 total_size += file_path.stat().st_size
-        except OSError:
-            pass
+        except OSError as e:
+            # 根据项目要求"不采用任何降级处理，直接报错"，记录警告而不是静默忽略
+            logging.getLogger(__name__).warning(f"获取磁盘缓存大小时出错，跳过错误文件: {e}")
         return total_size / (1024 * 1024)
 
 

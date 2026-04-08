@@ -218,127 +218,171 @@ class HardwareInterface(ABC):
     def connect(self) -> bool:
         """连接硬件
         
-        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
-        根据项目要求"系统可以在没有硬件条件下单独运行AGI所有功能"，
-        允许仿真模式，但必须是基于物理引擎的真实仿真。
+        根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        硬件接口必须实现具体的连接逻辑，基类不提供任何模拟实现。
+        
+        返回:
+            bool: 连接是否成功
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
         """
-        if self._simulation_mode:
-            # 仿真模式：记录信息，允许连接
-            self.logger.info("仿真模式连接：基于物理引擎的真实仿真（如PyBullet）")
-            self._connected = True
-            return True
-        else:
-            # 真实硬件模式：需要子类实现
-            self.logger.warning("真实硬件连接功能需要具体硬件驱动实现，连接失败")
-            return False
+        raise NotImplementedError(
+            f"硬件接口'{self._interface_type}'必须实现connect()方法。"
+            "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，"
+            "不能提供默认模拟实现。"
+        )
     
     def disconnect(self) -> bool:
         """断开连接
         
-        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
+        根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        硬件接口必须实现具体的断开连接逻辑，基类不提供任何模拟实现。
+        
+        返回:
+            bool: 断开是否成功
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
         """
-        if self._simulation_mode:
-            # 仿真模式：记录信息，允许断开
-            self.logger.info("仿真模式断开连接")
-            self._connected = False
-            return True
-        else:
-            # 真实硬件模式：需要子类实现
-            self.logger.warning("真实硬件断开连接功能需要具体硬件驱动实现，断开失败")
-            return False
+        raise NotImplementedError(
+            f"硬件接口'{self._interface_type}'必须实现disconnect()方法。"
+            "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，"
+            "不能提供默认模拟实现。"
+        )
     
     def is_connected(self) -> bool:
         """检查是否连接
         
-        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
+        根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        硬件接口必须实现具体的连接状态检查逻辑，基类不提供任何模拟实现。
+        
+        返回:
+            bool: 是否已连接
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
         """
-        if self._simulation_mode:
-            # 仿真模式：返回连接状态
-            return self._connected
-        else:
-            # 真实硬件模式：需要子类实现
-            self.logger.warning("真实硬件连接状态检查需要具体硬件驱动实现，返回未连接状态")
-            return False
+        raise NotImplementedError(
+            f"硬件接口'{self._interface_type}'必须实现is_connected()方法。"
+            "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，"
+            "不能提供默认模拟实现。"
+        )
     
     def get_sensor_data(self, sensor_type: SensorType) -> Optional[Any]:
         """获取传感器数据
         
-        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
-        仿真模式下应返回基于物理仿真的真实数据，而非随机值。
+        根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        硬件接口必须实现具体的传感器数据获取逻辑，基类不提供任何模拟实现。
+        
+        参数:
+            sensor_type: 传感器类型
+        
+        返回:
+            传感器数据，如果传感器功能已禁用则抛出异常
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
+            RuntimeError: 传感器功能已禁用
         """
         if not self.sensor_enabled:
             raise RuntimeError("传感器功能已禁用")
         
-        if self._simulation_mode:
-            # 仿真模式：返回存储的传感器数据或None
-            # 子类应基于物理仿真提供真实数据
-            data = self._sensor_data.get(sensor_type)
-            if data is None:
-                self.logger.debug(f"仿真模式下传感器数据未初始化: {sensor_type.value}")
-            return data
-        else:
-            # 真实硬件模式：需要子类实现
-            self.logger.warning(f"真实传感器数据获取功能需要具体硬件驱动实现（传感器类型: {sensor_type.value}），返回None")
-            return None
+        raise NotImplementedError(
+            f"硬件接口'{self._interface_type}'必须实现get_sensor_data()方法。"
+            "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，"
+            "不能提供默认模拟实现。"
+        )
     
     def set_joint_position(self, joint: RobotJoint, position: float) -> bool:
         """设置关节位置
         
-        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
-        仿真模式下应更新内部状态，子类应基于物理仿真实现真实控制。
+        根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        硬件接口必须实现具体的关节位置设置逻辑，基类不提供任何模拟实现。
+        
+        参数:
+            joint: 关节类型
+            position: 目标位置（弧度）
+        
+        返回:
+            bool: 设置是否成功
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
         """
-        if self._simulation_mode:
-            # 仿真模式：更新内部关节位置
-            self._joint_positions[joint] = position
-            self.logger.debug(f"仿真模式设置关节位置: {joint.value} = {position}")
-            return True
-        else:
-            # 真实硬件模式：需要子类实现
-            self.logger.warning(f"真实关节位置设置功能需要具体硬件驱动实现（关节: {joint.value}, 位置: {position}），设置失败")
-            return False
+        raise NotImplementedError(
+            f"硬件接口'{self._interface_type}'必须实现set_joint_position()方法。"
+            "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，"
+            "不能提供默认模拟实现。"
+        )
     
     def set_joint_positions(self, positions: Dict[RobotJoint, float]) -> bool:
         """设置多个关节位置
         
-        支持真实硬件连接和物理仿真，禁止纯虚拟实现。
-        仿真模式下应更新内部状态，子类应基于物理仿真实现真实控制。
+        根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        硬件接口必须实现具体的多关节位置设置逻辑，基类不提供任何模拟实现。
+        
+        参数:
+            positions: 关节位置字典（关节类型 -> 目标位置）
+        
+        返回:
+            bool: 设置是否成功
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
         """
-        if self._simulation_mode:
-            # 仿真模式：更新内部关节位置
-            for joint, position in positions.items():
-                self._joint_positions[joint] = position
-            self.logger.debug(f"仿真模式设置多个关节位置: {len(positions)}个关节")
-            return True
-        else:
-            # 真实硬件模式：需要子类实现
-            self.logger.warning(f"真实多关节位置设置功能需要具体硬件驱动实现（关节数: {len(positions)}），设置失败")
-            return False
+        raise NotImplementedError(
+            f"硬件接口'{self._interface_type}'必须实现set_joint_positions()方法。"
+            "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，"
+            "不能提供默认模拟实现。"
+        )
     
     def get_joint_state(self, joint: RobotJoint) -> Optional[JointState]:
-        """获取关节状态"""
-        if not self.sensor_enabled:
-            self.logger.warning("传感器功能已禁用，无法获取关节状态")
-            return None
+        """获取关节状态
         
-        if self._simulation_mode:
-            return self._joint_states.get(joint)
-        else:
-            # 无硬件模式：返回None允许系统继续运行
-            self.logger.warning(f"无硬件模式：无法获取关节状态（关节: {joint.value}），系统将继续运行")
-            return None
+        根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        硬件接口必须实现具体的关节状态获取逻辑，基类不提供任何模拟实现。
+        
+        参数:
+            joint: 关节类型
+        
+        返回:
+            关节状态，如果传感器功能已禁用则抛出异常
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
+            RuntimeError: 传感器功能已禁用
+        """
+        if not self.sensor_enabled:
+            raise RuntimeError("传感器功能已禁用，无法获取关节状态")
+        
+        raise NotImplementedError(
+            f"硬件接口'{self._interface_type}'必须实现get_joint_state()方法。"
+            "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，"
+            "不能提供默认模拟实现。"
+        )
     
     def get_all_joint_states(self) -> Dict[RobotJoint, JointState]:
-        """获取所有关节状态"""
-        if not self.sensor_enabled:
-            self.logger.warning("传感器功能已禁用，无法获取关节状态")
-            return {}
+        """获取所有关节状态
         
-        if self._simulation_mode:
-            return self._joint_states.copy()
-        else:
-            # 无硬件模式：返回空字典允许系统继续运行
-            self.logger.warning(f"无硬件模式：无法获取所有关节状态（关节总数: {len(RobotJoint)}），系统将继续运行")
-            return {}
+        根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        硬件接口必须实现具体的所有关节状态获取逻辑，基类不提供任何模拟实现。
+        
+        返回:
+            关节状态字典，如果传感器功能已禁用则抛出异常
+        
+        抛出:
+            NotImplementedError: 子类必须实现此方法
+            RuntimeError: 传感器功能已禁用
+        """
+        if not self.sensor_enabled:
+            raise RuntimeError("传感器功能已禁用，无法获取关节状态")
+        
+        raise NotImplementedError(
+            f"硬件接口'{self._interface_type}'必须实现get_all_joint_states()方法。"
+            "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，"
+            "不能提供默认模拟实现。"
+        )
 
 
 class SerialInterface(HardwareInterface):
@@ -1323,8 +1367,7 @@ class HumanoidRobotController:
         # 首次调用时检查高级控制模块是否可用
         if ADVANCED_CONTROL_AVAILABLE is None:
             try:
-                from .advanced_robot_control import AdvancedRobotController, ControlAlgorithm, TrajectoryType, ControlParameters
-                from .unified_interface import EnhancedHardwareInterface, OperationMode
+                from .advanced_robot_control import AdvancedRobotController, ControlAlgorithm, TrajectoryType, ControlParameters, EnhancedHardwareInterface, OperationMode
                 
                 # 将导入的类存储为模块属性，以便其他方法使用
                 self._AdvancedRobotController = AdvancedRobotController

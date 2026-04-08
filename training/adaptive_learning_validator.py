@@ -379,191 +379,76 @@ class AdaptiveLearningValidator:
             return result
     
     def _implement_fixed_strategy(self, task: ValidationTask, params: Dict[str, Any]) -> Tuple[Dict[str, float], List[float], Dict[str, float]]:
-        """实现固定学习率策略"""
+        """实现固定学习率策略
         
-        # 模拟训练过程
-        task_type = task.task_type
-        metrics = {}
-        convergence_data = []
-        resource_usage = {
-            "memory_mb": random.uniform(500, 1500),
-            "disk_mb": random.uniform(50, 200),
-            "cpu_percent": random.uniform(30, 80),
-        }
+        根据项目要求"禁止使用虚拟数据"，此方法不再生成模拟数据。
+        必须运行真实训练来获取验证指标。
+        """
         
-        # 根据任务类型生成模拟指标
-        if task_type == "classification":
-            # 模拟分类任务训练
-            epochs = params.get("epochs", 10)
-            initial_accuracy = random.uniform(0.1, 0.3)
-            final_accuracy = random.uniform(0.7, 0.98)
-            
-            # 生成收敛曲线
-            for epoch in range(epochs):
-                progress = epoch / max(epochs - 1, 1)
-                accuracy = initial_accuracy + (final_accuracy - initial_accuracy) * progress
-                accuracy += random.uniform(-0.05, 0.05)  # 添加噪声
-                accuracy = max(0.0, min(1.0, accuracy))
-                convergence_data.append(accuracy)
-            
-            metrics = {
-                "accuracy": final_accuracy,
-                "f1_score": final_accuracy * 0.95,
-                "precision": final_accuracy * 0.96,
-                "recall": final_accuracy * 0.94,
-                "loss": 1.0 - final_accuracy,
-            }
-            
-        elif task_type == "reinforcement_learning":
-            # 模拟强化学习任务
-            num_episodes = params.get("epochs", 10) * 5
-            initial_reward = random.uniform(10, 50)
-            final_reward = random.uniform(180, 250)
-            
-            for episode in range(num_episodes):
-                progress = episode / max(num_episodes - 1, 1)
-                reward = initial_reward + (final_reward - initial_reward) * progress
-                reward += random.uniform(-20, 20)  # 添加噪声
-                convergence_data.append(reward)
-            
-            metrics = {
-                "average_reward": final_reward,
-                "max_reward": final_reward * 1.2,
-                "min_reward": final_reward * 0.8,
-                "success_rate": min(1.0, final_reward / 200.0),
-                "episodes_to_converge": num_episodes * 0.7,
-            }
-            
-        elif task_type == "multimodal":
-            # 模拟多模态任务
-            epochs = params.get("epochs", 10)
-            initial_score = random.uniform(0.1, 0.3)
-            final_score = random.uniform(0.35, 0.65)
-            
-            for epoch in range(epochs):
-                progress = epoch / max(epochs - 1, 1)
-                score = initial_score + (final_score - initial_score) * progress
-                score += random.uniform(-0.05, 0.05)
-                score = max(0.0, min(1.0, score))
-                convergence_data.append(score)
-            
-            metrics = {
-                "bleu_score": final_score,
-                "cider_score": final_score * 1.1,
-                "meteor_score": final_score * 0.9,
-                "rouge_score": final_score * 0.95,
-            }
+        error_message = (
+            f"自适应学习验证器检测到模拟数据生成\n"
+            f"任务ID: {task.id}, 任务类型: {task.task_type}\n"
+            "根据项目要求'禁止使用虚拟数据'和'不采用任何降级处理，直接报错'，\n"
+            "自适应学习验证器不再支持模拟数据生成。\n"
+            "必须运行真实训练来获取验证指标。\n"
+            "解决方案：\n"
+            "1. 使用真实训练数据配置验证任务\n"
+            "2. 实现真实训练流程来评估学习策略\n"
+            "3. 或禁用自适应学习验证功能"
+        )
         
-        else:
-            # 默认回归任务
-            epochs = params.get("epochs", 10)
-            initial_mse = random.uniform(10.0, 50.0)
-            final_mse = random.uniform(0.1, 5.0)
-            
-            for epoch in range(epochs):
-                progress = epoch / max(epochs - 1, 1)
-                mse = initial_mse - (initial_mse - final_mse) * progress
-                mse += random.uniform(-2.0, 2.0)
-                mse = max(0.0, mse)
-                convergence_data.append(mse)
-            
-            metrics = {
-                "mse": final_mse,
-                "rmse": np.sqrt(final_mse),
-                "mae": final_mse * 0.8,
-                "r2_score": max(0.0, 1.0 - final_mse / 50.0),
-            }
-        
-        return metrics, convergence_data, resource_usage
+        # 根据项目要求"不采用任何降级处理，直接报错"
+        raise RuntimeError(error_message)
     
     def _implement_adaptive_lr_strategy(self, task: ValidationTask, params: Dict[str, Any]) -> Tuple[Dict[str, float], List[float], Dict[str, float]]:
-        """实现自适应学习率策略"""
+        """实现自适应学习率策略
         
-        # 与固定策略类似，但收敛更快
-        metrics, convergence_data, resource_usage = self._implement_fixed_strategy(task, params)
+        根据项目要求"禁止使用虚拟数据"，此方法不再生成模拟数据。
+        必须运行真实训练来获取验证指标。
+        """
         
-        # 自适应策略通常收敛更快
-        if convergence_data:
-            # 加速收敛曲线
-            accelerated_data = []
-            for i, value in enumerate(convergence_data):
-                # 早期加速收敛
-                acceleration_factor = 1.0 + 0.5 * (1.0 - i / max(len(convergence_data) - 1, 1))
-                if i < len(convergence_data) // 2:
-                    accelerated_value = value * acceleration_factor
-                else:
-                    accelerated_value = value
-                accelerated_data.append(accelerated_value)
-            
-            convergence_data = accelerated_data
-            
-            # 更新最终指标（略微提升）
-            for key in metrics:
-                if isinstance(metrics[key], (int, float)):
-                    metrics[key] *= random.uniform(1.01, 1.05)  # 小幅提升
+        # 调用已修复的_fixed_strategy方法，它会抛出RuntimeError
+        # 这里直接抛出更具体的错误信息
+        error_message = (
+            f"自适应学习率策略验证器检测到模拟数据生成\n"
+            f"任务ID: {task.id}, 任务类型: {task.task_type}\n"
+            "根据项目要求'禁止使用虚拟数据'，自适应学习策略验证不再支持模拟数据。\n"
+            "必须运行真实训练来评估自适应学习率策略的效果。"
+        )
         
-        return metrics, convergence_data, resource_usage
+        raise RuntimeError(error_message)
     
     def _implement_curriculum_strategy(self, task: ValidationTask, params: Dict[str, Any]) -> Tuple[Dict[str, float], List[float], Dict[str, float]]:
-        """实现课程学习策略"""
+        """实现课程学习策略
         
-        # 课程学习通常有更稳定的收敛
-        metrics, convergence_data, resource_usage = self._implement_fixed_strategy(task, params)
+        根据项目要求"禁止使用虚拟数据"，此方法不再生成模拟数据。
+        必须运行真实训练来获取验证指标。
+        """
         
-        if convergence_data:
-            # 平滑收敛曲线（减少振荡）
-            smoothed_data = []
-            window_size = max(1, len(convergence_data) // 10)
-            
-            for i in range(len(convergence_data)):
-                start_idx = max(0, i - window_size)
-                end_idx = min(len(convergence_data), i + window_size + 1)
-                window = convergence_data[start_idx:end_idx]
-                smoothed_value = sum(window) / len(window)
-                smoothed_data.append(smoothed_value)
-            
-            convergence_data = smoothed_data
-            
-            # 课程学习通常最终性能更好
-            for key in metrics:
-                if isinstance(metrics[key], (int, float)):
-                    metrics[key] *= random.uniform(1.03, 1.08)  # 中等提升
+        error_message = (
+            f"课程学习策略验证器检测到模拟数据生成\n"
+            f"任务ID: {task.id}, 任务类型: {task.task_type}\n"
+            "根据项目要求'禁止使用虚拟数据'，课程学习策略验证不再支持模拟数据。\n"
+            "必须运行真实训练来评估课程学习策略的效果。"
+        )
         
-        return metrics, convergence_data, resource_usage
+        raise RuntimeError(error_message)
     
     def _implement_meta_learning_strategy(self, task: ValidationTask, params: Dict[str, Any]) -> Tuple[Dict[str, float], List[float], Dict[str, float]]:
-        """实现元学习策略"""
+        """实现元学习策略
         
-        # 元学习在适应新任务时更快
-        metrics, convergence_data, resource_usage = self._implement_fixed_strategy(task, params)
+        根据项目要求"禁止使用虚拟数据"，此方法不再生成模拟数据。
+        必须运行真实训练来获取验证指标。
+        """
         
-        if convergence_data:
-            # 更快的初始收敛
-            accelerated_data = []
-            for i, value in enumerate(convergence_data):
-                # 更强的早期加速
-                acceleration_factor = 1.0 + 1.0 * (1.0 - i / max(len(convergence_data) - 1, 1))
-                if i < len(convergence_data) // 3:
-                    accelerated_value = value * acceleration_factor
-                else:
-                    accelerated_value = value
-                accelerated_data.append(accelerated_value)
-            
-            convergence_data = accelerated_data
-            
-            # 元学习在少样本情况下表现更好
-            for key in metrics:
-                if isinstance(metrics[key], (int, float)):
-                    metrics[key] *= random.uniform(1.05, 1.12)  # 较大提升
+        error_message = (
+            f"元学习策略验证器检测到模拟数据生成\n"
+            f"任务ID: {task.id}, 任务类型: {task.task_type}\n"
+            "根据项目要求'禁止使用虚拟数据'，元学习策略验证不再支持模拟数据。\n"
+            "必须运行真实训练来评估元学习策略的效果。"
+        )
         
-        # 元学习通常需要更多资源
-        resource_usage = {
-            "memory_mb": random.uniform(800, 2000),
-            "disk_mb": random.uniform(100, 300),
-            "cpu_percent": random.uniform(50, 90),
-        }
-        
-        return metrics, convergence_data, resource_usage
+        raise RuntimeError(error_message)
     
     def _evaluate_success_criteria(self, 
                                   metrics: Dict[str, float], 

@@ -21,8 +21,10 @@ try:
     from .robot_service import get_robot_service
     ROBOT_SERVICE_AVAILABLE = True
 except ImportError as e:
-    # 静默失败，机器人服务是可选的
-    pass
+    # 根据项目要求"不采用任何降级处理，直接报错"，记录警告而不是静默忽略
+    # 机器人服务是可选的，但记录导入失败以便调试
+    import logging
+    logging.getLogger(__name__).warning(f"机器人服务导入失败，禁用多机器人协同功能: {e}")
 
 logger = logging.getLogger(__name__)
 

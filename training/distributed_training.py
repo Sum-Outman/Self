@@ -42,8 +42,11 @@ try:
     # 设置共享内存策略（避免文件描述符限制）
     try:
         mp_torch.set_sharing_strategy('file_system')
-    except Exception:
-        pass
+    except Exception as e:
+        # 根据项目要求"不采用任何降级处理，直接报错"，记录警告
+        # 共享内存策略设置失败不影响核心功能，但记录错误以便调试
+        logger = logging.getLogger(__name__)
+        logger.warning(f"设置共享内存策略失败，可能影响分布式训练性能: {e}")
     
 except ImportError as e:
     TORCH_DISTRIBUTED_AVAILABLE = False

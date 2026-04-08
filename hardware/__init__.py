@@ -34,7 +34,6 @@ from .robot_controller import (
 from .simulation import PyBulletSimulation
 from .gazebo_simulation import GazeboSimulation
 from .unified_simulation import UnifiedSimulation
-from .unified_interface import EnhancedHardwareInterface, OperationMode
 from .hardware_monitor import HardwareMonitor, HardwareError, HardwareErrorLevel, HardwareErrorType
 
 __all__ = [
@@ -50,7 +49,6 @@ __all__ = [
     "PyBulletSimulation",
     "GazeboSimulation",
     "UnifiedSimulation",
-    "EnhancedHardwareInterface",
     "HardwareMonitor",
     "HardwareError",
     "HardwareErrorLevel",

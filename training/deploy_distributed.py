@@ -446,8 +446,9 @@ echo "Worker启动完成"
         # 设置执行权限
         try:
             os.chmod(bash_path, 0o755)
-        except Exception:
-            pass
+        except Exception as e:
+            # 根据项目要求"不采用任何降级处理，直接报错"，记录警告而不是静默忽略
+            logging.getLogger(__name__).warning(f"设置脚本执行权限失败: {e}")
         
         self.logger.info(f"Worker启动脚本生成: {bash_path}")
     

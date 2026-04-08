@@ -221,15 +221,13 @@ class NAOqiRobotInterface(HardwareInterface):
                 NAOQI_AVAILABLE = True
             except ImportError:
                 logger.error("NAOqi SDK未安装，无法连接真实机器人")
-                NAOQI_AVAILABLE = False
-                self._connected = False
-                self._partial_connection = False
-                return False
+                raise RuntimeError(
+                    "NAOqi SDK未安装，无法连接真实机器人。\n"
+                    "根据项目要求'不采用任何降级处理，直接报错'，硬件接口依赖缺失时抛出异常。\n"
+                    "请安装NAOqi SDK以使用NAO/Pepper机器人功能。"
+                )
             
-            if not NAOQI_AVAILABLE:
-                self._connected = False
-                self._partial_connection = False
-                return False
+
             
             # 初始化部分连接状态
             self._partial_connection = False
@@ -485,57 +483,109 @@ class NAOqiRobotInterface(HardwareInterface):
         logger.info("安全监控线程已启动")
     
     def _collect_sensor_data(self):
-        """收集传感器数据"""
+        """收集传感器数据
+        
+        根据项目要求"部分硬件连接就可以工作"，检查各个代理的可用性，
+        只从可用的代理收集数据。
+        """
         with self._cache_lock:
             try:
-                # 获取关节角度
-                joint_names = list(self._joint_mapping.values())
-                joint_angles = self.motion_proxy.getAngles(joint_names, True)
-                
-                # 获取关节温度（如果可用）
+                joint_angles = {}
                 joint_temperatures = {}
-                try:
-                    # NAOqi v2.8+支持
-                    joint_temperatures = self.memory_proxy.getData("Device/SubDeviceList/Temperature/Sensor/Value")
-                except Exception:
-                    pass  # 已实现
-                
-                # 获取IMU数据
                 imu_data = {}
-                try:
-                    # 加速度计
-                    accel = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/AccelerometerX/Sensor/Value")
-                    accel_y = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/AccelerometerY/Sensor/Value")
-                    accel_z = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/AccelerometerZ/Sensor/Value")
-                    
-                    # 陀螺仪
-                    gyro_x = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/GyroscopeX/Sensor/Value")
-                    gyro_y = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/GyroscopeY/Sensor/Value")
-                    gyro_z = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/GyroscopeZ/Sensor/Value")
-                    
-                    imu_data = {
-                        "acceleration": [accel, accel_y, accel_z],
-                        "gyroscope": [gyro_x, gyro_y, gyro_z],
-                        "timestamp": time.time()
-                    }
-                except Exception:
-                    pass  # 已实现
                 
-                # 更新缓存
+                # 获取关节角度（如果运动代理可用）
+                if self.motion_proxy is not None:
+                    try:
+                        joint_names = list(self._joint_mapping.values())
+                        if joint_names:  # 确保有关节映射
+                            angles = self.motion_proxy.getAngles(joint_names, True)
+                            joint_angles = dict(zip(joint_names, angles))
+                    except Exception as e:
+                        logger.warning(f"获取关节角度失败: {e}")
+                
+                # 获取关节温度（如果内存代理可用）
+                if self.memory_proxy is not None:
+                    try:
+                        # NAOqi v2.8+支持
+                        joint_temperatures = self.memory_proxy.getData("Device/SubDeviceList/Temperature/Sensor/Value")
+                    except Exception as e:
+                        # 根据项目要求"不采用任何降级处理，直接报错"
+                        error_message = (
+                            f"获取关节温度失败: {e}\n"
+                            "根据项目要求'不采用任何降级处理，直接报错'，\n"
+                            "硬件接口必须提供真实数据，不能静默失败。\n"
+                            "解决方案：\n"
+                            "1. 确保NAOqi SDK正确安装\n"
+                            "2. 确保机器人已连接且内存代理可用\n"
+                            "3. 检查传感器数据路径是否正确"
+                        )
+                        raise RuntimeError(error_message) from e
+                
+                # 获取IMU数据（如果内存代理可用）
+                if self.memory_proxy is not None:
+                    try:
+                        # 加速度计
+                        accel = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/AccelerometerX/Sensor/Value")
+                        accel_y = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/AccelerometerY/Sensor/Value")
+                        accel_z = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/AccelerometerZ/Sensor/Value")
+                        
+                        # 陀螺仪
+                        gyro_x = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/GyroscopeX/Sensor/Value")
+                        gyro_y = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/GyroscopeY/Sensor/Value")
+                        gyro_z = self.memory_proxy.getData("Device/SubDeviceList/InertialSensor/GyroscopeZ/Sensor/Value")
+                        
+                        imu_data = {
+                            "acceleration": [accel, accel_y, accel_z],
+                            "gyroscope": [gyro_x, gyro_y, gyro_z],
+                            "timestamp": time.time()
+                        }
+                    except Exception as e:
+                        # 根据项目要求"不采用任何降级处理，直接报错"
+                        error_message = (
+                            f"获取IMU数据失败: {e}\n"
+                            "根据项目要求'不采用任何降级处理，直接报错'，\n"
+                            "硬件接口必须提供真实数据，不能静默失败。\n"
+                            "解决方案：\n"
+                            "1. 确保NAOqi SDK正确安装\n"
+                            "2. 确保机器人已连接且内存代理可用\n"
+                            "3. 检查IMU传感器数据路径是否正确"
+                        )
+                        raise RuntimeError(error_message) from e
+                
+                # 更新缓存（即使某些数据为空）
                 self._sensor_cache.update({
-                    "joint_angles": dict(zip(joint_names, joint_angles)),
+                    "joint_angles": joint_angles,
                     "joint_temperatures": joint_temperatures,
                     "imu_data": imu_data,
                     "timestamp": time.time()
                 })
                 
+                # 记录数据收集状态（调试用）
+                data_status = []
+                if joint_angles:
+                    data_status.append(f"关节角度({len(joint_angles)}个关节)")
+                if joint_temperatures:
+                    data_status.append("关节温度")
+                if imu_data:
+                    data_status.append("IMU数据")
+                
+                if data_status:
+                    logger.debug(f"收集到数据: {', '.join(data_status)}")
+                else:
+                    logger.debug("未收集到任何传感器数据（部分硬件连接模式）")
+                
             except Exception as e:
                 logger.error(f"收集传感器数据失败: {e}")
     
     def _check_safety(self):
-        """安全检查"""
+        """安全检查
+        
+        根据项目要求"部分硬件连接就可以工作"，检查各个代理的可用性，
+        只对可用的硬件部分执行安全检查。
+        """
         try:
-            # 检查关节温度
+            # 检查关节温度（从缓存获取，不依赖代理）
             if "joint_temperatures" in self._sensor_cache:
                 temps = self._sensor_cache["joint_temperatures"]
                 if isinstance(temps, dict):
@@ -546,36 +596,46 @@ class NAOqiRobotInterface(HardwareInterface):
                                 self.emergency_stop()
                                 return
             
-            # 检查关节负载（如果可用）
-            try:
-                # 获取关节电流
-                currents = self.memory_proxy.getData("Device/SubDeviceList/ElectricCurrent/Sensor/Value")
-                if isinstance(currents, dict):
-                    for joint_name, current in currents.items():
-                        if current > 2.0:  # 电流阈值（安培）
-                            logger.warning(f"关节 {joint_name} 电流过高: {current}A")
-                            if current > 3.0:
-                                self.emergency_stop()
-                                return
-            except Exception:
-                pass  # 已实现
+            # 检查关节负载（如果内存代理可用）
+            if self.memory_proxy is not None:
+                try:
+                    # 获取关节电流
+                    currents = self.memory_proxy.getData("Device/SubDeviceList/ElectricCurrent/Sensor/Value")
+                    if isinstance(currents, dict):
+                        for joint_name, current in currents.items():
+                            if current > 2.0:  # 电流阈值（安培）
+                                logger.warning(f"关节 {joint_name} 电流过高: {current}A")
+                                if current > 3.0:
+                                    self.emergency_stop()
+                                    return
+                except Exception as e:
+                    logger.warning(f"获取关节电流失败（部分硬件连接）: {e}")
+            else:
+                logger.debug("内存代理不可用，跳过关节负载检查（部分硬件连接模式）")
             
-            # 检查电池电量
-            try:
-                battery_level = self.memory_proxy.getData("Device/SubDeviceList/Battery/Charge/Sensor/Value")
-                if battery_level < 0.2:  # 20%电量
-                    logger.warning(f"电池电量低: {battery_level*100:.1f}%")
-                    if battery_level < 0.1:  # 10%电量
-                        logger.error("电池电量极低，即将关机")
-                        # 可以触发安全关机
-            except Exception:
-                pass  # 已实现
+            # 检查电池电量（如果内存代理可用）
+            if self.memory_proxy is not None:
+                try:
+                    battery_level = self.memory_proxy.getData("Device/SubDeviceList/Battery/Charge/Sensor/Value")
+                    if battery_level < 0.2:  # 20%电量
+                        logger.warning(f"电池电量低: {battery_level*100:.1f}%")
+                        if battery_level < 0.1:  # 10%电量
+                            logger.error("电池电量极低，即将关机")
+                            # 可以触发安全关机
+                except Exception as e:
+                    logger.warning(f"获取电池电量失败（部分硬件连接）: {e}")
+            else:
+                logger.debug("内存代理不可用，跳过电池电量检查（部分硬件连接模式）")
                 
         except Exception as e:
             logger.error(f"安全检查失败: {e}")
     
     def emergency_stop(self):
-        """紧急停止"""
+        """紧急停止
+        
+        根据项目要求"部分硬件连接就可以工作"，检查各个代理的可用性，
+        只对可用的代理执行紧急停止操作。
+        """
         if self._emergency_stop:
             return
         
@@ -583,12 +643,26 @@ class NAOqiRobotInterface(HardwareInterface):
         self._emergency_stop = True
         
         try:
-            # 停止所有运动
-            self.motion_proxy.stopMove()
-            self.motion_proxy.killAll()
+            # 停止所有运动（如果运动代理可用）
+            if self.motion_proxy is not None:
+                try:
+                    self.motion_proxy.stopMove()
+                    self.motion_proxy.killAll()
+                    logger.info("运动已停止")
+                except Exception as e:
+                    logger.warning(f"停止运动失败（部分硬件连接）: {e}")
+            else:
+                logger.warning("运动代理不可用，无法停止运动（部分硬件连接模式）")
             
-            # 进入休息姿势
-            self.posture_proxy.goToPosture("Crouch", 0.8)
+            # 进入休息姿势（如果姿态代理可用）
+            if self.posture_proxy is not None:
+                try:
+                    self.posture_proxy.goToPosture("Crouch", 0.8)
+                    logger.info("已进入休息姿势")
+                except Exception as e:
+                    logger.warning(f"设置休息姿势失败（部分硬件连接）: {e}")
+            else:
+                logger.warning("姿态代理不可用，无法设置休息姿势（部分硬件连接模式）")
             
             # 断开连接
             self.disconnect()
@@ -597,20 +671,38 @@ class NAOqiRobotInterface(HardwareInterface):
             logger.error(f"紧急停止失败: {e}")
     
     def disconnect(self) -> bool:
-        """断开连接"""
+        """断开连接
+        
+        根据项目要求"部分硬件连接就可以工作"，检查各个代理的可用性，
+        只对可用的代理执行断开连接操作。
+        """
         try:
             self._stop_event.set()
             
-            # 停止线程
+            # 停止线程（如果存在）
             if self._connection_thread and self._connection_thread.is_alive():
-                self._connection_thread.join(timeout=2.0)
+                try:
+                    self._connection_thread.join(timeout=2.0)
+                    logger.info("传感器采集线程已停止")
+                except Exception as e:
+                    logger.warning(f"停止传感器采集线程失败: {e}")
             
             if self._safety_monitor_thread and self._safety_monitor_thread.is_alive():
-                self._safety_monitor_thread.join(timeout=2.0)
+                try:
+                    self._safety_monitor_thread.join(timeout=2.0)
+                    logger.info("安全监控线程已停止")
+                except Exception as e:
+                    logger.warning(f"停止安全监控线程失败: {e}")
             
-            # 让机器人进入休息状态
-            if self.motion_proxy:
-                self.motion_proxy.rest()
+            # 让机器人进入休息状态（如果运动代理可用）
+            if self.motion_proxy is not None:
+                try:
+                    self.motion_proxy.rest()
+                    logger.info("机器人已进入休息状态")
+                except Exception as e:
+                    logger.warning(f"设置休息状态失败（部分硬件连接）: {e}")
+            else:
+                logger.debug("运动代理不可用，跳过休息状态设置（部分硬件连接模式）")
             
             self._connected = False
             logger.info("机器人已断开连接")
@@ -625,24 +717,44 @@ class NAOqiRobotInterface(HardwareInterface):
         return self._connected
     
     def get_sensor_data(self, sensor_type: SensorType) -> Optional[Any]:
-        """获取传感器数据"""
+        """获取传感器数据
+        
+        根据项目要求"部分硬件连接就可以工作"，从缓存获取数据。
+        如果数据不可用，返回None而不是虚拟数据。
+        """
         with self._cache_lock:
             if sensor_type == SensorType.IMU:
-                return self._sensor_cache.get("imu_data")
+                imu_data = self._sensor_cache.get("imu_data")
+                if imu_data is None:
+                    logger.debug("IMU数据不可用（部分硬件连接）")
+                return imu_data
             elif sensor_type == SensorType.JOINT_POSITION:
-                return self._sensor_cache.get("joint_angles")
+                joint_angles = self._sensor_cache.get("joint_angles")
+                if not joint_angles:
+                    logger.debug("关节角度数据不可用（部分硬件连接）")
+                return joint_angles
             elif sensor_type == SensorType.JOINT_TORQUE:
-                # 需要额外计算或获取
-                return None  # 返回None
+                # 需要额外计算或获取，目前不支持
+                logger.debug("关节扭矩数据不可用（需要额外计算）")
+                return None  # 返回None，表示数据不可用
             else:
                 logger.warning(f"不支持的传感器类型: {sensor_type}")
-                return None  # 返回None
+                return None  # 返回None，表示不支持的类型
     
     def set_joint_position(self, joint: RobotJoint, position: float) -> bool:
-        """设置单个关节位置"""
+        """设置单个关节位置
+        
+        根据项目要求"部分硬件连接就可以工作"，检查运动代理是否可用。
+        如果运动代理不可用，返回False并记录警告。
+        """
         try:
             if not self._connected:
                 logger.error("机器人未连接")
+                return False
+            
+            # 检查运动代理是否可用（部分连接情况）
+            if self.motion_proxy is None:
+                logger.warning("运动代理不可用（部分硬件连接模式），无法设置关节位置")
                 return False
             
             # 获取NAOqi关节名称
@@ -661,10 +773,19 @@ class NAOqiRobotInterface(HardwareInterface):
             return False
     
     def set_joint_positions(self, positions: Dict[RobotJoint, float]) -> bool:
-        """设置多个关节位置"""
+        """设置多个关节位置
+        
+        根据项目要求"部分硬件连接就可以工作"，检查运动代理是否可用。
+        如果运动代理不可用，返回False并记录警告。
+        """
         try:
             if not self._connected:
                 logger.error("机器人未连接")
+                return False
+            
+            # 检查运动代理是否可用（部分连接情况）
+            if self.motion_proxy is None:
+                logger.warning("运动代理不可用（部分硬件连接模式），无法设置关节位置")
                 return False
             
             # 转换为NAOqi格式
@@ -690,11 +811,16 @@ class NAOqiRobotInterface(HardwareInterface):
             return False
     
     def get_joint_state(self, joint: RobotJoint) -> Optional[JointState]:
-        """获取单个关节状态"""
+        """获取单个关节状态
+        
+        根据项目要求"部分硬件连接就可以工作"，从缓存获取数据。
+        如果数据不可用，返回包含None值的JointState对象，而不是虚拟数据。
+        """
         try:
             joint_name = self._joint_mapping.get(joint)
             if not joint_name:
-                return None  # 返回None
+                logger.warning(f"未知的关节: {joint}，无法获取状态")
+                return None  # 返回None，表示关节未知
             
             with self._cache_lock:
                 joint_angles = self._sensor_cache.get("joint_angles", {})
@@ -702,7 +828,15 @@ class NAOqiRobotInterface(HardwareInterface):
                 angle = joint_angles.get(joint_name)
                 temp = joint_temperatures.get(joint_name) if isinstance(joint_temperatures, dict) else None
                 
+                # 记录调试信息（部分连接情况）
+                if angle is None:
+                    logger.debug(f"关节 {joint_name} 角度数据不可用（部分硬件连接）")
+                if temp is None:
+                    logger.debug(f"关节 {joint_name} 温度数据不可用（部分硬件连接）")
+                
                 # 创建关节状态对象
+                # 注意：velocity和torque为None，因为NAOqi不直接提供这些数据
+                # 根据项目要求"禁止使用虚拟数据"，不提供假值
                 state = JointState(
                     position=angle,
                     velocity=None,  # NAOqi不直接提供速度，需要计算
@@ -714,12 +848,18 @@ class NAOqiRobotInterface(HardwareInterface):
                 
         except Exception as e:
             logger.error(f"获取关节状态失败: {e}")
-            return None  # 返回None
+            return None  # 返回None，表示获取失败
     
     def get_all_joint_states(self) -> Dict[RobotJoint, JointState]:
-        """获取所有关节状态"""
+        """获取所有关节状态
+        
+        根据项目要求"部分硬件连接就可以工作"，从缓存获取数据。
+        对于每个关节，只返回实际可用的数据，不提供虚拟数据。
+        """
         try:
             states = {}
+            available_angles = 0
+            available_temps = 0
             
             with self._cache_lock:
                 joint_angles = self._sensor_cache.get("joint_angles", {})
@@ -729,18 +869,33 @@ class NAOqiRobotInterface(HardwareInterface):
                     angle = joint_angles.get(naoqi_name)
                     temp = joint_temperatures.get(naoqi_name) if isinstance(joint_temperatures, dict) else None
                     
+                    # 统计可用数据
+                    if angle is not None:
+                        available_angles += 1
+                    if temp is not None:
+                        available_temps += 1
+                    
                     states[robot_joint] = JointState(
                         position=angle,
-                        velocity=None,
-                        torque=None,
+                        velocity=None,  # NAOqi不直接提供速度
+                        torque=None,    # 需要额外获取
                         temperature=temp
                     )
+            
+            # 记录统计信息（调试用）
+            total_joints = len(self._joint_mapping)
+            logger.debug(
+                f"关节状态统计: {total_joints}个关节中，"
+                f"角度可用: {available_angles}, "
+                f"温度可用: {available_temps} "
+                f"（部分硬件连接模式）"
+            )
             
             return states
             
         except Exception as e:
             logger.error(f"获取所有关节状态失败: {e}")
-            return {}  # 返回空字典
+            return {}  # 返回空字典，表示获取失败
 
 
 class ROS2RobotInterface(HardwareInterface):

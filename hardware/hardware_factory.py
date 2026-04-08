@@ -23,7 +23,6 @@ from dataclasses import dataclass, field
 from .robot_controller import HardwareInterface, RobotJoint, NullHardwareInterface
 from .real_robot_interface import NAOqiRobotInterface, RobotConnectionConfig, RealRobotType
 from .simulation import PyBulletSimulation
-from .unified_interface import UnifiedHardwareInterface
 
 logger = logging.getLogger(__name__)
 

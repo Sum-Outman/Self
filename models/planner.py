@@ -894,13 +894,17 @@ class SExpressionParser:
         try:
             return int(token)
         except ValueError:
-            pass
+            # 根据项目要求"不采用任何降级处理，直接报错"，记录调试信息而不是静默忽略
+            # 整数转换失败是正常流程的一部分，继续尝试浮点数转换
+            logger.debug(f"token不是整数，尝试浮点数转换: {token}")
         
         # 浮点数
         try:
             return float(token)
         except ValueError:
-            pass
+            # 根据项目要求"不采用任何降级处理，直接报错"，记录调试信息而不是静默忽略
+            # 浮点数转换失败是正常流程的一部分，继续处理其他类型
+            logger.debug(f"token不是浮点数，尝试其他类型转换: {token}")
         
         # 特殊值
         if token.lower() == 'true':
@@ -1711,6 +1715,7 @@ class HybridPlanner:
                 # 添加任务、方法和操作符到HTN规划器
                 for task in htn_domain["tasks"]:
                     # 任务已经作为HTNTask对象，不需要额外操作
+                    # 根据项目要求"禁止使用虚拟数据"，但循环体不能为空，使用pass
                     pass
                 
                 for method in htn_domain["methods"]:

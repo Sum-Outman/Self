@@ -79,9 +79,6 @@ class PyBulletSimulation(HardwareInterface):
         # 关节状态缓存
         self.joint_states = {}
         
-        # 纯模拟模式标志
-        self._pure_simulation_mode = False
-        
         # 连接状态
         self.connected = False
         
@@ -153,29 +150,9 @@ class PyBulletSimulation(HardwareInterface):
             self.logger.error(f"连接PyBullet仿真环境失败: {e}")
             raise RuntimeError(f"PyBullet仿真环境连接失败: {e}")
     
-    def _connect_simulation_only(self) -> bool:
-        """连接纯模拟模式 - 根据用户要求"系统可以在没有硬件条件下单独运行AGI所有功能"
-        
-        当真实仿真不可用时，返回False并记录警告。
-        """
-        self.logger.warning(
-            "纯模拟模式连接：真实仿真环境不可用。\n"
-            "根据用户要求'系统可以在没有硬件条件下单独运行AGI所有功能'，\n"
-            "返回False，系统可以继续运行（仿真功能将不可用）。"
-        )
-        return False  # 返回False表示连接失败
+
     
-    def _simulation_loop_pure(self):
-        """纯模拟模式仿真循环 - 根据用户要求"系统可以在没有硬件条件下单独运行AGI所有功能"
-        
-        当真实仿真不可用时，记录警告并返回。
-        """
-        self.logger.warning(
-            "纯模拟模式仿真循环：真实仿真环境不可用。\n"
-            "根据用户要求'系统可以在没有硬件条件下单独运行AGI所有功能'，\n"
-            "跳过仿真循环，系统可以继续运行（仿真功能将不可用）。"
-        )
-        return  # 直接返回，不执行仿真循环
+
     
     def _load_humanoid_robot(self):
         """加载人形机器人模型"""
@@ -521,21 +498,7 @@ class PyBulletSimulation(HardwareInterface):
         if not self.is_connected():
             return False
         
-        # 纯模拟模式：更新本地关节状态
-        if hasattr(self, '_pure_simulation_mode') and self._pure_simulation_mode:
-            for joint, position in positions.items():
-                if joint in self.joint_states:
-                    current_state = self.joint_states[joint]
-                    self.joint_states[joint] = JointState(
-                        position=position,
-                        velocity=current_state.velocity,
-                        torque=current_state.torque,
-                        temperature=current_state.temperature,
-                        voltage=current_state.voltage,
-                        current=current_state.current
-                    )
-            self.logger.debug(f"纯模拟模式：更新了 {len(positions)} 个关节位置")
-            return True
+
         
         if not self.pybullet_available or self.robot_id is None:
             self.logger.error("PyBullet仿真环境未就绪")

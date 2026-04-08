@@ -105,72 +105,14 @@ try:
     ]
     
 except ImportError as e:
-    # 模块尚未完全迁移，提供实现
+    # 模块尚未完全迁移，根据项目要求"禁止使用虚拟数据"，不提供虚拟实现
     logger = logging.getLogger(__name__) if 'logging' in sys.modules else None
     if logger:
-        logger.warning(f"拉普拉斯模块导入失败: {e}, 提供实现类")
+        logger.error(f"拉普拉斯模块导入失败: {e}")
+        logger.error("拉普拉斯增强训练系统模块不完整，无法提供功能。")
+        logger.error("请完成模块迁移或确保所有依赖模块可用。")
     
-    __all__ = []
-    
-    class LaplacianBase:
-        """实现基类 - 将在模块迁移完成后实现"""
-        pass  # 已实现
-    
-    class LaplacianConfig:
-        """实现配置类 - 将在模块迁移完成后实现"""
-        pass  # 已实现
-    
-    class LaplacianRegularization:
-        """实现正则化类 - 将在模块迁移完成后实现"""
-        pass  # 已实现
-    
-    class RegularizationConfig:
-        """实现正则化配置类 - 将在模块迁移完成后实现"""
-        pass  # 已实现
-    
-    class LaplacianEnhancedTrainingConfig:
-        """实现训练增强配置类 - 将在模块迁移完成后实现"""
-        pass  # 已实现
-    
-    class UnifiedLaplacianConfig:
-        """实现统一配置类 - 将在模块迁移完成后实现"""
-        pass  # 已实现
-    
-    class LaplacianEnhancedPINN:
-        """实现PINN增强类 - 将在模块迁移完成后实现"""
-        pass  # 已实现
-    
-    class LaplacianEnhancedCNN:
-        """实现CNN增强类 - 将在模块迁移完成后实现"""
-        pass  # 已实现
-    
-    class LaplacianEnhancedOptimizer:
-        """实现优化器增强类 - 将在模块迁移完成后实现"""
-        pass  # 已实现
-    
-    class LaplacianIntegrationConfig:
-        """实现集成配置类 - 将在模块迁移完成后实现"""
-        pass  # 已实现
-    
-    class LaplacianIntegrationFramework:
-        """实现集成框架类 - 将在模块迁移完成后实现"""
-        pass  # 已实现
-    
-    LAPLACIAN_MODULES_AVAILABLE = False
-    
-    def integrate_laplacian_with_training(*args, **kwargs):
-        """实现集成函数"""
-        return {}  # 返回空字典
-    
-    class LaplacianBenchmark:
-        """实现基准测试类"""
-        pass  # 已实现
-    
-    class BenchmarkResult:
-        """实现基准测试结果类"""
-        pass  # 已实现
-    
-    # 枚举类型实现
+    # 只提供枚举类型（自包含，不依赖外部模块）
     class LaplacianType:
         GRAPH = "graph"
         MANIFOLD = "manifold"
@@ -184,3 +126,21 @@ except ImportError as e:
         NONE = "none"
         SYM = "sym"
         RW = "rw"
+    
+    LAPLACIAN_MODULES_AVAILABLE = False
+    
+    def integrate_laplacian_with_training(*args, **kwargs):
+        """集成函数 - 模块不完整时抛出错误"""
+        raise RuntimeError(
+            "拉普拉斯增强训练系统模块不完整，无法执行集成功能。\n"
+            "根据项目要求'禁止使用虚拟数据'，模块导入失败时不能提供虚拟实现。\n"
+            "请确保training.laplacian模块的所有依赖模块都已正确迁移和实现。"
+        )
+    
+    # 只导出可用的符号
+    __all__ = [
+        'LaplacianType',
+        'NormalizationType',
+        'LAPLACIAN_MODULES_AVAILABLE',
+        'integrate_laplacian_with_training',
+    ]

@@ -508,46 +508,67 @@ class FeatureDetector:
             
         Returns:
             检测到的特征列表
+        
+        根据项目要求"禁止使用虚拟数据"，此方法尝试使用真实特征检测库（OpenCV）。
+        如果OpenCV不可用，抛出RuntimeError，而不是生成模拟特征点。
         """
         features = []
         
         try:
-            # 简化的特征检测（模拟）
-            # 实际应用中应该使用OpenCV等库进行特征检测
+            # 尝试导入OpenCV进行真实特征检测
+            import cv2
             
-            height, width = image.shape[:2]
+            # 检查图像格式，确保是灰度图像
+            if len(image.shape) == 3:
+                gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+            else:
+                gray_image = image
+            
+            # 使用OpenCV的Shi-Tomasi角点检测
             max_features = self.detection_params["max_features"]
+            quality_level = self.detection_params["quality_level"]
             min_distance = self.detection_params["min_distance"]
+            block_size = self.detection_params["block_size"]
             
-            # 生成模拟特征点
-            import random
-            num_features = min(max_features, random.randint(10, 30))
+            # 检测角点
+            corners = cv2.goodFeaturesToTrack(
+                gray_image, 
+                maxCorners=max_features,
+                qualityLevel=quality_level,
+                minDistance=min_distance,
+                blockSize=block_size
+            )
             
-            for i in range(num_features):
-                # 随机生成特征点位置
-                x = random.uniform(min_distance, width - min_distance)
-                y = random.uniform(min_distance, height - min_distance)
+            if corners is not None:
+                corners = corners.reshape(-1, 2)
                 
-                # 随机选择特征类型（主要是点特征）
-                feature_type = FeatureType.POINT
-                
-                # 创建特征对象
-                feature = VisualFeature(
-                    feature_type=feature_type,
-                    position=(float(x), float(y)),
-                    confidence=random.uniform(0.7, 1.0)
-                )
-                
-                # 分配跟踪ID
-                feature.tracking_id = i
-                feature.tracked = True
-                
-                features.append(feature)
+                for i, (x, y) in enumerate(corners):
+                    # 创建特征对象
+                    feature = VisualFeature(
+                        feature_type=FeatureType.POINT,
+                        position=(float(x), float(y)),
+                        confidence=1.0  # OpenCV检测的特征置信度较高
+                    )
+                    
+                    # 分配跟踪ID
+                    feature.tracking_id = i
+                    feature.tracked = True
+                    features.append(feature)
             
-            self.logger.debug(f"检测到 {len(features)} 个特征")
+            self.logger.debug(f"使用OpenCV检测到 {len(features)} 个特征")
             
+        except ImportError as e:
+            # OpenCV不可用，根据项目要求"禁止使用虚拟数据"，抛出RuntimeError
+            raise RuntimeError(
+                f"OpenCV导入失败: {e}\n"
+                "根据项目要求'禁止使用虚拟数据'，视觉伺服需要真实特征检测。\n"
+                "请安装OpenCV: pip install opencv-python\n"
+                "或使用真实硬件图像数据。"
+            )
         except Exception as e:
-            self.logger.error(f"特征检测失败: {e}")
+            self.logger.error(f"真实特征检测失败: {e}")
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(f"真实特征检测失败: {e}")
         
         return features
     
@@ -562,43 +583,83 @@ class FeatureDetector:
             
         Returns:
             跟踪到的特征列表
+        
+        根据项目要求"禁止使用虚拟数据"，此方法使用真实的光流跟踪（OpenCV Lucas-Kanade光流）。
+        如果OpenCV不可用或跟踪失败，抛出RuntimeError，而不是生成模拟跟踪结果。
         """
         tracked_features = []
         
         try:
-            # 简化的特征跟踪（模拟）
-            # 实际应用中应该使用光流或特征匹配
+            # 尝试导入OpenCV进行真实光流跟踪
+            import cv2
             
-            import random
+            # 检查图像格式，确保是灰度图像
+            if len(prev_image.shape) == 3:
+                prev_gray = cv2.cvtColor(prev_image, cv2.COLOR_RGB2GRAY)
+                current_gray = cv2.cvtColor(current_image, cv2.COLOR_RGB2GRAY)
+            else:
+                prev_gray = prev_image
+                current_gray = current_image
             
-            for feature in prev_features:
-                # 模拟跟踪成功或失败
-                if random.random() < 0.8:  # 80%的跟踪成功率
-                    # 添加一些随机位移模拟运动
-                    dx = random.uniform(-5, 5)
-                    dy = random.uniform(-5, 5)
-                    
-                    new_x = feature.position[0] + dx
-                    new_y = feature.position[1] + dy
-                    
-                    # 创建跟踪特征
-                    tracked_feature = VisualFeature(
-                        feature_type=feature.feature_type,
-                        position=(new_x, new_y),
-                        confidence=feature.confidence * 0.95  # 置信度衰减
-                    )
-                    
-                    # 保持跟踪ID
-                    tracked_feature.tracking_id = feature.tracking_id
-                    tracked_feature.tracked = True
-                    tracked_feature.velocity = (dx, dy)  # 估计速度
-                    
-                    tracked_features.append(tracked_feature)
+            # 准备上一帧的特征点（OpenCV格式）
+            prev_pts = np.array([[f.position[0], f.position[1]] for f in prev_features], dtype=np.float32)
             
-            self.logger.debug(f"跟踪到 {len(tracked_features)}/{len(prev_features)} 个特征")
+            if len(prev_pts) == 0:
+                self.logger.warning("没有特征点可跟踪")
+                return []
             
+            # Lucas-Kanade光流参数
+            lk_params = dict(
+                winSize=(15, 15),
+                maxLevel=2,
+                criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
+            )
+            
+            # 计算光流
+            next_pts, status, error = cv2.calcOpticalFlowPyrLK(
+                prev_gray, current_gray, prev_pts, None, **lk_params
+            )
+            
+            # 筛选成功的跟踪点
+            good_indices = np.where(status.ravel() == 1)[0]
+            
+            for idx in good_indices:
+                feature = prev_features[idx]
+                new_x, new_y = next_pts[idx].ravel()
+                prev_x, prev_y = prev_pts[idx].ravel()
+                
+                # 计算速度（像素位移）
+                dx = new_x - prev_x
+                dy = new_y - prev_y
+                
+                # 创建跟踪特征
+                tracked_feature = VisualFeature(
+                    feature_type=feature.feature_type,
+                    position=(float(new_x), float(new_y)),
+                    confidence=feature.confidence * 0.95  # 置信度衰减
+                )
+                
+                # 保持跟踪ID
+                tracked_feature.tracking_id = feature.tracking_id
+                tracked_feature.tracked = True
+                tracked_feature.velocity = (dx, dy)  # 估计速度
+                
+                tracked_features.append(tracked_feature)
+            
+            self.logger.debug(f"使用光流跟踪到 {len(tracked_features)}/{len(prev_features)} 个特征")
+            
+        except ImportError as e:
+            # OpenCV不可用，根据项目要求"禁止使用虚拟数据"，抛出RuntimeError
+            raise RuntimeError(
+                f"OpenCV导入失败: {e}\n"
+                "根据项目要求'禁止使用虚拟数据'，视觉伺服需要真实光流跟踪。\n"
+                "请安装OpenCV: pip install opencv-python\n"
+                "或使用真实硬件图像数据。"
+            )
         except Exception as e:
-            self.logger.error(f"特征跟踪失败: {e}")
+            self.logger.error(f"真实光流跟踪失败: {e}")
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(f"真实光流跟踪失败: {e}")
         
         return tracked_features
 

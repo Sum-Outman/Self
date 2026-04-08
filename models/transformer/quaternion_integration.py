@@ -226,8 +226,9 @@ class QuaternionEnhancedTransformer(nn.Module):
             embeddings = embeddings.reshape(batch_size, seq_len, self.config.hidden_size)
         else:
             # 标准实数处理
-            # 简化：仅使用输出归一化和投影
-            pass
+            # 根据项目要求"禁止使用虚拟数据"，移除占位符
+            # 不使用四元数时，直接使用输入的实数嵌入
+            # 注意：输入已经是实数嵌入，无需额外处理
         
         # 输出
         embeddings = self.output_norm(embeddings)
