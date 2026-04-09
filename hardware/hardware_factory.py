@@ -362,14 +362,8 @@ class HardwareFactory:
             
         except Exception as e:
             logger.error(f"检查硬件健康状态失败: {e}")
-            return {
-                "healthy": False,
-                "status": "error",
-                "interface_type": self._interface_type,
-                "simulation_mode": True,
-                "sdk_available": self._sdk_availability_cache.copy(),
-                "message": f"健康检查失败: {str(e)}"
-            }
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(f"硬件健康检查失败: {e}")
 
 
 # 全局硬件工厂实例

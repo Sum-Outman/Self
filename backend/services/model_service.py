@@ -134,28 +134,54 @@ class ModelService:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self._model.to(device)
             
-            # 检查权重文件是否存在
-            if os.path.exists(model_weights_path):
-                logger.info(f"加载模型权重: {model_weights_path}")
+            # 检查权重文件是否存在 - 如果不存在，生成基础预训练权重
+            if not os.path.exists(model_weights_path):
+                logger.warning(f"模型权重文件不存在: {model_weights_path}")
+                logger.info("正在生成基础预训练权重（随机初始化）...")
+                
+                # 保存当前随机初始化权重作为基础预训练权重
                 try:
-                    # 加载预训练权重
-                    state_dict = torch.load(model_weights_path, map_location=device)
-                    # 使用strict=False以适应架构更改（如空间融合层输入维度调整）
-                    load_result = self._model.load_state_dict(state_dict, strict=False)
-                    if load_result.missing_keys:
-                        logger.warning(f"权重加载缺失的键: {load_result.missing_keys}")
-                    if load_result.unexpected_keys:
-                        logger.warning(f"权重加载意外的键: {load_result.unexpected_keys}")
-                    logger.info("模型权重加载成功（部分层可能使用随机初始化）")
-                except Exception as e:
-                    logger.warning(f"权重加载失败，使用随机初始化: {e}")
-                    # 保存当前随机初始化权重供后续使用
                     self._save_model_weights(model_weights_path)
-            else:
-                logger.warning(f"权重文件不存在: {model_weights_path}")
-                logger.warning("使用随机初始化模型，建议运行训练系统生成预训练权重")
-                # 保存当前随机初始化权重
-                self._save_model_weights(model_weights_path)
+                    logger.info(f"基础预训练权重已生成并保存: {model_weights_path}")
+                    logger.warning("注意：这是随机初始化的基础权重，不是训练过的模型。")
+                    logger.warning("建议运行训练系统进行实际训练以获得更好的性能。")
+                except Exception as e:
+                    error_msg = (
+                        f"生成基础预训练权重失败: {e}\n"
+                        "无法创建模型权重文件，模型服务无法启动。\n"
+                        "请检查目录权限或磁盘空间。"
+                    )
+                    logger.error(error_msg)
+                    raise RuntimeError(error_msg)
+            
+            # 加载预训练权重
+            logger.info(f"加载模型权重: {model_weights_path}")
+            try:
+                # 加载预训练权重
+                state_dict = torch.load(model_weights_path, map_location=device)
+                # 使用strict=False以适应架构更改（如空间融合层输入维度调整）
+                load_result = self._model.load_state_dict(state_dict, strict=False)
+                if load_result.missing_keys:
+                    logger.warning(f"权重加载缺失的键: {load_result.missing_keys}")
+                if load_result.unexpected_keys:
+                    logger.warning(f"权重加载意外的键: {load_result.unexpected_keys}")
+                
+                # 检查权重是否是随机初始化的（通过文件大小或元数据）
+                file_size = os.path.getsize(model_weights_path)
+                if file_size < 1024 * 1024:  # 小于1MB可能是小型模型或随机权重
+                    logger.warning("权重文件较小，可能是随机初始化的基础权重。")
+                
+                logger.info("模型权重加载成功")
+            except Exception as e:
+                error_msg = (
+                    f"权重文件加载失败: {e}\n"
+                    "权重文件可能损坏或格式不正确。\n"
+                    "请重新生成基础预训练权重：\n"
+                    "1. 删除现有权重文件: {model_weights_path}\n"
+                    "2. 重启模型服务将自动生成新权重\n"
+                )
+                logger.error(error_msg)
+                raise RuntimeError(error_msg)
             
             # 设置为评估模式
             self._model.eval()
@@ -168,7 +194,15 @@ class ModelService:
             
             logger.info(f"AGI模型加载成功，设备: {device}")
             logger.info(f"模型参数数量: {sum(p.numel() for p in self._model.parameters()):,}")
-            logger.info(f"权重状态: {'已加载' if os.path.exists(model_weights_path) else '随机初始化'}")
+            # 判断权重类型
+            if os.path.exists(model_weights_path):
+                file_size = os.path.getsize(model_weights_path)
+                if file_size < 1024 * 1024:
+                    logger.info("权重状态: 已加载（基础预训练权重 - 随机初始化）")
+                else:
+                    logger.info("权重状态: 已加载（预训练权重）")
+            else:
+                logger.info("权重状态: 未知")
             
             return True
             

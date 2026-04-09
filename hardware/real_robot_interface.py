@@ -264,10 +264,8 @@ class NAOqiRobotInterface(HardwareInterface):
             
             # 检查连接状态（需要至少一个关键代理）
             if proxy_success_count == 0:
-                logger.warning("所有关键代理创建失败，无法连接")
-                self._connected = False
-                self._partial_connection = False
-                return False
+                # 根据项目要求"不采用任何降级处理，直接报错"
+                raise RuntimeError("所有关键代理创建失败，无法连接")
             
             # 尝试获取机器人信息（如果memory_proxy可用）
             robot_name = "unknown"
@@ -337,11 +335,14 @@ class NAOqiRobotInterface(HardwareInterface):
             
             return True
             
-        except Exception as e:
+        except RuntimeError as e:
+            # RuntimeError直接重新抛出，符合"直接报错"要求
             logger.error(f"连接机器人失败: {e}")
-            self._connected = False
-            self._partial_connection = False
-            return False
+            raise  # 重新抛出RuntimeError，不进行任何降级处理
+        except Exception as e:
+            # 其他异常转换为RuntimeError抛出，不返回False降级处理
+            logger.error(f"连接机器人失败（异常）: {e}")
+            raise RuntimeError(f"连接机器人失败: {e}")
     
     def _create_proxy_safe(self, proxy_name: str, service_name: str):
         """安全创建代理，支持部分硬件连接
@@ -709,8 +710,10 @@ class NAOqiRobotInterface(HardwareInterface):
             return True
             
         except Exception as e:
-            logger.error(f"断开连接失败: {e}")
-            return False
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"断开连接失败: {e}")
     
     def is_connected(self) -> bool:
         """检查是否连接"""
@@ -744,24 +747,26 @@ class NAOqiRobotInterface(HardwareInterface):
     def set_joint_position(self, joint: RobotJoint, position: float) -> bool:
         """设置单个关节位置
         
-        根据项目要求"部分硬件连接就可以工作"，检查运动代理是否可用。
-        如果运动代理不可用，返回False并记录警告。
+        根据项目要求"不采用任何降级处理，直接报错"：
+        1. 机器人未连接时抛出RuntimeError
+        2. 运动代理不可用时抛出RuntimeError
+        3. 未知关节时抛出RuntimeError
+        4. 执行失败时抛出RuntimeError
+        
+        注意：虽然方法签名返回bool，但实际会抛出异常。
         """
         try:
             if not self._connected:
-                logger.error("机器人未连接")
-                return False
+                raise RuntimeError("机器人未连接，无法设置关节位置")
             
-            # 检查运动代理是否可用（部分连接情况）
+            # 检查运动代理是否可用
             if self.motion_proxy is None:
-                logger.warning("运动代理不可用（部分硬件连接模式），无法设置关节位置")
-                return False
+                raise RuntimeError("运动代理不可用，无法设置关节位置")
             
             # 获取NAOqi关节名称
             joint_name = self._joint_mapping.get(joint)
             if not joint_name:
-                logger.error(f"未知的关节: {joint}")
-                return False
+                raise RuntimeError(f"未知的关节: {joint}")
             
             # 设置关节角度（弧度）
             # NAOqi期望角度为弧度
@@ -769,24 +774,29 @@ class NAOqiRobotInterface(HardwareInterface):
             return True
             
         except Exception as e:
-            logger.error(f"设置关节位置失败: {e}")
-            return False
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"设置关节位置失败: {e}")
     
     def set_joint_positions(self, positions: Dict[RobotJoint, float]) -> bool:
         """设置多个关节位置
         
-        根据项目要求"部分硬件连接就可以工作"，检查运动代理是否可用。
-        如果运动代理不可用，返回False并记录警告。
+        根据项目要求"不采用任何降级处理，直接报错"：
+        1. 机器人未连接时抛出RuntimeError
+        2. 运动代理不可用时抛出RuntimeError
+        3. 没有有效关节映射时抛出RuntimeError
+        4. 执行失败时抛出RuntimeError
+        
+        注意：虽然方法签名返回bool，但实际会抛出异常。
         """
         try:
             if not self._connected:
-                logger.error("机器人未连接")
-                return False
+                raise RuntimeError("机器人未连接，无法设置关节位置")
             
-            # 检查运动代理是否可用（部分连接情况）
+            # 检查运动代理是否可用
             if self.motion_proxy is None:
-                logger.warning("运动代理不可用（部分硬件连接模式），无法设置关节位置")
-                return False
+                raise RuntimeError("运动代理不可用，无法设置关节位置")
             
             # 转换为NAOqi格式
             joint_names = []
@@ -799,16 +809,17 @@ class NAOqiRobotInterface(HardwareInterface):
                     joint_angles.append(angle)
             
             if not joint_names:
-                logger.error("没有有效的关节映射")
-                return False
+                raise RuntimeError("没有有效的关节映射")
             
             # 设置多个关节角度
             self.motion_proxy.setAngles(joint_names, joint_angles, 0.1)
             return True
             
         except Exception as e:
-            logger.error(f"设置多个关节位置失败: {e}")
-            return False
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"设置多个关节位置失败: {e}")
     
     def get_joint_state(self, joint: RobotJoint) -> Optional[JointState]:
         """获取单个关节状态
@@ -819,8 +830,8 @@ class NAOqiRobotInterface(HardwareInterface):
         try:
             joint_name = self._joint_mapping.get(joint)
             if not joint_name:
-                logger.warning(f"未知的关节: {joint}，无法获取状态")
-                return None  # 返回None，表示关节未知
+                # 根据项目要求"不采用任何降级处理，直接报错"
+                raise RuntimeError(f"未知的关节: {joint}，无法获取状态")
             
             with self._cache_lock:
                 joint_angles = self._sensor_cache.get("joint_angles", {})
@@ -847,8 +858,10 @@ class NAOqiRobotInterface(HardwareInterface):
                 return state
                 
         except Exception as e:
-            logger.error(f"获取关节状态失败: {e}")
-            return None  # 返回None，表示获取失败
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"获取关节状态失败: {e}")
     
     def get_all_joint_states(self) -> Dict[RobotJoint, JointState]:
         """获取所有关节状态
@@ -894,8 +907,10 @@ class NAOqiRobotInterface(HardwareInterface):
             return states
             
         except Exception as e:
-            logger.error(f"获取所有关节状态失败: {e}")
-            return {}  # 返回空字典，表示获取失败
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"获取所有关节状态失败: {e}")
 
 
 class ROS2RobotInterface(HardwareInterface):
@@ -982,7 +997,7 @@ class ROS2RobotInterface(HardwareInterface):
         try:
             logger.info("连接到ROS2机器人...")
             
-            # 尝试导入ROS2库
+            # 尝试导入ROS2库 - 根据项目要求"不采用任何降级处理，直接报错"
             try:
                 import rclpy  # type: ignore
                 from rclpy.node import Node  # type: ignore
@@ -991,12 +1006,22 @@ class ROS2RobotInterface(HardwareInterface):
                 from cv_bridge import CvBridge  # type: ignore
                 ROS2_AVAILABLE = True
             except ImportError as e:
-                logger.error(f"ROS2库未安装，无法连接: {e}")
-                ROS2_AVAILABLE = False
-                return False
+                error_msg = (
+                    f"ROS2库导入失败: {e}\n"
+                    "ROS2是真实机器人控制的核心依赖，必需依赖缺失。\n"
+                    "根据项目要求'不采用任何降级处理，直接报错'，硬件接口依赖缺失时抛出异常。\n"
+                    "请安装以下ROS2包以使用ROS2机器人功能：\n"
+                    "1. rclpy (ROS2 Python客户端库)\n"
+                    "2. sensor_msgs (传感器消息)\n"
+                    "3. trajectory_msgs (轨迹消息)\n"
+                    "4. cv_bridge (OpenCV桥接器)\n"
+                    "安装命令: sudo apt install ros-<distro>-rclpy ros-<distro>-sensor-msgs"
+                )
+                logger.error(error_msg)
+                raise RuntimeError(error_msg)
             
             if not ROS2_AVAILABLE:
-                return False
+                raise RuntimeError("ROS2库初始化失败，ROS2_AVAILABLE标志未正确设置")
             
             # 初始化ROS2
             rclpy.init()
@@ -1066,9 +1091,14 @@ class ROS2RobotInterface(HardwareInterface):
             logger.info("ROS2机器人连接成功")
             return True
             
-        except Exception as e:
+        except RuntimeError as e:
+            # RuntimeError直接重新抛出，符合"直接报错"要求
             logger.error(f"连接ROS2机器人失败: {e}")
-            return False
+            raise  # 重新抛出RuntimeError，不进行任何降级处理
+        except Exception as e:
+            # 其他异常转换为RuntimeError抛出，不返回False降级处理
+            logger.error(f"连接ROS2机器人失败（异常）: {e}")
+            raise RuntimeError(f"连接ROS2机器人失败: {e}")
     
     def _joint_state_callback(self, msg):
         """关节状态回调"""
@@ -1209,7 +1239,13 @@ class ROS2RobotInterface(HardwareInterface):
         logger.info("ROS2自旋线程结束")
     
     def disconnect(self) -> bool:
-        """断开连接"""
+        """断开连接
+        
+        根据项目要求"不采用任何降级处理，直接报错"：
+        断开连接失败时抛出RuntimeError。
+        
+        注意：虽然方法签名返回bool，但实际会抛出异常。
+        """
         try:
             self._connected = False
             
@@ -1223,8 +1259,10 @@ class ROS2RobotInterface(HardwareInterface):
             return True
             
         except Exception as e:
-            logger.error(f"断开ROS2连接失败: {e}")
-            return False
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"断开ROS2连接失败: {e}")
     
     def is_connected(self) -> bool:
         """检查是否连接"""
@@ -1266,18 +1304,32 @@ class ROS2RobotInterface(HardwareInterface):
                     return None  # 返回None
                     
         except Exception as e:
-            logger.error(f"获取传感器数据失败: {e}")
-            return None  # 返回None
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"获取传感器数据失败: {e}")
     
     def set_joint_position(self, joint: RobotJoint, position: float) -> bool:
         """设置关节位置"""
         return self.set_joint_positions({joint: position})
     
     def set_joint_positions(self, positions: Dict[RobotJoint, float]) -> bool:
-        """设置多个关节位置"""
+        """设置多个关节位置
+        
+        根据项目要求"不采用任何降级处理，直接报错"：
+        1. 机器人未连接时抛出RuntimeError
+        2. 关节命令发布器不可用时抛出RuntimeError
+        3. 没有有效关节时抛出RuntimeError
+        4. 执行失败时抛出RuntimeError
+        
+        注意：虽然方法签名返回bool，但实际会抛出异常。
+        """
         try:
-            if not self._connected or not self.joint_command_pub:
-                return False
+            if not self._connected:
+                raise RuntimeError("机器人未连接，无法设置关节位置")
+            
+            if not self.joint_command_pub:
+                raise RuntimeError("关节命令发布器不可用，无法设置关节位置")
             
             # 创建轨迹消息
             import rclpy  # type: ignore
@@ -1301,8 +1353,7 @@ class ROS2RobotInterface(HardwareInterface):
                     point.positions.append(pos)
             
             if not msg.joint_names:
-                logger.error("没有有效的关节可以控制")
-                return False
+                raise RuntimeError("没有有效的关节可以控制")
             
             point.time_from_start = rclpy.duration.Duration(seconds=1.0).to_msg()
             msg.points.append(point)
@@ -1313,8 +1364,10 @@ class ROS2RobotInterface(HardwareInterface):
             return True
             
         except Exception as e:
-            logger.error(f"设置ROS2关节位置失败: {e}")
-            return False
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"设置ROS2关节位置失败: {e}")
     
     def get_joint_state(self, joint: RobotJoint) -> Optional[JointState]:
         """获取关节状态"""
@@ -1322,15 +1375,17 @@ class ROS2RobotInterface(HardwareInterface):
             # 使用关节映射获取ROS2关节名称
             joint_name = self._joint_mapping.get(joint)
             if not joint_name:
-                logger.warning(f"找不到关节映射: {joint}，尝试使用默认名称")
-                joint_name = joint.value
+                # 根据项目要求"不采用任何降级处理，直接报错"
+                raise RuntimeError(f"找不到关节映射: {joint}，无法获取关节状态")
             
             with self._joint_states_lock:
                 return self._joint_states.get(joint_name)
                 
         except Exception as e:
-            logger.error(f"获取关节状态失败: {e}")
-            return None  # 返回None
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"获取关节状态失败: {e}")
     
     def get_all_joint_states(self) -> Dict[RobotJoint, JointState]:
         """获取所有关节状态"""
@@ -1354,8 +1409,10 @@ class ROS2RobotInterface(HardwareInterface):
             return states
             
         except Exception as e:
-            logger.error(f"获取所有关节状态失败: {e}")
-            return {}  # 返回空字典
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"获取所有关节状态失败: {e}")
 
 
 class RealRobotManager:
@@ -1367,16 +1424,22 @@ class RealRobotManager:
         self.lock = threading.Lock()
         logger.info("真实机器人管理器初始化完成")
     
-    def create_interface(self, config: RobotConnectionConfig) -> Optional[HardwareInterface]:
-        """创建机器人接口"""
+    def create_interface(self, config: RobotConnectionConfig) -> HardwareInterface:
+        """创建机器人接口
+        
+        根据项目要求"不采用任何降级处理，直接报错"：
+        1. 不支持的机器人类型时抛出RuntimeError
+        2. 创建接口失败时抛出RuntimeError
+        
+        注意：方法签名不再返回Optional，总是返回HardwareInterface或抛出异常。
+        """
         try:
             if config.robot_type in [RealRobotType.NAO, RealRobotType.PEPPER]:
                 interface = NAOqiRobotInterface(config)
             elif config.robot_type == RealRobotType.UNIVERSAL_ROBOT:
                 interface = ROS2RobotInterface(config)
             else:
-                logger.error(f"不支持的机器人类型: {config.robot_type}")
-                return None  # 返回None
+                raise RuntimeError(f"不支持的机器人类型: {config.robot_type}")
             
             with self.lock:
                 interface_id = f"{config.robot_type.value}_{config.host}_{config.port}"
@@ -1386,25 +1449,25 @@ class RealRobotManager:
             return interface
             
         except Exception as e:
-            logger.error(f"创建机器人接口失败: {e}")
-            return None  # 返回None
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"创建机器人接口失败: {e}")
     
     def connect_robot(self, config: RobotConnectionConfig) -> Dict[str, Any]:
-        """连接机器人"""
+        """连接机器人
+        
+        根据项目要求"不采用任何降级处理，直接报错"：
+        连接失败时抛出RuntimeError。
+        
+        成功时返回连接信息字典。
+        """
         try:
             interface = self.create_interface(config)
-            if not interface:
-                return {
-                    "success": False,
-                    "error": "创建接口失败"
-                }
+            # create_interface现在总是返回接口或抛出异常，不需要检查None
             
             connected = interface.connect()
-            if not connected:
-                return {
-                    "success": False,
-                    "error": "连接机器人失败"
-                }
+            # interface.connect()现在成功时返回True，失败时抛出RuntimeError
             
             return {
                 "success": True,
@@ -1414,42 +1477,40 @@ class RealRobotManager:
             }
             
         except Exception as e:
-            logger.error(f"连接机器人失败: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"连接机器人失败: {e}")
     
     def disconnect_robot(self, interface_id: str) -> Dict[str, Any]:
-        """断开机器人连接"""
+        """断开机器人连接
+        
+        根据项目要求"不采用任何降级处理，直接报错"：
+        1. 接口不存在时抛出RuntimeError
+        2. 断开连接失败时抛出RuntimeError
+        
+        成功时返回断开连接信息字典。
+        """
         try:
             with self.lock:
                 interface = self.interfaces.get(interface_id)
                 if not interface:
-                    return {
-                        "success": False,
-                        "error": f"接口 {interface_id} 不存在"
-                    }
+                    raise RuntimeError(f"接口 {interface_id} 不存在")
                 
                 disconnected = interface.disconnect()
-                if disconnected:
-                    del self.interfaces[interface_id]
-                    return {
-                        "success": True,
-                        "message": f"已断开接口 {interface_id}"
-                    }
-                else:
-                    return {
-                        "success": False,
-                        "error": "断开连接失败"
-                    }
+                # interface.disconnect()现在成功时返回True，失败时抛出RuntimeError
+                
+                del self.interfaces[interface_id]
+                return {
+                    "success": True,
+                    "message": f"已断开接口 {interface_id}"
+                }
                 
         except Exception as e:
-            logger.error(f"断开机器人连接失败: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"断开机器人连接失败: {e}")
     
     def list_interfaces(self) -> Dict[str, Any]:
         """列出所有接口"""
@@ -1471,6 +1532,374 @@ class RealRobotManager:
 
 # 全局真实机器人管理器实例
 _real_robot_manager = None
+
+
+class UniversalRobotAdapter(HardwareInterface):
+    """通用机器人适配器
+    
+    将通用控制命令适配到不同厂家型号的人形机器人。
+    支持一次训练，兼容控制所有不同型号人形机器人。
+    """
+    
+    def __init__(self, target_interface: HardwareInterface, robot_config: Dict[str, Any]):
+        """
+        初始化通用机器人适配器
+        
+        参数:
+            target_interface: 目标机器人硬件接口
+            robot_config: 机器人配置，包含关节映射、运动范围等
+        """
+        super().__init__(simulation_mode=False)
+        self.target_interface = target_interface
+        self.robot_config = robot_config
+        self._interface_type = f"universal_adapter_{target_interface.interface_type}"
+        
+        # 机器人型号信息（必须先设置，因为后面会用到）
+        self.robot_model = robot_config.get("robot_model", "unknown")
+        self.manufacturer = robot_config.get("manufacturer", "unknown")
+        
+        # 从配置中提取关节映射 - 将字符串键转换为RobotJoint枚举
+        raw_joint_mapping = robot_config.get("joint_mapping", {})
+        self.joint_mapping = self._convert_string_keys_to_robot_joint(raw_joint_mapping)
+        self.inverse_joint_mapping = {v: k for k, v in self.joint_mapping.items()}
+        
+        # 运动范围限制 - 同样转换键
+        raw_joint_limits = robot_config.get("joint_limits", {})
+        self.joint_limits = self._convert_string_keys_to_robot_joint(raw_joint_limits)
+        
+        # 几何参数 - 用于运动学计算和兼容性适配
+        self.geometry_params = robot_config.get("geometry_params", {})
+        if not self.geometry_params:
+            # 根据机器人型号提供不同的默认几何参数
+            self.geometry_params = self._get_default_geometry_params(self.robot_model)
+            logger.warning(f"未提供几何参数，使用{self.robot_model}机器人默认尺寸")
+        
+        logger.info(f"初始化通用机器人适配器，目标接口: {target_interface.interface_type}，机器人型号: {self.robot_model}")
+    
+    def _convert_string_keys_to_robot_joint(self, input_dict: Dict[str, Any]) -> Dict[RobotJoint, Any]:
+        """将字典的字符串键转换为RobotJoint枚举
+        
+        参数:
+            input_dict: 输入字典，键为关节名称字符串
+        
+        返回:
+            转换后的字典，键为RobotJoint枚举
+        """
+        if not input_dict:
+            return {}
+        
+        result = {}
+        for key_str, value in input_dict.items():
+            try:
+                # 尝试将字符串转换为RobotJoint枚举
+                if isinstance(key_str, str):
+                    # 首先尝试直接匹配枚举值
+                    try:
+                        robot_joint = RobotJoint(key_str)
+                    except ValueError:
+                        # 如果直接匹配失败，尝试不区分大小写匹配
+                        key_lower = key_str.lower()
+                        for joint in RobotJoint:
+                            if joint.value.lower() == key_lower:
+                                robot_joint = joint
+                                break
+                        else:
+                            # 如果还是找不到，记录警告并使用字符串作为键
+                            logger.warning(f"无法将字符串 '{key_str}' 转换为RobotJoint枚举，将跳过此键")
+                            continue
+                elif isinstance(key_str, RobotJoint):
+                    # 已经是RobotJoint枚举，直接使用
+                    robot_joint = key_str
+                else:
+                    logger.warning(f"不支持的键类型: {type(key_str)}，将跳过此键")
+                    continue
+                
+                result[robot_joint] = value
+                
+            except Exception as e:
+                logger.warning(f"转换键 '{key_str}' 时发生错误: {e}")
+                continue
+        
+        logger.debug(f"将 {len(input_dict)} 个键转换为RobotJoint枚举，成功转换 {len(result)} 个")
+        return result
+    
+    def _get_default_geometry_params(self, robot_model: str) -> Dict[str, float]:
+        """获取默认几何参数（根据机器人型号）
+        
+        参数:
+            robot_model: 机器人型号字符串
+            
+        返回:
+            几何参数字典
+        """
+        # 根据机器人型号返回不同的默认几何参数
+        robot_model_lower = robot_model.lower()
+        
+        if "nao" in robot_model_lower:
+            # NAO机器人（SoftBank Robotics）
+            return {
+                "upper_arm_length": 0.15,
+                "lower_arm_length": 0.15,
+                "upper_leg_length": 0.20,
+                "lower_leg_length": 0.20,
+                "torso_height": 0.40,
+                "shoulder_width": 0.10,
+                "hip_width": 0.10,
+                "foot_length": 0.15,
+                "foot_width": 0.07,
+                "total_height": 0.58,
+                "weight": 5.5
+            }
+        elif "pepper" in robot_model_lower:
+            # Pepper机器人（SoftBank Robotics）
+            return {
+                "upper_arm_length": 0.20,
+                "lower_arm_length": 0.20,
+                "upper_leg_length": 0.25,
+                "lower_leg_length": 0.25,
+                "torso_height": 0.50,
+                "shoulder_width": 0.15,
+                "hip_width": 0.15,
+                "foot_length": 0.20,
+                "foot_width": 0.10,
+                "total_height": 1.21,
+                "weight": 28.0
+            }
+        elif "atlas" in robot_model_lower:
+            # Boston Dynamics Atlas
+            return {
+                "upper_arm_length": 0.35,
+                "lower_arm_length": 0.35,
+                "upper_leg_length": 0.45,
+                "lower_leg_length": 0.45,
+                "torso_height": 0.60,
+                "shoulder_width": 0.25,
+                "hip_width": 0.25,
+                "foot_length": 0.30,
+                "foot_width": 0.15,
+                "total_height": 1.50,
+                "weight": 89.0
+            }
+        elif "sophia" in robot_model_lower:
+            # Hanson Robotics Sophia
+            return {
+                "upper_arm_length": 0.25,
+                "lower_arm_length": 0.25,
+                "upper_leg_length": 0.30,
+                "lower_leg_length": 0.30,
+                "torso_height": 0.45,
+                "shoulder_width": 0.18,
+                "hip_width": 0.18,
+                "foot_length": 0.22,
+                "foot_width": 0.12,
+                "total_height": 1.10,
+                "weight": 20.0
+            }
+        else:
+            # 未知型号，使用通用人形机器人默认值
+            logger.warning(f"未知机器人型号 '{robot_model}'，使用通用人形机器人默认尺寸")
+            return {
+                "upper_arm_length": 0.20,
+                "lower_arm_length": 0.20,
+                "upper_leg_length": 0.25,
+                "lower_leg_length": 0.25,
+                "torso_height": 0.45,
+                "shoulder_width": 0.12,
+                "hip_width": 0.12,
+                "foot_length": 0.18,
+                "foot_width": 0.09,
+                "total_height": 1.00,
+                "weight": 25.0
+            }
+    
+    def get_interface_info(self) -> Dict[str, Any]:
+        """获取接口信息"""
+        base_info = super().get_interface_info()
+        
+        # 将RobotJoint枚举键转换为字符串用于JSON序列化
+        joint_mapping_str = {k.value if isinstance(k, RobotJoint) else str(k): v 
+                           for k, v in self.joint_mapping.items()}
+        joint_limits_str = {k.value if isinstance(k, RobotJoint) else str(k): v 
+                          for k, v in self.joint_limits.items()}
+        
+        # 获取几何信息
+        geometry_info = self.get_robot_geometry_info()
+        
+        adapter_info = {
+            "adapter_type": "universal_robot_adapter",
+            "target_interface": self.target_interface.get_interface_info(),
+            "joint_mapping": joint_mapping_str,
+            "joint_limits": joint_limits_str,
+            "joint_mapping_count": len(self.joint_mapping),
+            "joint_limits_count": len(self.joint_limits),
+            "robot_model": self.robot_model,
+            "manufacturer": self.manufacturer,
+            "geometry_params": self.geometry_params,
+            "has_kinematics": True,
+            "kinematics_methods": ["calculate_forward_kinematics"],
+            "description": f"通用机器人适配器，支持跨厂家型号兼容控制 - {self.robot_model} ({self.manufacturer})"
+        }
+        adapter_info.update(geometry_info)
+        base_info.update(adapter_info)
+        return base_info
+    
+    def connect(self) -> bool:
+        """连接硬件 - 转发到目标接口"""
+        return self.target_interface.connect()
+    
+    def disconnect(self) -> bool:
+        """断开连接 - 转发到目标接口"""
+        return self.target_interface.disconnect()
+    
+    def is_connected(self) -> bool:
+        """检查连接状态 - 转发到目标接口"""
+        return self.target_interface.is_connected()
+    
+    def get_sensor_data(self, sensor_type: SensorType) -> Optional[Any]:
+        """获取传感器数据 - 转发到目标接口"""
+        return self.target_interface.get_sensor_data(sensor_type)
+    
+    def set_joint_position(self, joint: RobotJoint, position: float) -> bool:
+        """设置关节位置 - 应用关节映射和限制"""
+        # 应用关节映射
+        mapped_joint = self.joint_mapping.get(joint, joint)
+        
+        # 应用关节限制
+        if joint in self.joint_limits:
+            limits = self.joint_limits[joint]
+            position = max(limits.get("min", -3.14), min(position, limits.get("max", 3.14)))
+        
+        # 转发到目标接口
+        return self.target_interface.set_joint_position(mapped_joint, position)
+    
+    def set_joint_positions(self, positions: Dict[RobotJoint, float]) -> bool:
+        """设置多个关节位置 - 应用关节映射和限制"""
+        mapped_positions = {}
+        for joint, position in positions.items():
+            # 应用关节映射
+            mapped_joint = self.joint_mapping.get(joint, joint)
+            
+            # 应用关节限制
+            if joint in self.joint_limits:
+                limits = self.joint_limits[joint]
+                position = max(limits.get("min", -3.14), min(position, limits.get("max", 3.14)))
+            
+            mapped_positions[mapped_joint] = position
+        
+        # 转发到目标接口
+        return self.target_interface.set_joint_positions(mapped_positions)
+    
+    def get_joint_state(self, joint: RobotJoint) -> Optional[JointState]:
+        """获取关节状态 - 应用反向关节映射"""
+        mapped_joint = self.joint_mapping.get(joint, joint)
+        state = self.target_interface.get_joint_state(mapped_joint)
+        
+        # 如果需要，可以在这里进行单位转换等适配
+        return state
+    
+    def get_all_joint_states(self) -> Dict[RobotJoint, JointState]:
+        """获取所有关节状态 - 应用反向关节映射"""
+        all_states = self.target_interface.get_all_joint_states()
+        
+        # 应用反向关节映射
+        adapted_states = {}
+        for joint, state in all_states.items():
+            # 查找原始关节
+            original_joint = self.inverse_joint_mapping.get(joint, joint)
+            adapted_states[original_joint] = state
+        
+        return adapted_states
+    
+    def calculate_forward_kinematics(self, joint_angles: Dict[RobotJoint, float], 
+                                   end_effector: str = "right_hand") -> List[float]:
+        """计算正运动学（基于几何参数）
+        
+        参数:
+            joint_angles: 关节角度字典（弧度）
+            end_effector: 末端执行器名称，如 "right_hand", "left_hand", "right_foot"
+            
+        返回:
+            末端执行器位置 [x, y, z]（米）
+        """
+        try:
+            import numpy as np
+            
+            # 使用几何参数进行计算
+            upper_arm = self.geometry_params.get("upper_arm_length", 0.15)
+            lower_arm = self.geometry_params.get("lower_arm_length", 0.15)
+            upper_leg = self.geometry_params.get("upper_leg_length", 0.20)
+            lower_leg = self.geometry_params.get("lower_leg_length", 0.20)
+            torso_height = self.geometry_params.get("torso_height", 0.40)
+            shoulder_width = self.geometry_params.get("shoulder_width", 0.10)
+            
+            # 基础位置（骨盆高度）
+            base_z = torso_height / 2  # 近似骨盆高度
+            
+            if end_effector == "right_hand":
+                # 获取相关关节角度（使用关节映射后的关节）
+                shoulder_pitch = joint_angles.get(RobotJoint.R_SHOULDER_PITCH, 0.0)
+                shoulder_roll = joint_angles.get(RobotJoint.R_SHOULDER_ROLL, 0.0)
+                elbow_yaw = joint_angles.get(RobotJoint.R_ELBOW_YAW, 0.0)
+                elbow_roll = joint_angles.get(RobotJoint.R_ELBOW_ROLL, 0.0)
+                
+                # 简化运动学计算（基于几何参数）
+                # 实际应使用完整的DH参数或URDF模型
+                x = shoulder_width/2 + upper_arm * np.sin(shoulder_pitch) * np.cos(shoulder_roll)
+                y = -shoulder_width/2 + upper_arm * np.sin(shoulder_roll)
+                z = base_z + upper_arm * np.cos(shoulder_pitch) * np.cos(shoulder_roll)
+                
+                return [float(x), float(y), float(z)]
+                
+            elif end_effector == "left_hand":
+                shoulder_pitch = joint_angles.get(RobotJoint.L_SHOULDER_PITCH, 0.0)
+                shoulder_roll = joint_angles.get(RobotJoint.L_SHOULDER_ROLL, 0.0)
+                
+                x = -shoulder_width/2 + upper_arm * np.sin(shoulder_pitch) * np.cos(shoulder_roll)
+                y = shoulder_width/2 + upper_arm * np.sin(shoulder_roll)
+                z = base_z + upper_arm * np.cos(shoulder_pitch) * np.cos(shoulder_roll)
+                
+                return [float(x), float(y), float(z)]
+                
+            elif end_effector == "right_foot":
+                # 腿部运动学
+                hip_pitch = joint_angles.get(RobotJoint.R_HIP_PITCH, 0.0)
+                knee_pitch = joint_angles.get(RobotJoint.R_KNEE_PITCH, 0.0)
+                ankle_pitch = joint_angles.get(RobotJoint.R_ANKLE_PITCH, 0.0)
+                
+                # 简化腿部运动学
+                leg_length = upper_leg + lower_leg
+                leg_angle = hip_pitch + knee_pitch + ankle_pitch
+                
+                x = 0.05  # 脚部相对于髋部的前后偏移
+                y = -shoulder_width/2
+                z = base_z - leg_length * np.cos(leg_angle)
+                
+                return [float(x), float(y), float(z)]
+                
+            else:
+                # 不支持的其他末端执行器
+                raise RuntimeError(f"不支持的末端执行器: {end_effector}")
+                
+        except Exception as e:
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"计算正运动学时发生错误: {e}")
+    
+    def get_robot_geometry_info(self) -> Dict[str, Any]:
+        """获取机器人几何信息
+        
+        用于兼容性评估和参数适配。
+        """
+        return {
+            "robot_model": self.robot_model,
+            "manufacturer": self.manufacturer,
+            "geometry_params": self.geometry_params,
+            "joint_mapping_count": len(self.joint_mapping),
+            "joint_limits_count": len(self.joint_limits),
+            "description": f"通用机器人适配器 - {self.robot_model} ({self.manufacturer})"
+        }
+
 
 def get_real_robot_manager() -> RealRobotManager:
     """获取全局真实机器人管理器实例"""

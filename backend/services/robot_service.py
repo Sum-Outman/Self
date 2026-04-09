@@ -646,19 +646,42 @@ class RobotService(BaseService):
         return False
 
     def _setup_simulation_only(self) -> bool:
-        """设置纯模拟模式（无硬件）- 根据项目要求"禁止使用虚拟数据"，此模式已禁用
+        """设置无硬件模式 - 允许系统在不连接硬件的情况下运行
         
         根据项目要求：
         1. 禁止使用任何假数据和虚拟数据
         2. 不采用任何降级处理，直接报错
         3. 部分硬件连接就可以工作
+        4. 在不连接硬件情况下AGI系统可以正常运行
         
-        此方法现在抛出异常，禁止使用纯模拟模式。
+        此方法创建NullHardwareInterface，允许系统启动，但硬件功能调用将直接报错。
         """
-        raise RuntimeError(
-            "纯模拟模式已禁用。根据项目要求'禁止使用任何假数据和虚拟数据'，不能使用模拟数据。\n"
-            "请确保硬件连接正常，或系统配置为支持部分硬件连接工作模式。"
-        )
+        try:
+            from hardware.robot_controller import NullHardwareInterface
+            
+            # 创建无硬件接口
+            null_interface = NullHardwareInterface()
+            self._hardware_manager.interfaces["null_hardware"] = null_interface
+            
+            # 更新机器人状态
+            self._robot_status["hardware_available"] = False
+            self._robot_status["simulation_enabled"] = False
+            self._robot_status["operation_mode"] = "no_hardware"
+            self._robot_status["hardware_error"] = "无硬件模式：系统在不连接硬件情况下运行，硬件功能不可用"
+            
+            # 尝试连接（将返回False，但允许系统继续运行）
+            connection_result = null_interface.connect()
+            self.logger.info(f"无硬件模式初始化成功，连接结果: {connection_result}")
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"无硬件模式初始化失败: {e}")
+            self._robot_status["hardware_available"] = False
+            self._robot_status["simulation_enabled"] = False
+            self._robot_status["operation_mode"] = "hardware_unavailable"
+            self._robot_status["hardware_error"] = f"无硬件模式初始化失败: {e}"
+            return False
 
     def _update_simulated_data(self):
         """更新时间戳 - 不再生成真实数据，只更新时间戳"""

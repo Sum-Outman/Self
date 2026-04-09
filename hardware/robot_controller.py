@@ -2817,12 +2817,19 @@ class NullHardwareInterface(HardwareInterface):
         return self._simulation_mode
     
     def connect(self) -> bool:
-        """连接硬件（无硬件模式直接报错）"""
-        raise RuntimeError(
-            "无硬件模式：无法连接真实硬件\n"
-            "根据项目要求'不采用任何降级处理，直接报错'，硬件不可用时直接报错。\n"
-            "请连接真实硬件或使用物理仿真环境。"
+        """连接硬件（无硬件模式返回True，表示无硬件模式已成功启用）
+        
+        根据项目要求：
+        1. 不连接硬件情况下AGI系统可以正常运行 - 返回True允许系统启动
+        2. 不采用任何降级处理，直接报错 - 硬件功能调用将抛出RuntimeError
+        """
+        self.logger.warning(
+            "无硬件模式：系统将在无硬件条件下运行\n"
+            "根据项目要求'在不连接硬件情况下AGI系统可以正常运行'，无硬件模式已启用。\n"
+            "根据'不采用任何降级处理，直接报错'要求，硬件功能调用将直接抛出RuntimeError。"
         )
+        self._connected = True  # 标记为已连接（无硬件模式）
+        return True
     
     def disconnect(self) -> bool:
         """断开连接（无硬件模式始终返回True）"""

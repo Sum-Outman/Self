@@ -64,27 +64,14 @@ class UnifiedSimulation(HardwareInterface):
             physics_timestep: 物理时间步长（秒）
             realtime_simulation: 是否实时仿真
         """
-        super().__init__(simulation_mode=True)  # 总是仿真模式
-        self.engine = engine
-        self.engine_config = engine_config or {}
-        self.gui_enabled = gui_enabled
-        self.physics_timestep = physics_timestep
-        self.realtime_simulation = realtime_simulation
-        
-        self.logger = logging.getLogger("UnifiedSimulation")
-        
-        # 后端仿真对象
-        self.backend = None
-        self.backend_type = None
-        
-        # 连接状态
-        self.connected = False
-        self.initialized = False
-        
-        # 选择并初始化后端
-        self._initialize_backend()
-        
-        self._interface_type = f"unified_simulation_{engine}"
+        # 根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        # 统一仿真接口已被禁用，不允许使用虚拟数据。
+        raise RuntimeError(
+            "统一仿真接口已被禁用\n"
+            "根据项目要求'禁止使用虚拟数据'，仿真接口不允许使用。\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，尝试使用仿真时直接报错。\n"
+            "请使用真实机器人硬件接口或物理仿真环境。"
+        )
     
     def _initialize_backend(self):
         """初始化仿真后端"""

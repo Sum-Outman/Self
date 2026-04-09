@@ -40,24 +40,41 @@ from backend.db_models.user import User
 
 logger = logging.getLogger(__name__)
 
-# 超参数优化导入
+# 超参数优化导入 - 必需依赖，缺失时直接报错
 try:
     from training.architecture_search_hpo import HyperparameterOptimizer, SearchAlgorithm
     HPO_AVAILABLE = True
 except ImportError as e:
-    HPO_AVAILABLE = False
-    logger.warning(f"超参数优化模块不可用: {e}")
-    HyperparameterOptimizer = None
-    SearchAlgorithm = None
+    # 根据项目要求"不采用任何降级处理，直接报错"
+    error_msg = (
+        f"超参数优化模块导入失败: {e}\n"
+        "超参数优化是AGI训练系统的核心功能，必需依赖缺失。\n"
+        "请确保以下模块已安装：\n"
+        "1. 训练模块: training.architecture_search_hpo\n"
+        "2. 依赖项: 检查requirements.txt中的训练相关依赖\n"
+        "3. 模块路径: 确保training目录在Python路径中\n"
+        "根据项目要求'必需依赖缺失时直接报错'，训练服务无法启动。"
+    )
+    logger.error(error_msg)
+    raise RuntimeError(error_msg)
 
-# 分布式训练导入
+# 分布式训练导入 - 必需依赖，缺失时直接报错
 try:
     from training.distributed_training import DistributedTrainer
     DISTRIBUTED_TRAINING_AVAILABLE = True
 except ImportError as e:
-    DISTRIBUTED_TRAINING_AVAILABLE = False
-    logger.warning(f"分布式训练模块不可用: {e}")
-    DistributedTrainer = None
+    # 根据项目要求"不采用任何降级处理，直接报错"
+    error_msg = (
+        f"分布式训练模块导入失败: {e}\n"
+        "分布式训练是AGI训练系统的核心功能，必需依赖缺失。\n"
+        "请确保以下模块已安装：\n"
+        "1. 训练模块: training.distributed_training\n"
+        "2. 依赖项: 检查requirements.txt中的分布式训练相关依赖\n"
+        "3. 模块路径: 确保training目录在Python路径中\n"
+        "根据项目要求'必需依赖缺失时直接报错'，训练服务无法启动。"
+    )
+    logger.error(error_msg)
+    raise RuntimeError(error_msg)
 
 
 class TrainingService:

@@ -854,21 +854,75 @@ async def create_index(
     db: Session = Depends(get_db),
     user = Depends(get_current_admin),  # 需要管理员权限
 ):
-    """创建索引"""
+    """创建索引 - 真实实现"""
     try:
-        # 这里应该实现实际的索引创建逻辑
-        # 目前返回模拟响应
+        # 验证表存在
+        from sqlalchemy import text
         
+        # 检查表是否存在
+        if "sqlite" in Config.DATABASE_URL.lower():
+            check_query = text("""
+                SELECT COUNT(*) FROM sqlite_master 
+                WHERE type='table' AND name=:table_name
+            """)
+        else:
+            # PostgreSQL/MySQL
+            check_query = text("""
+                SELECT COUNT(*) FROM information_schema.tables 
+                WHERE table_name = :table_name
+            """)
+        
+        result = db.execute(check_query, {"table_name": table_name})
+        table_exists = result.scalar() > 0
+        
+        if not table_exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"表 '{table_name}' 不存在"
+            )
+        
+        # 生成索引名称
         index_name = request.index_name or f"idx_{table_name}_{'_'.join(request.columns)}"
+        
+        # 构建SQL语句
+        columns_str = ", ".join(request.columns)
+        unique_clause = "UNIQUE " if request.unique else ""
+        concurrent_clause = "CONCURRENTLY " if request.concurrent and "postgresql" in Config.DATABASE_URL.lower() else ""
+        
+        # 根据数据库类型生成SQL
+        if "sqlite" in Config.DATABASE_URL.lower():
+            # SQLite不支持CONCURRENTLY和USING子句的某些选项
+            create_sql = text(f"""
+                CREATE {unique_clause}INDEX IF NOT EXISTS {index_name}
+                ON {table_name} ({columns_str})
+            """)
+        elif "postgresql" in Config.DATABASE_URL.lower():
+            create_sql = text(f"""
+                CREATE {unique_clause}INDEX {concurrent_clause}IF NOT EXISTS {index_name}
+                ON {table_name} USING {request.using} ({columns_str})
+            """)
+        else:
+            # MySQL或其他数据库
+            create_sql = text(f"""
+                CREATE {unique_clause}INDEX {index_name}
+                ON {table_name} ({columns_str})
+            """)
+        
+        # 执行创建索引
+        db.execute(create_sql)
+        db.commit()
         
         return {
             "success": True,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "index_name": index_name,
-            "message": f"索引 {index_name} 创建成功（模拟操作）",
-            "warning": "这是模拟操作，实际环境中会执行SQL创建索引"
+            "message": f"索引 {index_name} 创建成功",
+            "warning": None  # 移除模拟警告
         }
+    except HTTPException:
+        raise
     except Exception as e:
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"创建索引失败: {str(e)}"
@@ -882,18 +936,61 @@ async def drop_index(
     db: Session = Depends(get_db),
     user = Depends(get_current_admin),  # 需要管理员权限
 ):
-    """删除索引"""
+    """删除索引 - 真实实现"""
     try:
-        # 这里应该实现实际的索引删除逻辑
-        # 目前返回模拟响应
+        from sqlalchemy import text
+        
+        # 验证表和索引存在
+        if "sqlite" in Config.DATABASE_URL.lower():
+            # 检查索引是否存在
+            check_query = text("""
+                SELECT COUNT(*) FROM sqlite_master 
+                WHERE type='index' AND name=:index_name AND tbl_name=:table_name
+            """)
+        elif "postgresql" in Config.DATABASE_URL.lower():
+            check_query = text("""
+                SELECT COUNT(*) FROM pg_indexes 
+                WHERE indexname = :index_name AND tablename = :table_name
+            """)
+        else:
+            # MySQL
+            check_query = text("""
+                SELECT COUNT(*) FROM information_schema.statistics 
+                WHERE index_name = :index_name AND table_name = :table_name
+            """)
+        
+        result = db.execute(check_query, {"index_name": index_name, "table_name": table_name})
+        index_exists = result.scalar() > 0
+        
+        if not index_exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"索引 '{index_name}' 在表 '{table_name}' 中不存在"
+            )
+        
+        # 构建删除SQL
+        if "sqlite" in Config.DATABASE_URL.lower():
+            drop_sql = text(f"DROP INDEX IF EXISTS {index_name}")
+        elif "postgresql" in Config.DATABASE_URL.lower():
+            drop_sql = text(f"DROP INDEX IF EXISTS {index_name}")
+        else:
+            # MySQL
+            drop_sql = text(f"DROP INDEX {index_name} ON {table_name}")
+        
+        # 执行删除索引
+        db.execute(drop_sql)
+        db.commit()
         
         return {
             "success": True,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "message": f"索引 {index_name} 删除成功（模拟操作）",
-            "warning": "这是模拟操作，实际环境中会执行SQL删除索引"
+            "message": f"索引 {index_name} 删除成功",
+            "warning": None  # 移除模拟警告
         }
+    except HTTPException:
+        raise
     except Exception as e:
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"删除索引失败: {str(e)}"
@@ -906,11 +1003,12 @@ async def run_database_maintenance(
     db: Session = Depends(get_db),
     user = Depends(get_current_admin),  # 需要管理员权限
 ):
-    """执行数据库维护"""
+    """执行数据库维护 - 真实实现"""
     try:
-        # 这里应该实现实际的数据库维护逻辑
-        # 目前返回模拟响应
+        from sqlalchemy import text
+        import time
         
+        # 支持的维护类型
         maintenance_types = ["vacuum", "analyze", "reindex"]
         if maintenance_type not in maintenance_types:
             raise HTTPException(
@@ -918,16 +1016,72 @@ async def run_database_maintenance(
                 detail=f"不支持的维护类型: {maintenance_type}。支持的维护类型: {', '.join(maintenance_types)}"
             )
         
+        # 记录开始时间
+        start_time = time.time()
+        
+        # 根据数据库类型和执行维护操作
+        if "sqlite" in Config.DATABASE_URL.lower():
+            # SQLite
+            if maintenance_type == "vacuum":
+                db.execute(text("VACUUM"))
+            elif maintenance_type == "analyze":
+                db.execute(text("ANALYZE"))
+            elif maintenance_type == "reindex":
+                db.execute(text("REINDEX"))
+        elif "postgresql" in Config.DATABASE_URL.lower():
+            # PostgreSQL
+            if maintenance_type == "vacuum":
+                db.execute(text("VACUUM"))
+            elif maintenance_type == "analyze":
+                db.execute(text("ANALYZE"))
+            elif maintenance_type == "reindex":
+                # PostgreSQL需要指定要重新索引的对象
+                # 这里重新索引所有索引
+                db.execute(text("REINDEX DATABASE CURRENT"))
+        else:
+            # MySQL
+            if maintenance_type == "vacuum":
+                # MySQL使用OPTIMIZE TABLE
+                # 获取所有表
+                tables_query = text("SHOW TABLES")
+                tables_result = db.execute(tables_query)
+                tables = [row[0] for row in tables_result]
+                
+                for table in tables:
+                    db.execute(text(f"OPTIMIZE TABLE {table}"))
+            elif maintenance_type == "analyze":
+                # MySQL使用ANALYZE TABLE
+                tables_query = text("SHOW TABLES")
+                tables_result = db.execute(tables_query)
+                tables = [row[0] for row in tables_result]
+                
+                for table in tables:
+                    db.execute(text(f"ANALYZE TABLE {table}"))
+            elif maintenance_type == "reindex":
+                # MySQL不支持REINDEX，使用OPTIMIZE TABLE
+                tables_query = text("SHOW TABLES")
+                tables_result = db.execute(tables_query)
+                tables = [row[0] for row in tables_result]
+                
+                for table in tables:
+                    db.execute(text(f"OPTIMIZE TABLE {table}"))
+        
+        db.commit()
+        
+        # 计算执行时间
+        execution_time_ms = round((time.time() - start_time) * 1000, 2)
+        
         return {
             "success": True,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "message": f"数据库维护操作 '{maintenance_type}' 执行成功（模拟操作）",
-            "execution_time_ms": 100,  # 模拟执行时间
-            "warning": "这是模拟操作，实际环境中会执行SQL维护命令"
+            "message": f"数据库维护操作 '{maintenance_type}' 执行成功",
+            "execution_time_ms": execution_time_ms,
+            "warning": None  # 移除模拟警告
         }
     except HTTPException:
         raise
     except Exception as e:
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"执行数据库维护失败: {str(e)}"

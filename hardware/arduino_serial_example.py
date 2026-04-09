@@ -56,8 +56,17 @@ class ArduinoRobotInterface(SerialInterface):
             baudrate: 波特率 (建议115200)
             simulation_mode: 是否为模拟模式
         """
+        # 检查模拟模式（根据项目要求"禁止使用虚拟数据"）
+        if simulation_mode:
+            raise RuntimeError(
+                "Arduino机器人接口不支持模拟模式\n"
+                "根据项目要求'禁止使用虚拟数据'，不允许使用模拟模式。\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，尝试使用模拟模式时直接报错。\n"
+                "请连接真实Arduino硬件或使用物理仿真环境。"
+            )
+        
         super().__init__(port=port, baudrate=baudrate, 
-                        simulation_mode=simulation_mode)
+                        simulation_mode=False)  # 强制为False
         self._interface_type = "arduino_robot"
         
         # Arduino特定配置

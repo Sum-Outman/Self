@@ -59,51 +59,14 @@ class GazeboSimulation(HardwareInterface):
             gui_enabled: 是否启用GUI可视化
             physics_timestep: 物理时间步长（秒）
         """
-        super().__init__()  # 不再支持模拟模式
-        self.ros_master_uri = ros_master_uri
-        self.gazebo_world = gazebo_world
-        self.robot_model = robot_model
-        self.gui_enabled = gui_enabled
-        self.physics_timestep = physics_timestep
-        
-        self.logger = logging.getLogger("GazeboSimulation")
-        
-        # ROS和Gazebo相关对象
-        self.ros_client = None
-        self.gazebo_client = None
-        self.robot_name = None
-        
-        # 机器人参数
-        self.robot_joint_indices = {}  # 关节名到索引的映射
-        self.robot_joint_limits = {}  # 关节限制
-        self.robot_sensors = {}  # 传感器数据
-        
-        # 仿真状态
-        self.simulation_running = False
-        self.simulation_thread = None
-        self.simulation_time = 0.0
-        
-        # 关节状态缓存
-        self.joint_states = {}
-        
-        # 检查ROS和Gazebo连接状态
-        self.ros_available = False
-        self.gazebo_available = False
-        
-        # 检查roslibpy是否可用
-        try:
-            import roslibpy  # type: ignore
-            self.roslibpy_available = True
-            self.logger.info("roslibpy可用，准备连接Gazebo仿真环境")
-        except ImportError as e:
-            self.roslibpy_available = False
-            self.logger.error(f"roslibpy不可用: {e}")
-            self.logger.warning("Gazebo仿真环境不可用，Gazebo功能将不可用（项目要求禁止使用虚拟数据）")
-        
-        # 连接状态
-        self.connected = False
-        
-        self._interface_type = "gazebo"
+        # 根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        # Gazebo仿真接口已被禁用，不允许使用虚拟数据。
+        raise RuntimeError(
+            "Gazebo仿真接口已被禁用\n"
+            "根据项目要求'禁止使用虚拟数据'，仿真接口不允许使用。\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，尝试使用仿真时直接报错。\n"
+            "请使用真实机器人硬件接口或物理仿真环境。"
+        )
     
     def connect(self) -> bool:
         """连接Gazebo仿真环境

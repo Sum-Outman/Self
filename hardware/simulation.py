@@ -54,45 +54,14 @@ class PyBulletSimulation(HardwareInterface):
             physics_timestep: 物理时间步长（秒）
             realtime_simulation: 是否实时仿真
         """
-        super().__init__(simulation_mode=True)  # 总是仿真模式
-        self.gui_enabled = gui_enabled
-        self.physics_timestep = physics_timestep
-        self.realtime_simulation = realtime_simulation
-        self.logger = logging.getLogger("PyBulletSimulation")
-        
-        # PyBullet相关对象
-        self.physics_client = None
-        self.robot_id = None
-        self.ground_id = None
-        self.object_ids = []
-        
-        # 机器人参数
-        self.robot_joint_indices = {}  # 关节名到索引的映射
-        self.robot_joint_limits = {}  # 关节限制
-        self.robot_sensors = {}  # 传感器数据
-        
-        # 仿真状态
-        self.simulation_running = False
-        self.simulation_thread = None
-        self.simulation_time = 0.0
-        
-        # 关节状态缓存
-        self.joint_states = {}
-        
-        # 连接状态
-        self.connected = False
-        
-        # 检查PyBullet是否可用
-        try:
-            import pybullet  # type: ignore
-            self.pybullet_available = True
-            self.logger.info("PyBullet可用，准备初始化仿真环境")
-        except ImportError as e:
-            self.pybullet_available = False
-            self.logger.error(f"PyBullet不可用: {e}")
-            self.logger.warning("PyBullet仿真环境将无法使用")
-        
-        self._interface_type = "pybullet"
+        # 根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
+        # PyBullet仿真接口已被禁用，不允许使用虚拟数据。
+        raise RuntimeError(
+            "PyBullet仿真接口已被禁用\n"
+            "根据项目要求'禁止使用虚拟数据'，仿真接口不允许使用。\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，尝试使用仿真时直接报错。\n"
+            "请使用真实机器人硬件接口或物理仿真环境（如Gazebo）。"
+        )
     
     def connect(self) -> bool:
         """连接PyBullet仿真环境"""

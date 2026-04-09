@@ -504,11 +504,17 @@ class AdvancedRobotController:
             return None  # 返回None
     
     def execute_trajectory(self, trajectory_id: str):
-        """执行轨迹"""
+        """执行轨迹
+        
+        根据项目要求"不采用任何降级处理，直接报错"：
+        1. 轨迹不存在时抛出RuntimeError
+        2. 执行失败时抛出RuntimeError
+        
+        成功时不返回值（或返回True）。
+        """
         try:
             if trajectory_id not in self.trajectories:
-                logger.error(f"轨迹不存在: {trajectory_id}")
-                return False
+                raise RuntimeError(f"轨迹不存在: {trajectory_id}")
             
             trajectory = self.trajectories[trajectory_id]
             joint = trajectory.joint
@@ -517,11 +523,12 @@ class AdvancedRobotController:
             self.active_trajectories[joint] = trajectory_id
             
             logger.info(f"开始执行轨迹: {trajectory_id} (关节: {joint.value})")
-            return True
             
         except Exception as e:
-            logger.error(f"执行轨迹失败: {e}")
-            return False
+            if isinstance(e, RuntimeError):
+                raise  # 重新抛出RuntimeError
+            else:
+                raise RuntimeError(f"执行轨迹失败: {e}")
     
     def stop_trajectory(self, joint: RobotJoint):
         """停止轨迹"""
@@ -1091,12 +1098,10 @@ class BalanceController:
             # 如果距离小于安全边界，则不稳定
             return min_distance > self.zmp_margin
             
-        except Exception:
-            # 如果凸包计算失败，使用简单边界框检查
-            x_min, y_min = np.min(self.support_polygon, axis=0) + self.zmp_margin
-            x_max, y_max = np.max(self.support_polygon, axis=0) - self.zmp_margin
-            
-            return (x_min <= zmp[0] <= x_max) and (y_min <= zmp[1] <= y_max)
+        except Exception as e:
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            # 凸包计算失败时抛出RuntimeError，不执行降级处理
+            raise RuntimeError(f"平衡稳定性检查失败（凸包计算错误）: {e}")
     
     def _point_to_line_distance(self, point: np.ndarray, line_p1: np.ndarray, line_p2: np.ndarray) -> float:
         """计算点到线段的距离"""
