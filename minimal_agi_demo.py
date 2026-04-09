@@ -519,10 +519,10 @@ class MinimalAGIDemo:
 
         # 基本信息
         print(
-            f"\n环境状态: {'✅ 正常' if test_results['environment_setup'] else '❌ 失败'}"
+            f"\n环境状态: {'正常' if test_results['environment_setup'] else '失败'}"
         )
         print(
-            f"模型实例化: {'✅ 成功' if test_results['model_instantiation'] else '❌ 失败'}"
+            f"模型实例化: {'成功' if test_results['model_instantiation'] else '失败'}"
         )
 
         if test_results["model_instantiation"]:
@@ -539,7 +539,7 @@ class MinimalAGIDemo:
         # 能力测试结果
         print("\n能力测试结果:")
         for test in test_results.get("tests", []):
-            status = "✅ 通过" if test["success"] else "⚠️ 警告"
+            status = "通过" if test["success"] else "警告"
             print(f"  {status} {test['name']}: {test['message']}")
 
         # 摘要
@@ -557,12 +557,12 @@ class MinimalAGIDemo:
         if test_results.get("errors"):
             print("\n错误列表:")
             for error in test_results["errors"]:
-                print(f"  ❌ {error}")
+                print(f"  错误: {error}")
 
         if test_results.get("warnings"):
             print("\n警告列表:")
             for warning in test_results["warnings"]:
-                print(f"  ⚠️ {warning}")
+                print(f"  警告: {warning}")
 
         # 总体评估
         overall_success = (
@@ -572,7 +572,7 @@ class MinimalAGIDemo:
         )
 
         print(
-            f"\n总体状态: {'✅ 最小可行AGI版本验证成功' if overall_success else '⚠️ 部分验证通过，需要改进'}"
+            f"\n总体状态: {'最小可行AGI版本验证成功' if overall_success else '部分验证通过，需要改进'}"
         )
 
         if overall_success:

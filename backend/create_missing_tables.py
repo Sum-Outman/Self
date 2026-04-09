@@ -64,7 +64,7 @@ def main():
     missing_tables = [t for t in registered_tables if t not in existing_tables]
 
     if not missing_tables:
-        logger.info("✅ 所有表已存在，无需创建")
+        logger.info("所有表已存在，无需创建")
         return True
 
     logger.info(f"发现 {len(missing_tables)} 个缺失的表:")
@@ -88,7 +88,7 @@ def main():
             logger.error(f"创建表后仍然缺失的表: {still_missing}")
             return False
         else:
-            logger.info(f"✅ 成功创建了 {len(missing_tables)} 个缺失的表")
+            logger.info(f"成功创建了 {len(missing_tables)} 个缺失的表")
             return True
 
     except Exception as e:

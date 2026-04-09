@@ -528,7 +528,7 @@ class RobotService(BaseService):
         }
 
     def _initialize_hardware_interface(self):
-        """初始化硬件接口 - 优先尝试真实硬件，然后仿真，最后纯模拟"""
+        """初始化硬件接口 - 根据项目要求，只尝试真实硬件接口，失败时直接报错"""
         try:
             # 尝试导入硬件模块
             from hardware.robot_controller import HardwareManager
@@ -536,52 +536,29 @@ class RobotService(BaseService):
             # 创建硬件管理器
             self._hardware_manager = HardwareManager()
 
-            # 获取配置中的仿真优先级
-            simulation_priority = self.config.extra_config.get(
-                "simulation_priority", ["ros2_real", "gazebo", "pybullet", "simulation"]
-            )
-            use_hardware_fallback = self.config.extra_config.get(
-                "use_hardware_fallback", True
-            )
-
-            # 按优先级尝试不同接口
-            for interface_type in simulation_priority:
-                success = False
-
-                if interface_type == "ros2_real":
-                    success = self._try_ros2_interface()
-                elif interface_type == "gazebo":
-                    success = self._try_gazebo_interface()
-                elif interface_type == "pybullet":
-                    success = self._try_pybullet_interface()
-                elif interface_type == "simulation":
-                    success = self._setup_simulation_only()
-
-                if success:
-                    self.logger.info(f"成功使用 {interface_type} 接口")
-                    return
-
-            # 所有接口都失败
-            self.logger.warning("所有硬件接口初始化失败，硬件不可用")
-            self._robot_status["hardware_available"] = False
-            self._robot_status["simulation_enabled"] = False
-            self._robot_status["operation_mode"] = "hardware_unavailable"
-            self._robot_status["hardware_error"] = (
-                "所有硬件接口初始化失败，请检查硬件连接"
-            )
+            # 根据项目要求"不采用任何降级处理，直接报错"，只尝试真实硬件接口
+            self.logger.info("尝试真实硬件接口...")
+            
+            # 直接尝试真实硬件接口，不使用降级处理
+            if not self._try_ros2_interface():
+                # 根据项目要求"不采用任何降级处理，直接报错"
+                raise RuntimeError(
+                    "真实硬件接口初始化失败。\n"
+                    "根据项目要求'不采用任何降级处理，直接报错'，不允许尝试仿真或模拟接口。"
+                )
 
         except ImportError as e:
-            self.logger.warning(f"硬件模块导入失败: {e}，硬件不可用")
-            self._robot_status["hardware_available"] = False
-            self._robot_status["simulation_enabled"] = False
-            self._robot_status["operation_mode"] = "hardware_unavailable"
-            self._robot_status["hardware_error"] = f"硬件模块导入失败: {e}"
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"硬件模块导入失败: {e}\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，硬件模块不可用时不允许降级处理。"
+            ) from e
         except Exception as e:
-            self.logger.error(f"硬件接口初始化失败: {e}，硬件不可用")
-            self._robot_status["hardware_available"] = False
-            self._robot_status["simulation_enabled"] = False
-            self._robot_status["operation_mode"] = "hardware_unavailable"
-            self._robot_status["hardware_error"] = f"硬件接口初始化失败: {e}"
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"硬件接口初始化失败: {e}\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，硬件接口失败时不允许降级处理。"
+            ) from e
 
     def _try_ros2_interface(self) -> bool:
         """尝试ROS2真实机器人接口"""

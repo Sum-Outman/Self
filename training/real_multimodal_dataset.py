@@ -1204,18 +1204,18 @@ class RealMultimodalDataset(Dataset):
 
         except ImportError as e:
             error_msg = f"Parquet格式支持需要pandas和pyarrow库: {e}"
-            if self.strict_mode:
-                raise RuntimeError(f"{error_msg}。严格模式下需要安装依赖")
-            else:
-                logger.warning(f"{error_msg}，尝试从其他格式加载")
-                self._try_fallback_formats()
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"{error_msg}\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，不允许尝试其他格式的回退。"
+            )
         except Exception as e:
             error_msg = f"加载Parquet文件失败: {e}"
-            if self.strict_mode:
-                raise RuntimeError(f"{error_msg}。严格模式下不允许使用真实数据")
-            else:
-                logger.warning(f"{error_msg}，尝试从其他格式加载")
-                self._try_fallback_formats()
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"{error_msg}\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，不允许尝试其他格式的回退。"
+            )
 
     def _load_from_tfrecord(self):
         """从TFRecord格式加载数据"""
@@ -1288,34 +1288,15 @@ class RealMultimodalDataset(Dataset):
                 self._try_fallback_formats()
 
     def _try_fallback_formats(self):
-        """尝试其他数据格式的回退策略"""
-        logger.info("尝试回退到其他数据格式...")
-
-        # 1. 尝试从文件夹结构加载
-        try:
-            logger.info("尝试从文件夹结构加载数据")
-            self._load_from_folder_structure()
-            if len(self.data_items) > 0:
-                logger.info(f"从文件夹结构成功加载 {len(self.data_items)} 个样本")
-                return
-        except Exception as e:
-            logger.warning(f"从文件夹结构加载失败: {e}")
-
-        # 2. 尝试从标注文件加载
-        if self.annotations_path.exists():
-            try:
-                logger.info(f"尝试从标注文件加载: {self.annotations_path}")
-                self._load_from_annotations()
-                if len(self.data_items) > 0:
-                    logger.info(f"从标注文件成功加载 {len(self.data_items)} 个样本")
-                    return
-            except Exception as e:
-                logger.warning(f"从标注文件加载失败: {e}")
-
-        # 3. 检查是否有其他数据源
-        logger.warning("所有回退格式尝试均失败")
-        # 最终回退到合成数据
-        self._load_synthetic_data()
+        """尝试其他数据格式的回退策略
+        
+        根据项目要求"不采用任何降级处理，直接报错"，此方法已禁用，将直接抛出RuntimeError。
+        """
+        # 根据项目要求"不采用任何降级处理，直接报错"
+        raise RuntimeError(
+            "数据格式加载失败时尝试回退已被禁用。\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，不允许尝试其他格式的回退。"
+        )
 
     def _load_from_folder_structure(self):
         """从文件夹结构加载多模态数据"""
@@ -1588,11 +1569,11 @@ def test_real_multimodal_dataset():
         batch = next(iter(dataloader))
         logger.info(f"批次键: {list(batch.keys())}")
 
-        logger.info("✅ 真实多模态数据集测试通过")
+        logger.info("真实多模态数据集测试通过")
         return True
 
     except Exception as e:
-        logger.error(f"❌ 真实多模态数据集测试失败: {e}")
+        logger.error(f"真实多模态数据集测试失败: {e}")
         import traceback
 
         traceback.print_exc()

@@ -293,7 +293,7 @@ class ErrorHandler {
    */
   private showErrorToast(message: string, errorType: string): void {
     // 根据错误类型设置不同的样式
-    let icon = '❌';
+    let icon = '';
     let duration = 4000;
     
     switch (errorType) {

@@ -349,7 +349,7 @@ if cors_origins == [""]:
     # 默认值：开发环境允许所有来源，生产环境应该限制
     if os.getenv("ENVIRONMENT", "development") == "production":
         cors_origins = []  # 生产环境默认不允许任何来源
-        logger.error("❌ 生产环境CORS配置错误：未设置CORS_ALLOW_ORIGINS环境变量")
+        logger.error("生产环境CORS配置错误：未设置CORS_ALLOW_ORIGINS环境变量")
         logger.error("   请设置CORS_ALLOW_ORIGINS环境变量，例如：")
         logger.error(
             "   CORS_ALLOW_ORIGINS=https://your-frontend.com,https://admin.your-frontend.com"
@@ -358,7 +358,7 @@ if cors_origins == [""]:
     else:
         cors_origins = ["*"]  # 开发环境允许所有来源
         logger.warning(
-            "⚠️ 开发环境CORS配置：允许所有来源。生产环境请设置CORS_ALLOW_ORIGINS环境变量"
+            "开发环境CORS配置：允许所有来源。生产环境请设置CORS_ALLOW_ORIGINS环境变量"
         )
 
 app.add_middleware(
@@ -431,7 +431,7 @@ app.middleware("http")(https_redirect_middleware)
 # 可信主机配置
 allowed_hosts = os.getenv("ALLOWED_HOSTS", "*").split(",")
 if allowed_hosts == ["*"] and os.getenv("ENVIRONMENT", "development") == "production":
-    logger.error("❌ 生产环境安全错误：ALLOWED_HOSTS设置为'*'，存在安全风险")
+    logger.error("生产环境安全错误：ALLOWED_HOSTS设置为'*'，存在安全风险")
     logger.error("   请设置ALLOWED_HOSTS环境变量，例如：")
     logger.error("   ALLOWED_HOSTS=your-api.com,api.your-api.com")
 
@@ -558,7 +558,7 @@ def get_memory_system():
 
     # 检查app.state是否存在
     if not hasattr(app, "state"):
-        logger.error(f"❌ app对象没有state属性！app: {app}, 类型: {type(app)}")
+        logger.error(f"app对象没有state属性！app: {app}, 类型: {type(app)}")
         return None  # 返回None
 
     # 从app.state获取记忆系统实例
@@ -576,11 +576,11 @@ def get_memory_system():
 
     if memory_system is None:
         logger.warning(
-            f"⚠️ get_memory_system() 返回 None (所有方法都失败), {caller_info}"
+            f"get_memory_system() 返回 None (所有方法都失败), {caller_info}"
         )
     else:
         logger.info(
-            f"✅ get_memory_system() 从app.state返回有效的记忆系统实例, {caller_info}"
+            f"get_memory_system() 从app.state返回有效的记忆系统实例, {caller_info}"
         )
         # 如果从app.state获取成功，更新全局状态管理器
         set_memory_system(memory_system)
@@ -618,7 +618,7 @@ def get_laplacian_enhanced_system():
     global laplacian_enhanced_system
     if laplacian_enhanced_system is not None:
         logger.info(
-            f"✅ get_laplacian_enhanced_system() 从全局变量返回有效的拉普拉斯增强系统实例, {caller_info}"
+            f"get_laplacian_enhanced_system() 从全局变量返回有效的拉普拉斯增强系统实例, {caller_info}"
         )
         return laplacian_enhanced_system
 
@@ -630,7 +630,7 @@ def get_laplacian_enhanced_system():
 
     # 检查app.state是否存在
     if not hasattr(app, "state"):
-        logger.error(f"❌ app对象没有state属性！app: {app}, 类型: {type(app)}")
+        logger.error(f"app对象没有state属性！app: {app}, 类型: {type(app)}")
         return None  # 返回None
 
     # 从app.state获取拉普拉斯增强系统实例
@@ -648,11 +648,11 @@ def get_laplacian_enhanced_system():
 
     if system is None:
         logger.warning(
-            f"⚠️ get_laplacian_enhanced_system() 返回 None (所有方法都失败), {caller_info}"
+            f"get_laplacian_enhanced_system() 返回 None (所有方法都失败), {caller_info}"
         )
     else:
         logger.info(
-            f"✅ get_laplacian_enhanced_system() 从app.state返回有效的拉普拉斯增强系统实例, {caller_info}"
+            f"get_laplacian_enhanced_system() 从app.state返回有效的拉普拉斯增强系统实例, {caller_info}"
         )
         # 如果从app.state获取成功，更新全局变量
         laplacian_enhanced_system = system
@@ -1789,17 +1789,17 @@ def initialize_systems():
             )
             if global_memory_system is None:
                 logger.error(
-                    "❌ 记忆系统初始化后全局状态管理器中的memory_system仍为None！"
+                    "记忆系统初始化后全局状态管理器中的memory_system仍为None！"
                 )
             else:
-                logger.info("✅ 记忆系统初始化成功，全局状态管理器中的实例有效")
+                logger.info("记忆系统初始化成功，全局状态管理器中的实例有效")
 
             # 同时检查app.state（向后兼容）
             logger.info(f"app.state.memory_system = {app.state.memory_system}")
 
             # 修复：更新全局变量memory_system（解决line 447的memory_system = None问题）
             memory_system = global_memory_system
-            logger.info(f"✅ 已更新全局变量memory_system: {memory_system}")
+            logger.info(f"已更新全局变量memory_system: {memory_system}")
 
         except Exception as e:
             logger.error(f"记忆系统初始化失败: {e}")
@@ -1813,7 +1813,7 @@ def initialize_systems():
             # 修复：失败时也更新全局变量
             memory_system = None
             logger.error(
-                "❌ 记忆系统初始化失败，app.state.memory_system和全局状态管理器中的memory_system已设为None"
+                "记忆系统初始化失败，app.state.memory_system和全局状态管理器中的memory_system已设为None"
             )
             raise
         finally:
@@ -1884,11 +1884,11 @@ def initialize_systems():
                 
                 # 创建拉普拉斯增强系统实例（更新全局变量）
                 laplacian_enhanced_system = LaplacianEnhancedSystem(laplacian_config)
-                logger.info("✅ 拉普拉斯增强系统初始化成功")
+                logger.info("拉普拉斯增强系统初始化成功")
                 
                 # 将拉普拉斯增强系统集成到app.state
                 app.state.laplacian_enhanced_system = laplacian_enhanced_system
-                logger.info("✅ 拉普拉斯增强系统已设置到app.state")
+                logger.info("拉普拉斯增强系统已设置到app.state")
                 print(f"拉普拉斯增强系统实例: {laplacian_enhanced_system}")
                 logger.info(f"初始化后 laplacian_enhanced_system = {laplacian_enhanced_system}")
                 
@@ -1933,9 +1933,9 @@ def initialize_systems():
             f"系统初始化完成，app.state.memory_system = {app.state.memory_system}"
         )
         if app.state.memory_system is None:
-            logger.error("❌ 系统初始化完成时app.state.memory_system为None！")
+            logger.error("系统初始化完成时app.state.memory_system为None！")
         else:
-            logger.info("✅ 系统初始化完成时app.state.memory_system有效")
+            logger.info("系统初始化完成时app.state.memory_system有效")
 
         logger.info("系统初始化完成")
 
@@ -2004,7 +2004,7 @@ def initialize_hardware_components():
 
         # 更新硬件初始化标志
         hardware_initialized = True
-        logger.info("✅ 所有硬件组件初始化完成（模型开启后接入模式）")
+        logger.info("所有硬件组件初始化完成（模型开启后接入模式）")
         return True
 
     except Exception as e:
@@ -2070,7 +2070,7 @@ def shutdown_hardware_components():
         motor_controller = None
         hardware_initialized = False
 
-        logger.info("✅ 所有硬件组件已关闭")
+        logger.info("所有硬件组件已关闭")
         return True
 
     except Exception as e:
@@ -2091,9 +2091,9 @@ async def startup_event():
     try:
         logger.info("正在调用 init_concurrency_systems()...")
         init_concurrency_systems()
-        logger.info("✅ 并发系统初始化成功")
+        logger.info("并发系统初始化成功")
     except Exception as e:
-        logger.error(f"❌ 并发系统初始化失败: {e}")
+        logger.error(f"并发系统初始化失败: {e}")
         # 根据项目要求"不采用任何降级处理，直接报错"，但允许系统继续启动
         # 并发系统失败可能导致性能下降，但核心功能应继续运行
 
@@ -2101,9 +2101,9 @@ async def startup_event():
     try:
         logger.info("正在调用 initialize_systems()...")
         initialize_systems()
-        logger.info("✅ 系统初始化成功")
+        logger.info("系统初始化成功")
     except Exception as e:
-        logger.error(f"❌ 系统初始化失败: {e}")
+        logger.error(f"系统初始化失败: {e}")
         # 关键系统初始化失败，记录错误但允许服务启动
         # 根据项目要求"禁止使用虚拟数据"，不提供降级实现
 
@@ -2119,9 +2119,9 @@ async def startup_event():
         }
         serial_service_started = start_serial_data_service(serial_service_config)
         if serial_service_started:
-            logger.info("✅ 串口数据服务启动成功")
+            logger.info("串口数据服务启动成功")
         else:
-            logger.warning("⚠️ 串口数据服务启动失败或已运行")
+            logger.warning("串口数据服务启动失败或已运行")
     except ImportError as e:
         logger.warning(f"串口数据服务导入失败: {e}")
     except Exception as e:
@@ -2134,7 +2134,7 @@ async def startup_event():
         
         # 初始化四元数核心
         quaternion_core = QuaternionCore()
-        logger.info("✅ 四元数核心库加载成功")
+        logger.info("四元数核心库加载成功")
         
         # 存储到应用状态（如果适用）
         if hasattr(app.state, 'quaternion_core'):
@@ -2151,9 +2151,9 @@ async def startup_event():
     memory_system_check = get_memory_system()
     logger.info(f"服务启动完成，get_memory_system() 返回: {memory_system_check}")
     if memory_system_check is None:
-        logger.error("❌ 服务启动完成时get_memory_system()返回None！")
+        logger.error("服务启动完成时get_memory_system()返回None！")
     else:
-        logger.info("✅ 服务启动完成时get_memory_system()返回有效实例")
+        logger.info("服务启动完成时get_memory_system()返回有效实例")
 
     logger.info("Self AGI 后端服务启动完成")
 
@@ -2174,9 +2174,9 @@ async def shutdown_event():
 
         serial_service_stopped = stop_serial_data_service()
         if serial_service_stopped:
-            logger.info("✅ 串口数据服务停止成功")
+            logger.info("串口数据服务停止成功")
         else:
-            logger.warning("⚠️ 串口数据服务停止失败或未运行")
+            logger.warning("串口数据服务停止失败或未运行")
     except ImportError:
         logger.debug("串口数据服务未导入，无需停止")
     except Exception as e:

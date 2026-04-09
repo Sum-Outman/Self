@@ -2814,11 +2814,11 @@ class HyperparameterOptimizer:
 
         except Exception as e:
             self.logger.error(f"进化算法优化失败: {e}")
-            # 降级到随机搜索
-            self.logger.warning("进化算法失败，降级到随机搜索")
-            return self._random_search(
-                objective_function, hyperparameter_space, num_trials
-            )
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"进化算法优化失败: {e}\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，进化算法失败时不允许降级到随机搜索。"
+            ) from e
 
 
 # ============================================================

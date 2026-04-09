@@ -424,11 +424,17 @@ class NetworkConfigurationManager:
             elif platform.system() == "Darwin":
                 self._scan_macos_interfaces()
             else:
-                logger.warning(f"不支持的操作系统: {platform.system()}")
-                self._scan_fallback_interfaces()
+                # 根据项目要求"不采用任何降级处理，直接报错"
+                raise RuntimeError(
+                    f"不支持的操作系统: {platform.system()}\n"
+                    "根据项目要求'不采用任何降级处理，直接报错'，不允许使用备用接口扫描。"
+                )
         except Exception as e:
-            logger.error(f"扫描网络接口时出错: {e}")
-            self._scan_fallback_interfaces()
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"扫描网络接口时出错: {e}\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，不允许使用备用接口扫描。"
+            ) from e
 
         return list(self.interfaces.values())
 
@@ -574,27 +580,15 @@ class NetworkConfigurationManager:
         self._scan_linux_interfaces()  # macOS与Linux类似
 
     def _scan_fallback_interfaces(self):
-        """备用接口扫描方法"""
-        try:
-            # 尝试通过socket获取本地IP
-            hostname = socket.gethostname()
-            local_ip = socket.gethostbyname(hostname)
-
-            interface = NetworkInterface(
-                name="eth0",
-                ip_address=local_ip,
-                netmask="255.255.255.0",
-                gateway="",
-                mac_address="00:00:00:00:00:00",
-                status="active",
-                mtu=1500,
-                speed_mbps=1000,
-                is_up=True,
-                is_wireless=False,
-            )
-            self.interfaces["eth0"] = interface
-        except BaseException:
-            pass  # 已实现
+        """备用接口扫描方法
+        
+        根据项目要求"不采用任何降级处理，直接报错"，此方法已禁用。
+        """
+        # 根据项目要求"不采用任何降级处理，直接报错"
+        raise RuntimeError(
+            "网络接口扫描失败，备用接口扫描已被禁用。\n"
+            "根据项目要求'不采用任何降级处理，直接报错'，不允许使用备用接口扫描。"
+        )
 
     def get_interface(self, name: str) -> Optional[NetworkInterface]:
         """获取指定接口信息"""

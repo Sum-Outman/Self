@@ -377,7 +377,7 @@ if __name__ == "__main__":
     # 运行基准测试（可选）
     # benchmark_quaternion_vs_standard()
 
-    print("\n✅ 四元数神经网络层修复完成！")
+    print("\n四元数神经网络层修复完成！")
     print("   1. 完整的四元数层实现（7个类）")
     print("   2. 配置开关集成（AGIModelConfig.quaternion_neural_network_enabled）")
     print("   3. 集成演示模块（QuaternionIntegrationDemo）")

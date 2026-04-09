@@ -443,7 +443,7 @@ const ConflictResolutionVisualization: React.FC<ConflictResolutionVisualizationP
                   <div className="text-sm text-gray-600">
                     {selectedConflict.resolved ? (
                       <div className="p-3 bg-green-50 border border-green-200 rounded">
-                        <p className="font-medium text-green-800">✅ 冲突已解决</p>
+                        <p className="font-medium text-green-800">冲突已解决</p>
                         <p className="mt-1 text-green-700">
                           使用 {getStrategyText(selectedConflict.resolutionStrategy)} 成功解决了此冲突。
                           相关记忆已更新，系统状态一致。
@@ -451,7 +451,7 @@ const ConflictResolutionVisualization: React.FC<ConflictResolutionVisualizationP
                       </div>
                     ) : (
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
-                        <p className="font-medium text-yellow-800">⚠️ 冲突待解决</p>
+                        <p className="font-medium text-yellow-800">冲突待解决</p>
                         <p className="mt-1 text-yellow-700">
                           建议使用 {getStrategyText(selectedConflict.resolutionStrategy) || '适当的解决策略'}。
                           点击"立即解决"按钮开始解决过程。

@@ -1231,10 +1231,11 @@ class AGITrainer:
 
         except Exception as e:
             self.logger.error(f"分布式训练初始化失败: {e}")
-            # 降级到非分布式训练
-            self.logger.warning("分布式训练失败，降级到非分布式训练")
-            self.config.distributed_enabled = False
-            return self._setup_device()  # 递归调用非分布式版本
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"分布式训练初始化失败: {e}\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，分布式训练失败时不允许降级到非分布式训练。"
+            ) from e
 
     def _apply_gradient_compression(self):
         """应用梯度压缩减少通信开销
@@ -4464,18 +4465,12 @@ class AGITrainer:
                 f"DataLoader优化配置: num_workers={num_workers}, pin_memory={pin_memory}, distributed={                     self.is_distributed}"
             )
         except Exception as e:
-            self.logger.warning(f"DataLoader优化配置失败，降级到简单配置: {e}")
-            # 降级到简单配置
-            train_loader = DataLoader(
-                self.train_dataset,
-                batch_size=self.config.batch_size,
-                shuffle=shuffle and sampler is None,  # 如果有采样器则不洗牌
-                sampler=sampler,
-                num_workers=0,  # 禁用多进程
-                pin_memory=False,  # 禁用pin_memory
-                drop_last=sampler is not None,
-            )
-            self.logger.info("DataLoader使用降级配置: num_workers=0, pin_memory=False")
+            self.logger.error(f"DataLoader优化配置失败: {e}")
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"DataLoader优化配置失败: {e}\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，DataLoader优化配置失败时不允许降级到简单配置。"
+            ) from e
 
         # 训练循环
         for epoch in range(self.current_epoch, self.config.num_epochs):
@@ -9552,20 +9547,12 @@ class AGITrainer:
                 f"评估DataLoader优化配置: num_workers={num_workers}, pin_memory={pin_memory}, distributed={                     self.is_distributed}"
             )
         except Exception as e:
-            self.logger.warning(f"评估DataLoader优化配置失败，降级到简单配置: {e}")
-            # 降级到简单配置
-            eval_loader = DataLoader(
-                self.eval_dataset,
-                batch_size=self.config.batch_size,
-                shuffle=shuffle and sampler is None,  # 如果有采样器则不洗牌
-                sampler=sampler,
-                num_workers=0,  # 禁用多进程
-                pin_memory=False,  # 禁用pin_memory
-                drop_last=sampler is not None and sampler.drop_last,
-            )
-            self.logger.info(
-                "评估DataLoader使用降级配置: num_workers=0, pin_memory=False"
-            )
+            self.logger.error(f"评估DataLoader优化配置失败: {e}")
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"评估DataLoader优化配置失败: {e}\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，评估DataLoader优化配置失败时不允许降级到简单配置。"
+            ) from e
 
         # 初始化指标
         total_loss = 0.0

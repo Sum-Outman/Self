@@ -141,37 +141,22 @@ class SimulationService(BaseService):
         return dependencies
 
     def _initialize_simulation_interfaces(self):
-        """初始化仿真接口"""
-        extra_config = self.config.extra_config
-        fallback_order = extra_config.get(
-            "fallback_order",
-            ["unified_pybullet", "unified_gazebo", "pybullet", "gazebo", "simulation"],
-        )
-
-        # 按回退顺序尝试初始化接口
-        for interface_type in fallback_order:
-            success = False
-
-            if interface_type == "unified_pybullet":
-                success = self._initialize_unified_pybullet_interface()
-            elif interface_type == "unified_gazebo":
-                success = self._initialize_unified_gazebo_interface()
-            elif interface_type == "pybullet":
-                success = self._initialize_pybullet_interface()
-            elif interface_type == "gazebo":
-                success = self._initialize_gazebo_interface()
-            elif interface_type == "simulation":
-                success = self._setup_simulation_only()
-
-            if success:
-                self._active_interface = interface_type
-                self.logger.info(f"成功使用 {interface_type} 接口")
-                return
-
-        # 所有接口都失败
-        self.logger.warning("所有仿真接口初始化失败")
-        self._active_interface = "simulation"
-        self._setup_simulation_only()
+        """初始化仿真接口
+        
+        根据项目要求"不采用任何降级处理，直接报错"，只尝试主要仿真接口，失败时直接报错。
+        """
+        self.logger.info("尝试初始化统一PyBullet仿真接口...")
+        
+        # 根据项目要求"不采用任何降级处理，直接报错"，只尝试主要接口
+        if not self._initialize_unified_pybullet_interface():
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                "统一PyBullet仿真接口初始化失败。\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，不允许尝试其他仿真接口。"
+            )
+        
+        self._active_interface = "unified_pybullet"
+        self.logger.info("成功使用 unified_pybullet 接口")
 
     def _initialize_unified_pybullet_interface(self) -> bool:
         """初始化统一PyBullet仿真接口"""

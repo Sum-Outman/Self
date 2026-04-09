@@ -194,23 +194,7 @@ class TrainingService:
                     "batch_size", config.get("batch_size_per_gpu", 0)
                 )
 
-            # 如果没有从配置中获取到值，使用智能默认值
-            if dataset_size <= 0:
-                # 根据任务类型估计数据集大小
-                if "transformer" in str(db_job.model_id).lower():
-                    dataset_size = 1000000  # 大模型通常使用大数据集
-                else:
-                    dataset_size = 100000  # 中等数据集
 
-            if epochs <= 0:
-                # 根据常见实践设置默认epoch数
-                if (
-                    "pretrain" in str(config).lower()
-                    or "finetune" in str(config).lower()
-                ):
-                    epochs = 10
-                else:
-                    epochs = 50
 
             # 基于进度计算当前epoch
             current_epoch = 0

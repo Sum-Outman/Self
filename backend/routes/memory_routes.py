@@ -55,9 +55,9 @@ def get_memory_system():
     if memory_system is not None:
         # 更新缓存
         _memory_system_cache = memory_system
-        logger.info(f"✅ 从全局状态管理器获取到有效实例，更新缓存: {memory_system}")
+        logger.info(f"从全局状态管理器获取到有效实例，更新缓存: {memory_system}")
     else:
-        logger.warning("❌ 全局状态管理器中的memory_system为None")
+        logger.warning("全局状态管理器中的memory_system为None")
 
     return memory_system
 

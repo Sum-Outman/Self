@@ -245,7 +245,7 @@ const MemoryPage: React.FC = () => {
                     ? 'bg-gray-600 text-gray-600 border border-gray-600'
                     : 'bg-gray-500 text-gray-500 border border-gray-500'
                 }`}>
-                  {memoryStats.system_initialized ? '✅ 系统已初始化' : '⚠️ 系统未初始化'}
+                  {memoryStats.system_initialized ? '系统已初始化' : '系统未初始化'}
                 </span>
               )}
             </div>

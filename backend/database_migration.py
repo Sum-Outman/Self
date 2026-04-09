@@ -143,10 +143,10 @@ def verify_database_integrity():
             logger.warning(f"已注册元数据中缺失的表: {missing_in_metadata}")
 
         if not missing_in_db and not missing_in_metadata:
-            logger.info("✅ 数据库完整性验证通过")
+            logger.info("数据库完整性验证通过")
             return True
         else:
-            logger.warning("⚠️ 数据库完整性验证发现问题")
+            logger.warning("数据库完整性验证发现问题")
             return False
 
     except Exception as e:
@@ -218,7 +218,7 @@ def main():
             logger.error("创建表失败")
             return 1
     else:
-        logger.info("✅ 所有表已存在，无需创建")
+        logger.info("所有表已存在，无需创建")
 
     # 运行迁移脚本
     if not run_migration_scripts():

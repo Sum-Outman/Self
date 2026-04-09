@@ -2100,19 +2100,11 @@ class SelfAGIOrchestrator:
 
         except Exception as e:
             self.logger.error(f"知识增强推理失败: {e}")
-            # 回退到标准推理
-            try:
-                fallback_result = self.reason(
-                    {"query": query, "context": context}, use_advanced_reasoning=True
-                )
-                fallback_result["knowledge_enhanced"] = False
-                fallback_result["error"] = f"知识增强失败: {str(e)}"
-                return fallback_result
-            except Exception as e2:
-                return {
-                    "error": f"知识增强推理失败且回退失败: {str(e)}; {str(e2)}",
-                    "success": False,
-                }
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"知识增强推理失败: {e}\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，不允许回退到标准推理。"
+            ) from e
 
     def query_knowledge_for_decision(
         self, decision_context: Dict[str, Any], options: List[str]

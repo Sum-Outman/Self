@@ -176,14 +176,18 @@ class MultimodalService:
                         ).isoformat(),  # 真实时间戳
                     }
                 except Exception as processor_error:
-                    logger.warning(
-                        f"真实处理器处理失败: {processor_error}，使用增强分析"
-                    )
-                    # 继续使用增强分析作为回退
-
-            # 回退到确定性分析 - 修复版：禁止使用随机数据
-            # 基于文本内容的确定性分析，不使用随机数据
-            # 根据项目要求"禁止使用虚拟数据"，所有值必须基于文本内容计算
+                    logger.error(f"真实处理器处理失败: {processor_error}")
+                    # 根据项目要求"不采用任何降级处理，直接报错"
+                    raise RuntimeError(
+                        f"真实多模态处理器处理失败: {processor_error}\n"
+                        "根据项目要求'不采用任何降级处理，直接报错'，不允许使用增强分析作为回退。"
+                    ) from processor_error
+            else:
+                # 根据项目要求"不采用任何降级处理，直接报错"
+                raise RuntimeError(
+                    "多模态处理器缺少process_text方法。\n"
+                    "根据项目要求'不采用任何降级处理，直接报错'，不允许使用回退分析。"
+                )
 
             def calculate_readability_deterministic(text: str) -> float:
                 """基于文本特征的确定性可读性计算，不使用随机数据"""

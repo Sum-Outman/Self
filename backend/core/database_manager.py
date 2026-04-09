@@ -382,7 +382,7 @@ def main():
         validation = manager.validate_database_schema()
 
         print(
-            f"数据库连接: {'✅ 成功' if validation['connection']['status'] else '❌ 失败'}"
+            f"数据库连接: {'成功' if validation['connection']['status'] else '失败'}"
         )
         if not validation["connection"]["status"]:
             print(f"  消息: {validation['connection']['message']}")
@@ -399,7 +399,7 @@ def main():
             for rec in validation["recommendations"]:
                 print(f"  • {rec}")
 
-        print(f"\n总体状态: {'✅ 正常' if validation['overall'] else '❌ 需要修复'}")
+        print(f"\n总体状态: {'正常' if validation['overall'] else '需要修复'}")
 
     elif args.repair:
         print("=== 数据库修复 ===")
@@ -408,43 +408,43 @@ def main():
         if repair_result["actions"]:
             print("执行的操作:")
             for action in repair_result["actions"]:
-                print(f"  ✅ {action}")
+                print(f"  完成: {action}")
 
         if repair_result["errors"]:
             print("错误:")
             for error in repair_result["errors"]:
-                print(f"  ❌ {error}")
+                print(f"  错误: {error}")
 
         if repair_result["warnings"]:
             print("警告:")
             for warning in repair_result["warnings"]:
-                print(f"  ⚠️ {warning}")
+                print(f"  警告: {warning}")
 
-        print(f"\n修复结果: {'✅ 成功' if repair_result['overall'] else '❌ 失败'}")
+        print(f"\n修复结果: {'成功' if repair_result['overall'] else '失败'}")
 
     elif args.cleanup:
         print("=== 清理遗留迁移脚本 ===")
         success, message = manager.cleanup_legacy_migration_scripts()
         if success:
-            print(f"✅ {message}")
+            print(f"成功: {message}")
         else:
-            print(f"❌ {message}")
+            print(f"失败: {message}")
 
     elif args.create_tables:
         print("=== 创建缺失的表 ===")
         success, message = manager.create_missing_tables()
         if success:
-            print(f"✅ {message}")
+            print(f"成功: {message}")
         else:
-            print(f"❌ {message}")
+            print(f"失败: {message}")
 
     elif args.migrate:
         print("=== 运行Alembic迁移 ===")
         success, message = manager.run_alembic_migration("head")
         if success:
-            print(f"✅ {message}")
+            print(f"成功: {message}")
         else:
-            print(f"❌ {message}")
+            print(f"失败: {message}")
 
     else:
         parser.print_help()

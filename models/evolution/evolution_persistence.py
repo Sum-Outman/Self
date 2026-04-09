@@ -1170,10 +1170,12 @@ class EvolutionPersistenceSystem:
                 pickle.dump(data_package, f)
 
         except Exception as e:
-            logger.warning(f"Pickle保存失败，使用JSON: {e}")
-            # 降级到JSON
-            json_filepath = filepath.replace(".pkl", ".json")
-            self._save_as_json(state, json_filepath)
+            logger.error(f"Pickle保存失败: {e}")
+            # 根据项目要求"不采用任何降级处理，直接报错"
+            raise RuntimeError(
+                f"Pickle保存失败: {e}\n"
+                "根据项目要求'不采用任何降级处理，直接报错'，Pickle保存失败时不允许降级到JSON格式。"
+            ) from e
 
     def _save_summary(self, state: EvolutionState, filepath: str):
         """保存摘要"""

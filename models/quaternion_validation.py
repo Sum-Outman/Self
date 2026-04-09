@@ -706,10 +706,10 @@ def run_pre_training_validation():
 
     # 判断验证是否通过
     if summary["success_rate"] >= 0.75:  # 75%成功率
-        print("\n✅ 四元数模型预训练验证通过!")
+        print("\n四元数模型预训练验证通过!")
         return True
     else:
-        print("\n❌ 四元数模型预训练验证失败!")
+        print("\n四元数模型预训练验证失败!")
         return False
 
 
@@ -726,8 +726,8 @@ if __name__ == "__main__":
         validation_passed = run_pre_training_validation()
 
         if validation_passed:
-            print("\n🎉 四元数全面引入实施方案验证成功完成!")
+            print("\n四元数全面引入实施方案验证成功完成!")
         else:
-            print("\n⚠️  四元数全面引入实施方案验证未通过，需要进一步优化。")
+            print("\n四元数全面引入实施方案验证未通过，需要进一步优化。")
     else:
-        print("\n❌ 四元数验证测试失败，无法进行预训练验证。")
+        print("\n四元数验证测试失败，无法进行预训练验证。")
