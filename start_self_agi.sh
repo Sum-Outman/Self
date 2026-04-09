@@ -442,9 +442,9 @@ case $START_MODE in
     1)
         print_info "启动开发模式..."
         print_info "启动后端开发服务器 (uvicorn)..."
-        gnome-terminal --tab --title="Self AGI 后端 (开发)" -- bash -c "python backend/main.py; exec bash" 2>/dev/null || \
-        xterm -title "Self AGI 后端 (开发)" -e "python backend/main.py; exec bash" 2>/dev/null || \
-        screen -dmS self_agi_backend python backend/main.py
+        gnome-terminal --tab --title="Self AGI 后端 (开发)" -- bash -c "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000; exec bash" 2>/dev/null || \
+        xterm -title "Self AGI 后端 (开发)" -e "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000; exec bash" 2>/dev/null || \
+        screen -dmS self_agi_backend bash -c "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000"
         sleep 3
         print_info "启动前端开发服务器..."
         gnome-terminal --tab --title="Self AGI 前端 (开发)" -- bash -c "cd frontend && npm run dev; exec bash" 2>/dev/null || \
@@ -494,9 +494,9 @@ case $START_MODE in
     3)
         print_info "仅启动后端服务..."
         print_info "启动后端开发服务器..."
-        gnome-terminal --tab --title="Self AGI 后端" -- bash -c "python backend/main.py; exec bash" 2>/dev/null || \
-        xterm -title "Self AGI 后端" -e "python backend/main.py; exec bash" 2>/dev/null || \
-        screen -dmS self_agi_backend python backend/main.py
+        gnome-terminal --tab --title="Self AGI 后端" -- bash -c "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000; exec bash" 2>/dev/null || \
+        xterm -title "Self AGI 后端" -e "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000; exec bash" 2>/dev/null || \
+        screen -dmS self_agi_backend bash -c "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000"
         ;;
     4)
         print_info "仅启动前端服务..."
@@ -508,9 +508,9 @@ case $START_MODE in
     5|*)
         print_info "启动所有服务 (开发模式)..."
         print_info "启动后端开发服务器..."
-        gnome-terminal --tab --title="Self AGI 后端" -- bash -c "python backend/main.py; exec bash" 2>/dev/null || \
-        xterm -title "Self AGI 后端" -e "python backend/main.py; exec bash" 2>/dev/null || \
-        screen -dmS self_agi_backend python backend/main.py
+        gnome-terminal --tab --title="Self AGI 后端" -- bash -c "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000; exec bash" 2>/dev/null || \
+        xterm -title "Self AGI 后端" -e "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000; exec bash" 2>/dev/null || \
+        screen -dmS self_agi_backend bash -c "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000"
         sleep 3
         print_info "启动前端开发服务器..."
         gnome-terminal --tab --title="Self AGI 前端" -- bash -c "cd frontend && npm run dev; exec bash" 2>/dev/null || \

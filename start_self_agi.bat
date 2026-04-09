@@ -451,7 +451,7 @@ goto start_all_dev
 :start_dev_mode
 echo [INFO] 启动开发模式...
 echo [INFO] 启动后端开发服务器 (uvicorn)...
-start "Self AGI 后端 (开发)" cmd /k "python backend/main.py"
+start "Self AGI 后端 (开发)" cmd /k "cd backend & uvicorn main:app --host 0.0.0.0 --port 8000"
 timeout /t 3 /nobreak >nul
 echo [INFO] 启动前端开发服务器...
 start "Self AGI 前端 (开发)" cmd /k "cd frontend && npm run dev"
@@ -494,7 +494,7 @@ goto services_info
 :start_backend_only
 echo [INFO] 仅启动后端服务...
 echo [INFO] 启动后端开发服务器...
-start "Self AGI 后端" cmd /k "python backend/main.py"
+start "Self AGI 后端" cmd /k "cd backend & uvicorn main:app --host 0.0.0.0 --port 8000"
 goto services_info
 
 :start_frontend_only
@@ -506,7 +506,7 @@ goto services_info
 :start_all_dev
 echo [INFO] 启动所有服务 (开发模式)...
 echo [INFO] 启动后端开发服务器...
-start "Self AGI 后端" cmd /k "python backend/main.py"
+start "Self AGI 后端" cmd /k "cd backend & uvicorn main:app --host 0.0.0.0 --port 8000"
 timeout /t 3 /nobreak >nul
 echo [INFO] 启动前端开发服务器...
 start "Self AGI 前端" cmd /k "cd frontend && npm run dev"
