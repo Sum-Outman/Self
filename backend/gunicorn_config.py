@@ -1,12 +1,12 @@
 # Gunicorn 生产服务器配置
 # 用于支持高并发 (10,000+ 并发连接)
 
-import os
 import multiprocessing
 
 # 导入配置
 try:
     from backend.core.config import Config
+
     USE_CONFIG = True
 except ImportError:
     USE_CONFIG = False
@@ -85,7 +85,7 @@ raw_env = [
     "PYTHONPATH=.",
 ]
 
-print(f"Gunicorn 配置加载完成:")
+print("Gunicorn 配置加载完成:")
 print(f"  - 绑定地址: {bind}")
 print(f"  - 工作进程数: {workers} (CPU核心数: {cpu_count})")
 print(f"  - 工作进程类: {worker_class}")
@@ -93,6 +93,6 @@ print(f"  - 线程数: {threads}")
 print(f"  - 最大并发连接数: {workers * worker_connections}")
 print(f"  - 预加载应用: {preload_app}")
 if USE_CONFIG:
-    print(f"  - 配置来源: Config类")
+    print("  - 配置来源: Config类")
 else:
-    print(f"  - 配置来源: 默认值")
+    print("  - 配置来源: 默认值")

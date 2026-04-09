@@ -7,7 +7,6 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
-    Boolean,
     DateTime,
     Float,
     Text,
@@ -38,7 +37,11 @@ class Memory(Base):
 
     # 关系
     user = relationship("User", back_populates="memories")
-    associations = relationship("MemoryAssociation", back_populates="source_memory", foreign_keys="[MemoryAssociation.source_memory_id]")
+    associations = relationship(
+        "MemoryAssociation",
+        back_populates="source_memory",
+        foreign_keys="[MemoryAssociation.source_memory_id]",
+    )
 
 
 class MemoryAssociation(Base):

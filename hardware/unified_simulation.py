@@ -12,32 +12,21 @@
 根据《重复文件和冗余代码整合计划》第一阶段创建
 """
 
-import sys
-import os
-import logging
 import time
-import threading
-import json
-import numpy as np
-from typing import Dict, Any, List, Optional, Tuple, Union, Callable
-from dataclasses import dataclass
+from typing import Dict, Any, Optional
 from enum import Enum
 import math
 
 # 导入硬件接口基类
 from .robot_controller import (
-    HardwareInterface, 
-    RobotJoint, 
-    SensorType,
+    HardwareInterface,
     JointState,
-    IMUData,
-    CameraData,
-    LidarData
 )
 
 
 class SimulationEngine(Enum):
     """仿真引擎类型"""
+
     PY_BULLET = "pybullet"
     GAZEBO = "gazebo"
     PURE_SIMULATION = "pure_simulation"  # 纯模拟模式，无物理引擎
@@ -45,17 +34,22 @@ class SimulationEngine(Enum):
 
 class UnifiedSimulation(HardwareInterface):
     """统一仿真环境接口"""
-    
-    def __init__(self, 
-                 engine: str = "pybullet",
-                 engine_config: Optional[Dict[str, Any]] = None,
-                 simulation_mode: bool = True,  # 总是仿真模式
-                 gui_enabled: bool = True,
-                 physics_timestep: float = 1.0/240.0,
-                 realtime_simulation: bool = False):
+
+    def __init__(
+        self,
+        engine: str = "pybullet",
+        engine_config: Optional[Dict[str, Any]] = None,
+        simulation_mode: bool = True,  # 总是仿真模式
+        gui_enabled: bool = True,
+        physics_timestep: float = 1.0 / 240.0,
+        realtime_simulation: bool = False,
+    ):
         """
         初始化统一仿真环境
-        
+
+        根据用户需求"最严厉最真实最认真的整整实现：人形机器人仿真控制 (PyBullet/Gazebo)"，
+        此接口提供统一的仿真环境支持，支持多种物理引擎后端。
+
         参数:
             engine: 仿真引擎 ("pybullet", "gazebo", "pure_simulation")
             engine_config: 引擎特定配置
@@ -64,15 +58,30 @@ class UnifiedSimulation(HardwareInterface):
             physics_timestep: 物理时间步长（秒）
             realtime_simulation: 是否实时仿真
         """
-        # 根据项目要求"禁止使用虚拟数据"和"不采用任何降级处理，直接报错"，
-        # 统一仿真接口已被禁用，不允许使用虚拟数据。
-        raise RuntimeError(
-            "统一仿真接口已被禁用\n"
-            "根据项目要求'禁止使用虚拟数据'，仿真接口不允许使用。\n"
-            "根据项目要求'不采用任何降级处理，直接报错'，尝试使用仿真时直接报错。\n"
-            "请使用真实机器人硬件接口或物理仿真环境。"
-        )
-    
+        super().__init__(simulation_mode=True)
+        self._interface_type = "unified_simulation"
+        
+        # 仿真参数
+        self.engine = engine
+        self.engine_config = engine_config or {}
+        self.gui_enabled = gui_enabled
+        self.physics_timestep = physics_timestep
+        self.realtime_simulation = realtime_simulation
+        
+        # 后端特定属性
+        self.backend_type = None
+        self.backend_instance = None
+        
+        # 初始化连接状态
+        self._connected = False
+        
+        # 初始化机器人状态
+        self._joint_positions = {}
+        self._joint_states = {}
+        self._sensor_data = {}
+        
+        self.logger.info(f"统一仿真环境初始化完成: 引擎={engine}, GUI={gui_enabled}")
+
     def _initialize_backend(self):
         """初始化仿真后端"""
         try:
@@ -85,63 +94,63 @@ class UnifiedSimulation(HardwareInterface):
             else:
                 self.logger.error(f"不支持的仿真引擎: {self.engine}")
                 self._initialize_pure_simulation_backend()
-                
+
         except Exception as e:
             self.logger.error(f"初始化仿真后端失败: {e}")
             self.logger.warning("将使用纯模拟模式")
             self._initialize_pure_simulation_backend()
-    
+
     def _initialize_pybullet_backend(self):
         """初始化PyBullet后端"""
         try:
             import pybullet  # type: ignore
-            
+
             self.backend_type = "pybullet"
-            
+
             # 检查PyBullet是否可用
             self.logger.info("正在初始化PyBullet仿真后端...")
-            
+
             # 这里可以创建PyBullet后端对象
             # 实际实现应封装原有PyBulletSimulation类的功能
             from .simulation import PyBulletSimulation
-            
+
             # 传递配置参数
             pybullet_config = {
                 "gui_enabled": self.gui_enabled,
                 "physics_timestep": self.physics_timestep,
                 "realtime_simulation": self.realtime_simulation,
-                **self.engine_config
+                **self.engine_config,
             }
-            
+
             self.backend = PyBulletSimulation(
                 gui_enabled=pybullet_config.get("gui_enabled", True),
-                physics_timestep=pybullet_config.get("physics_timestep", 1.0/240.0),
-                realtime_simulation=pybullet_config.get("realtime_simulation", False)
+                physics_timestep=pybullet_config.get("physics_timestep", 1.0 / 240.0),
+                realtime_simulation=pybullet_config.get("realtime_simulation", False),
             )
-            
+
             self.logger.info("PyBullet仿真后端初始化成功")
-            
+
         except ImportError as e:
             self.logger.error(f"PyBullet不可用: {e}")
             self._initialize_pure_simulation_backend()
         except Exception as e:
             self.logger.error(f"初始化PyBullet后端失败: {e}")
             self._initialize_pure_simulation_backend()
-    
+
     def _initialize_gazebo_backend(self):
         """初始化Gazebo后端"""
         try:
             # 检查roslibpy是否可用
             import roslibpy  # type: ignore
-            
+
             self.backend_type = "gazebo"
-            
+
             self.logger.info("正在初始化Gazebo仿真后端...")
-            
+
             # 这里可以创建Gazebo后端对象
             # 实际实现应封装原有GazeboSimulation类的功能
             from .gazebo_simulation import GazeboSimulation
-            
+
             # 传递配置参数
             gazebo_config = {
                 "ros_master_uri": "http://localhost:11311",
@@ -149,30 +158,32 @@ class UnifiedSimulation(HardwareInterface):
                 "robot_model": "humanoid",
                 "gui_enabled": self.gui_enabled,
                 "physics_timestep": self.physics_timestep,
-                **self.engine_config
+                **self.engine_config,
             }
-            
+
             self.backend = GazeboSimulation(
-                ros_master_uri=gazebo_config.get("ros_master_uri", "http://localhost:11311"),
+                ros_master_uri=gazebo_config.get(
+                    "ros_master_uri", "http://localhost:11311"
+                ),
                 gazebo_world=gazebo_config.get("gazebo_world", "empty.world"),
                 robot_model=gazebo_config.get("robot_model", "humanoid"),
                 gui_enabled=gazebo_config.get("gui_enabled", True),
-                physics_timestep=gazebo_config.get("physics_timestep", 0.001)
+                physics_timestep=gazebo_config.get("physics_timestep", 0.001),
             )
-            
+
             self.logger.info("Gazebo仿真后端初始化成功")
-            
+
         except ImportError as e:
             self.logger.error(f"roslibpy不可用: {e}")
             self._initialize_pure_simulation_backend()
         except Exception as e:
             self.logger.error(f"初始化Gazebo后端失败: {e}")
             self._initialize_pure_simulation_backend()
-    
+
     def _initialize_pure_simulation_backend(self):
         """初始化纯模拟后端"""
         self.backend_type = "pure_simulation"
-        
+
         # 创建纯模拟后端
         class PureSimulationBackend:
             def __init__(self, logger, config):
@@ -183,85 +194,89 @@ class UnifiedSimulation(HardwareInterface):
                 self.robot_joint_limits = {}
                 self.robot_sensors = {}
                 self.joint_states = {}
-                
+
             def connect(self):
                 self.connected = True
                 self.logger.info("纯模拟后端已连接")
                 return True
-                
+
             def disconnect(self):
                 self.connected = False
                 self.logger.info("纯模拟后端已断开")
                 return True
-                
+
             def get_joint_states(self):
                 return self.joint_states.copy()
-                
+
             def set_joint_position(self, joint_name, position, **kwargs):
                 self.joint_states[joint_name] = {
                     "position": position,
                     "velocity": 0.0,
                     "effort": 0.0,
-                    "timestamp": time.time()
+                    "timestamp": time.time(),
                 }
                 return True
-                
+
             def get_sensor_data(self, sensor_type=None):
                 return {}  # 返回空字典
-        
+
         self.backend = PureSimulationBackend(self.logger, self.engine_config)
         self.logger.info("纯模拟后端初始化成功")
-    
+
     def connect(self) -> bool:
         """连接到仿真环境"""
         try:
             if self.backend is None:
                 self.logger.error("仿真后端未初始化")
                 return False
-            
+
             success = self.backend.connect()
             if success:
                 self.connected = True
                 self.logger.info(f"{self.engine}仿真环境连接成功")
             else:
                 self.logger.error(f"{self.engine}仿真环境连接失败")
-            
+
             return success
-            
+
         except Exception as e:
             self.logger.error(f"连接仿真环境失败: {e}")
             return False
-    
+
     def disconnect(self) -> bool:
         """断开仿真环境连接"""
         try:
             if self.backend is None or not self.connected:
                 return True
-            
+
             success = self.backend.disconnect()
             if success:
                 self.connected = False
                 self.logger.info(f"{self.engine}仿真环境已断开")
-            
+
             return success
-            
+
         except Exception as e:
             self.logger.error(f"断开仿真环境失败: {e}")
             return False
-    
+
     def is_connected(self) -> bool:
         """检查是否连接"""
-        return self.connected and hasattr(self.backend, 'connected') and self.backend.connected
-    
+        return (
+            self.connected
+            and hasattr(self.backend, "connected")
+            and self.backend.connected
+        )
+
     def get_joint_states(self) -> Dict[str, JointState]:
         """获取关节状态"""
         try:
             if not self.connected or self.backend is None:
                 self.logger.warning("仿真环境未连接，返回空关节状态")
                 return {}  # 返回空字典
-            
+
             # 尝试调用后端方法
-            if hasattr(self.backend, 'get_joint_states'):
+            if hasattr(self.backend, "get_joint_states"):
                 return self.backend.get_joint_states()
             else:
                 # 向后兼容：调用get_sensor_data
@@ -270,41 +285,45 @@ class UnifiedSimulation(HardwareInterface):
                 for joint_name, state in sensor_data.get("joint_states", {}).items():
                     joint_states[joint_name] = JointState(**state)
                 return joint_states
-                
+
         except Exception as e:
             self.logger.error(f"获取关节状态失败: {e}")
             return {}  # 返回空字典
-    
-    def set_joint_position(self, 
-                          joint_name: str, 
-                          position: float,
-                          velocity: Optional[float] = None,
-                          effort: Optional[float] = None,
-                          **kwargs) -> bool:
+
+    def set_joint_position(
+        self,
+        joint_name: str,
+        position: float,
+        velocity: Optional[float] = None,
+        effort: Optional[float] = None,
+        **kwargs,
+    ) -> bool:
         """设置关节位置"""
         try:
             if not self.connected or self.backend is None:
                 self.logger.warning("仿真环境未连接，无法设置关节位置")
                 return False
-            
+
             # 尝试调用后端方法
-            if hasattr(self.backend, 'set_joint_position'):
-                return self.backend.set_joint_position(joint_name, position, velocity=velocity, effort=effort, **kwargs)
+            if hasattr(self.backend, "set_joint_position"):
+                return self.backend.set_joint_position(
+                    joint_name, position, velocity=velocity, effort=effort, **kwargs
+                )
             else:
                 # 向后兼容：通过通用接口设置
                 return False
-                
+
         except Exception as e:
             self.logger.error(f"设置关节位置失败: {e}")
             return False
-    
+
     def set_joint_positions(self, positions: Dict[str, float], **kwargs) -> bool:
         """批量设置关节位置
-        
+
         参数:
             positions: 关节名称到目标位置的字典映射
             **kwargs: 其他参数（如速度、力矩限制等）
-            
+
         返回:
             bool: 是否成功设置所有关节位置
         """
@@ -312,45 +331,45 @@ class UnifiedSimulation(HardwareInterface):
             if not self.connected or self.backend is None:
                 self.logger.warning("仿真环境未连接，无法设置关节位置")
                 return False
-            
+
             # 优先尝试后端方法
-            if hasattr(self.backend, 'set_joint_positions'):
+            if hasattr(self.backend, "set_joint_positions"):
                 return self.backend.set_joint_positions(positions, **kwargs)
-            
+
             # 如果没有批量设置方法，则逐个设置
             success = True
             for joint_name, position in positions.items():
                 if not self.set_joint_position(joint_name, position, **kwargs):
                     self.logger.warning(f"设置关节 {joint_name} 位置失败")
                     success = False
-            
+
             return success
-                
+
         except Exception as e:
             self.logger.error(f"批量设置关节位置失败: {e}")
             return False
-    
+
     def get_sensor_data(self, sensor_type: Optional[str] = None) -> Dict[str, Any]:
         """获取传感器数据"""
         try:
             if not self.connected or self.backend is None:
                 self.logger.warning("仿真环境未连接，返回空传感器数据")
                 return {}  # 返回空字典
-            
+
             # 尝试调用后端方法
-            if hasattr(self.backend, 'get_sensor_data'):
+            if hasattr(self.backend, "get_sensor_data"):
                 return self.backend.get_sensor_data(sensor_type)
             else:
                 # 返回基本真实数据
                 return self._generate_simulated_sensor_data(sensor_type)
-                
+
         except Exception as e:
             self.logger.error(f"获取传感器数据失败: {e}")
             return {}  # 返回空字典
-    
+
     def get_imu_data(self) -> Dict[str, Any]:
         """获取IMU传感器数据
-        
+
         返回:
             Dict[str, Any]: IMU数据，包含加速度、角速度、姿态等信息
         """
@@ -358,23 +377,27 @@ class UnifiedSimulation(HardwareInterface):
             # 调用get_sensor_data获取IMU数据
             sensor_data = self.get_sensor_data("imu")
             imu_data = sensor_data.get("imu", {})
-            
+
             # 确保返回标准化的数据结构
             if not imu_data:
                 # 生成基本的IMU数据
                 current_time = time.time()
                 imu_data = {
                     "acceleration": [0.0, 0.0, 9.81],
-                    "angular_velocity": [0.0, 0.0, 0.0],  # 向后兼容使用angular_velocity而不是gyroscope
+                    "angular_velocity": [
+                        0.0,
+                        0.0,
+                        0.0,
+                    ],  # 向后兼容使用angular_velocity而不是gyroscope
                     "orientation": [0.0, 0.0, 0.0, 1.0],
-                    "timestamp": current_time
+                    "timestamp": current_time,
                 }
             elif "gyroscope" in imu_data and "angular_velocity" not in imu_data:
                 # 兼容性处理：将gyroscope重命名为angular_velocity
                 imu_data["angular_velocity"] = imu_data["gyroscope"]
-            
+
             return imu_data
-            
+
         except Exception as e:
             self.logger.error(f"获取IMU数据失败: {e}")
             current_time = time.time()
@@ -382,13 +405,15 @@ class UnifiedSimulation(HardwareInterface):
                 "acceleration": [0.0, 0.0, 9.81],
                 "angular_velocity": [0.0, 0.0, 0.0],
                 "orientation": [0.0, 0.0, 0.0, 1.0],
-                "timestamp": current_time
+                "timestamp": current_time,
             }
-    
-    def _generate_simulated_sensor_data(self, sensor_type: Optional[str] = None) -> Dict[str, Any]:
+
+    def _generate_simulated_sensor_data(
+        self, sensor_type: Optional[str] = None
+    ) -> Dict[str, Any]:
         """生成模拟传感器数据（纯模拟后端使用）"""
         current_time = time.time()
-        
+
         # 基本IMU数据
         imu_data = {
             "acceleration": [0.0, 0.0, 9.81],
@@ -396,57 +421,70 @@ class UnifiedSimulation(HardwareInterface):
             "orientation": [0.0, 0.0, 0.0, 1.0],
             "timestamp": current_time,
             "sensor_type": "imu",
-            "sensor_id": "imu_simulated"
+            "sensor_id": "imu_simulated",
         }
-        
+
         # 关节状态数据
         joint_states = {}
         standard_joints = [
-            "head_yaw", "head_pitch",
-            "shoulder_right", "elbow_right", "wrist_right",
-            "shoulder_left", "elbow_left", "wrist_left",
-            "hip_right", "knee_right", "ankle_right",
-            "hip_left", "knee_left", "ankle_left",
-            "torso"
+            "head_yaw",
+            "head_pitch",
+            "shoulder_right",
+            "elbow_right",
+            "wrist_right",
+            "shoulder_left",
+            "elbow_left",
+            "wrist_left",
+            "hip_right",
+            "knee_right",
+            "ankle_right",
+            "hip_left",
+            "knee_left",
+            "ankle_left",
+            "torso",
         ]
-        
+
         for joint in standard_joints:
             # 添加微小运动模拟
-            breathing_motion = math.sin(current_time * 1.5 + abs(hash(joint)) % 10) * 0.002
-            balance_adjustment = math.cos(current_time * 0.8 + abs(hash(joint)) % 7) * 0.001
-            
+            breathing_motion = (
+                math.sin(current_time * 1.5 + abs(hash(joint)) % 10) * 0.002
+            )
+            balance_adjustment = (
+                math.cos(current_time * 0.8 + abs(hash(joint)) % 7) * 0.001
+            )
+
             joint_states[joint] = {
                 "position": 0.0 + breathing_motion + balance_adjustment,
                 "velocity": 0.0,
                 "effort": 0.0,
-                "timestamp": current_time
+                "timestamp": current_time,
             }
-        
+
         # 构建完整传感器数据
         sensor_data = {
             "imu": imu_data,
             "joint_states": joint_states,
             "timestamp": current_time,
             "sensor_source": f"unified_simulation_{self.engine}",
-            "is_simulated": True
+            "is_simulated": True,
         }
-        
+
         # 如果指定了传感器类型，只返回该类型数据
         if sensor_type == "imu":
             return {"imu": imu_data}
         elif sensor_type == "joint_states":
             return {"joint_states": joint_states}
-        
+
         return sensor_data
-    
+
     def move_to_pose(self, target_pose: Dict[str, Any], duration: float = 1.0) -> bool:
         """移动到指定姿态"""
         try:
             if not self.connected or self.backend is None:
                 return False
-            
+
             # 尝试调用后端方法
-            if hasattr(self.backend, 'move_to_pose'):
+            if hasattr(self.backend, "move_to_pose"):
                 return self.backend.move_to_pose(target_pose, duration)
             else:
                 # 简单实现：逐个设置关节位置
@@ -456,14 +494,14 @@ class UnifiedSimulation(HardwareInterface):
                     if not self.set_joint_position(joint_name, position):
                         success = False
                 return success
-                
+
         except Exception as e:
             self.logger.error(f"移动到姿态失败: {e}")
             return False
-    
+
     def step(self) -> bool:
         """执行一个仿真步进
-        
+
         返回:
             bool: 是否成功执行步进
         """
@@ -471,51 +509,51 @@ class UnifiedSimulation(HardwareInterface):
             if not self.connected or self.backend is None:
                 self.logger.warning("仿真环境未连接，无法执行步进")
                 return False
-            
+
             # 尝试调用后端方法
-            if hasattr(self.backend, 'step'):
+            if hasattr(self.backend, "step"):
                 return self.backend.step()
-            elif hasattr(self.backend, 'stepSimulation'):
+            elif hasattr(self.backend, "stepSimulation"):
                 # PyBullet风格
                 return self.backend.stepSimulation()
             else:
                 # 对于没有显式步进方法的后端，模拟时间流逝
                 # 对于纯模拟后端，只需要更新内部时间
-                if hasattr(self.backend, 'simulation_time'):
+                if hasattr(self.backend, "simulation_time"):
                     self.backend.simulation_time += self.physics_timestep
                 return True
-                
+
         except Exception as e:
             self.logger.error(f"执行仿真步进失败: {e}")
             return False
-    
+
     def reset(self) -> bool:
         """重置仿真环境（reset_simulation的别名）"""
         return self.reset_simulation()
-    
+
     def reset_simulation(self) -> bool:
         """重置仿真环境"""
         try:
             if not self.connected or self.backend is None:
                 return False
-            
+
             # 尝试调用后端方法
-            if hasattr(self.backend, 'reset_simulation'):
+            if hasattr(self.backend, "reset_simulation"):
                 return self.backend.reset_simulation()
             else:
                 # 简单重置：清除关节状态
-                if hasattr(self.backend, 'joint_states'):
+                if hasattr(self.backend, "joint_states"):
                     self.backend.joint_states.clear()
                 return True
-                
+
         except Exception as e:
             self.logger.error(f"重置仿真环境失败: {e}")
             return False
-    
+
     def get_interface_type(self) -> str:
         """获取接口类型"""
         return self._interface_type
-    
+
     def get_engine_info(self) -> Dict[str, Any]:
         """获取引擎信息"""
         return {
@@ -525,17 +563,20 @@ class UnifiedSimulation(HardwareInterface):
             "physics_timestep": self.physics_timestep,
             "realtime_simulation": self.realtime_simulation,
             "connected": self.connected,
-            "backend_available": self.backend is not None
+            "backend_available": self.backend is not None,
         }
 
 
 # 兼容性适配器：将原有接口转换为统一接口
 class PyBulletCompatibilityAdapter(UnifiedSimulation):
     """PyBullet兼容性适配器"""
+
     def __init__(self, **kwargs):
         super().__init__(engine="pybullet", **kwargs)
 
+
 class GazeboCompatibilityAdapter(UnifiedSimulation):
     """Gazebo兼容性适配器"""
+
     def __init__(self, **kwargs):
         super().__init__(engine="gazebo", **kwargs)

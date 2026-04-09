@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
+
 
 class QuantityCognitionModule(nn.Module):
     """数量认知模块 - 处理数量识别和计数
@@ -171,4 +171,3 @@ class QuantityCognitionModule(nn.Module):
 
 
 # 多模态概念理解模块（苹果例子）
-

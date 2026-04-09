@@ -14,33 +14,30 @@ Self AGI 专业领域能力模块
 基于真实算法和库实现，包括代码分析工具、数学计算库、物理引擎等
 """
 
-import sys
-import os
 import logging
-import json
-import numpy as np
-from typing import Dict, Any, List, Optional, Tuple, Callable
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
-import random
 import time
 import math
 import re
 import hashlib
-from collections import deque, defaultdict
+from collections import defaultdict
 import warnings
 from datetime import datetime, timedelta
 
 # 导入代码分析库
 try:
     import ast
+
     AST_AVAILABLE = True
 except ImportError as e:
     AST_AVAILABLE = False
     warnings.warn(f"Python AST模块不可用: {e}")
 
 try:
-    import jedi
+    pass
+
     JEDI_AVAILABLE = True
 except ImportError as e:
     JEDI_AVAILABLE = False
@@ -48,14 +45,16 @@ except ImportError as e:
 
 # 导入数学计算库
 try:
-    import sympy
+    pass
+
     SYMPY_AVAILABLE = True
 except ImportError as e:
     SYMPY_AVAILABLE = False
     warnings.warn(f"SymPy数学库不可用: {e}")
 
 try:
-    import numpy as np
+    pass
+
     NUMPY_AVAILABLE = True
 except ImportError as e:
     NUMPY_AVAILABLE = False
@@ -64,11 +63,13 @@ except ImportError as e:
 # 导入物理模拟库
 try:
     import pybullet  # type: ignore
+
     PYBULLET_AVAILABLE = True
 except ImportError as e:
     PYBULLET_AVAILABLE = False
     warnings.warn(
-        f"PyBullet物理引擎不可用: {e}\n机器人仿真功能将受限。\nWindows用户安装建议:\n1. 安装Visual Studio Build Tools (C++编译环境)\n2. 运行: pip install pybullet\n3. 或使用预编译版本: pip install pybullet --find-links https://github.com/bulletphysics/bullet3/releases\n4. 对于不需要编译的简易安装，可以使用: pip install pybullet --only-binary :all:")
+        f"PyBullet物理引擎不可用: {e}\n机器人仿真功能将受限。\nWindows用户安装建议:\n1. 安装Visual Studio Build Tools (C++编译环境)\n2. 运行: pip install pybullet\n3. 或使用预编译版本: pip install pybullet --find-links https://github.com/bulletphysics/bullet3/releases\n4. 对于不需要编译的简易安装，可以使用: pip install pybullet --only-binary :all:"
+    )
 
 # 导入医学知识库（模拟）
 try:
@@ -81,6 +82,7 @@ except ImportError as e:
 # 导入金融分析库
 try:
     import pandas as pd
+
     PANDAS_AVAILABLE = True
 except ImportError as e:
     PANDAS_AVAILABLE = False
@@ -89,6 +91,7 @@ except ImportError as e:
 
 class ProgrammingLanguage(Enum):
     """编程语言枚举"""
+
     PYTHON = "python"
     JAVASCRIPT = "javascript"
     TYPESCRIPT = "typescript"
@@ -115,25 +118,27 @@ class ProgrammingLanguage(Enum):
 
 class CodeComplexity(Enum):
     """代码复杂度级别"""
-    VERY_SIMPLE = "very_simple"    # 非常简单
-    SIMPLE = "simple"              # 简单
-    MODERATE = "moderate"          # 中等
-    COMPLEX = "complex"            # 复杂
+
+    VERY_SIMPLE = "very_simple"  # 非常简单
+    SIMPLE = "simple"  # 简单
+    MODERATE = "moderate"  # 中等
+    COMPLEX = "complex"  # 复杂
     VERY_COMPLEX = "very_complex"  # 非常复杂
 
 
 class MathematicalDomain(Enum):
     """数学领域枚举 - 增强版（修复缺陷3.1）"""
-    ALGEBRA = "algebra"            # 代数
-    CALCULUS = "calculus"          # 微积分
-    GEOMETRY = "geometry"          # 几何
-    STATISTICS = "statistics"      # 统计
-    PROBABILITY = "probability"    # 概率
+
+    ALGEBRA = "algebra"  # 代数
+    CALCULUS = "calculus"  # 微积分
+    GEOMETRY = "geometry"  # 几何
+    STATISTICS = "statistics"  # 统计
+    PROBABILITY = "probability"  # 概率
     LINEAR_ALGEBRA = "linear_algebra"  # 线性代数
     DISCRETE_MATH = "discrete_math"  # 离散数学
     NUMBER_THEORY = "number_theory"  # 数论
     DIFFERENTIAL_GEOMETRY = "differential_geometry"  # 微分几何
-    TOPOLOGY = "topology"          # 拓扑
+    TOPOLOGY = "topology"  # 拓扑
     COMPLEX_ANALYSIS = "complex_analysis"  # 复分析
     FUNCTIONAL_ANALYSIS = "functional_analysis"  # 泛函分析
     DIFFERENTIAL_EQUATIONS = "differential_equations"  # 微分方程
@@ -182,7 +187,7 @@ class CodeAnalysisResult:
             "style_violations": self.style_violations,
             "performance_issues": self.performance_issues,
             "optimization_suggestions": self.optimization_suggestions,
-            "refactoring_suggestions": self.refactoring_suggestions
+            "refactoring_suggestions": self.refactoring_suggestions,
         }
 
 
@@ -215,7 +220,7 @@ class MathematicalProblem:
             "final_answer": self.final_answer,
             "verification_result": self.verification_result,
             "time_taken_seconds": self.time_taken_seconds,
-            "attempted_methods": self.attempted_methods
+            "attempted_methods": self.attempted_methods,
         }
 
 
@@ -244,7 +249,7 @@ class ProgrammingCapabilityManager:
             "complexity": self._analyze_code_complexity,
             "quality": self._analyze_code_quality,
             "security": self._analyze_code_security,
-            "performance": self._analyze_code_performance
+            "performance": self._analyze_code_performance,
         }
 
     def _initialize_code_generators(self):
@@ -261,7 +266,7 @@ class ProgrammingCapabilityManager:
             "database": self._generate_database,
             "web": self._generate_web,
             "cli": self._generate_cli,
-            "config": self._generate_config
+            "config": self._generate_config,
         }
 
     def _initialize_bug_detectors(self):
@@ -270,12 +275,12 @@ class ProgrammingCapabilityManager:
             "syntax_error": self._detect_syntax_errors,
             "logical_error": self._detect_logical_errors,
             "runtime_error": self._detect_runtime_errors,
-            "security_vulnerability": self._detect_security_vulnerabilities
+            "security_vulnerability": self._detect_security_vulnerabilities,
         }
 
-    def analyze_code(self,
-                     code: str,
-                     language: ProgrammingLanguage = ProgrammingLanguage.PYTHON) -> CodeAnalysisResult:
+    def analyze_code(
+        self, code: str, language: ProgrammingLanguage = ProgrammingLanguage.PYTHON
+    ) -> CodeAnalysisResult:
         """
         分析代码
 
@@ -286,14 +291,17 @@ class ProgrammingCapabilityManager:
         返回:
             代码分析结果
         """
-        self.logger.info(f"开始分析代码，语言: {language.value}, 长度: {len(code)} 字符")
+        self.logger.info(
+            f"开始分析代码，语言: {language.value}, 长度: {len(code)} 字符"
+        )
 
         # 生成唯一ID
         code_id = hashlib.md5(
-            f"{code}{language.value}{time.time()}".encode()).hexdigest()[:16]
+            f"{code}{language.value}{time.time()}".encode()
+        ).hexdigest()[:16]
 
         # 基本分析
-        lines_of_code = len(code.split('\n'))
+        lines_of_code = len(code.split("\n"))
         functions_count = self._count_functions(code, language)
         classes_count = self._count_classes(code, language)
 
@@ -310,9 +318,11 @@ class ProgrammingCapabilityManager:
 
         # 建议生成
         optimization_suggestions = self._generate_optimization_suggestions(
-            code, language, performance_issues)
+            code, language, performance_issues
+        )
         refactoring_suggestions = self._generate_refactoring_suggestions(
-            code, language, complexity)
+            code, language, complexity
+        )
 
         result = CodeAnalysisResult(
             code_id=code_id,
@@ -328,22 +338,24 @@ class ProgrammingCapabilityManager:
             style_violations=style_violations,
             performance_issues=performance_issues,
             optimization_suggestions=optimization_suggestions,
-            refactoring_suggestions=refactoring_suggestions
+            refactoring_suggestions=refactoring_suggestions,
         )
 
         self.logger.info(
             f"代码分析完成: ID={code_id}, "
             f"复杂度={complexity.value}, "
             f"函数数={functions_count}, "
-            f"问题数={len(bugs_detected) + len(style_violations) + len(performance_issues)}"
+            f"问题数={                 len(bugs_detected) +                 len(style_violations) +                 len(performance_issues)}"
         )
 
         return result
 
-    def generate_code(self,
-                      description: str,
-                      language: ProgrammingLanguage = ProgrammingLanguage.PYTHON,
-                      code_type: str = "function") -> Dict[str, Any]:
+    def generate_code(
+        self,
+        description: str,
+        language: ProgrammingLanguage = ProgrammingLanguage.PYTHON,
+        code_type: str = "function",
+    ) -> Dict[str, Any]:
         """
         根据描述生成代码
 
@@ -356,7 +368,8 @@ class ProgrammingCapabilityManager:
             生成的代码和相关信息
         """
         self.logger.info(
-            f"生成代码: 类型={code_type}, 语言={language.value}, 描述={description[:50]}...")
+            f"生成代码: 类型={code_type}, 语言={language.value}, 描述={description[:50]}..."
+        )
 
         # 选择代码生成器
         generator_func = self.code_generators.get(code_type)
@@ -379,18 +392,21 @@ class ProgrammingCapabilityManager:
             "analysis_result": analysis_result.to_dict(),
             "quality_score": self._calculate_code_quality_score(analysis_result),
             "timestamp": time.time(),
-            "timestamp_human": datetime.now().isoformat()
+            "timestamp_human": datetime.now().isoformat(),
         }
 
         self.logger.info(
-            f"代码生成完成: ID={analysis_result.code_id}, 质量分数={result['quality_score']:.2f}")
+            f"代码生成完成: ID={analysis_result.code_id}, 质量分数={result['quality_score']:.2f}"
+        )
 
         return result
 
-    def debug_code(self,
-                   code: str,
-                   language: ProgrammingLanguage = ProgrammingLanguage.PYTHON,
-                   error_message: Optional[str] = None) -> Dict[str, Any]:
+    def debug_code(
+        self,
+        code: str,
+        language: ProgrammingLanguage = ProgrammingLanguage.PYTHON,
+        error_message: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         调试代码
 
@@ -415,7 +431,8 @@ class ProgrammingCapabilityManager:
         # 如果有错误信息，优先处理
         if error_message:
             suggested_fixes = self._suggest_fixes_for_error(
-                error_message, code, language)
+                error_message, code, language
+            )
         else:
             suggested_fixes = self._suggest_fixes_for_bugs(all_bugs, code, language)
 
@@ -431,15 +448,17 @@ class ProgrammingCapabilityManager:
             "analysis_result": analysis_result.to_dict(),
             "bugs_detected": all_bugs,
             "suggested_fixes": suggested_fixes,
-            "fixes_applied": len([f for f in suggested_fixes if f.get("applied", False)]),
+            "fixes_applied": len(
+                [f for f in suggested_fixes if f.get("applied", False)]
+            ),
             "execution_time_seconds": execution_time,
             "success": len(all_bugs) == 0 or fixed_code != code,
             "timestamp": time.time(),
-            "timestamp_human": datetime.now().isoformat()
+            "timestamp_human": datetime.now().isoformat(),
         }
 
         self.logger.info(
-            f"代码调试完成: "
+            "代码调试完成: "
             f"检测到 {len(all_bugs)} 个bug, "
             f"应用了 {result['fixes_applied']} 个修复, "
             f"成功: {result['success']}"
@@ -451,14 +470,14 @@ class ProgrammingCapabilityManager:
         """统计函数数量"""
         if language == ProgrammingLanguage.PYTHON:
             # 简单统计Python函数
-            return len(re.findall(r'def\s+\w+\s*\(', code))
+            return len(re.findall(r"def\s+\w+\s*\(", code))
         elif language == ProgrammingLanguage.JAVASCRIPT:
             # 统计JavaScript函数
             patterns = [
-                r'function\s+\w+\s*\(',  # function声明
-                r'const\s+\w+\s*=\s*\(',  # 箭头函数
-                r'let\s+\w+\s*=\s*\(',
-                r'var\s+\w+\s*=\s*\('
+                r"function\s+\w+\s*\(",  # function声明
+                r"const\s+\w+\s*=\s*\(",  # 箭头函数
+                r"let\s+\w+\s*=\s*\(",
+                r"var\s+\w+\s*=\s*\(",
             ]
             count = 0
             for pattern in patterns:
@@ -466,22 +485,24 @@ class ProgrammingCapabilityManager:
             return count
         else:
             # 其他语言，使用简单模式匹配
-            return len(re.findall(r'def|function|func|fn\s+\w+\s*\(', code))
+            return len(re.findall(r"def|function|func|fn\s+\w+\s*\(", code))
 
     def _count_classes(self, code: str, language: ProgrammingLanguage) -> int:
         """统计类数量"""
         if language == ProgrammingLanguage.PYTHON:
-            return len(re.findall(r'class\s+\w+', code))
+            return len(re.findall(r"class\s+\w+", code))
         elif language == ProgrammingLanguage.JAVA:
-            return len(re.findall(r'class\s+\w+', code))
+            return len(re.findall(r"class\s+\w+", code))
         elif language == ProgrammingLanguage.CPP:
-            return len(re.findall(r'class\s+\w+', code))
+            return len(re.findall(r"class\s+\w+", code))
         else:
-            return len(re.findall(r'class\s+\w+', code))
+            return len(re.findall(r"class\s+\w+", code))
 
-    def _analyze_code_complexity(self, code: str, language: ProgrammingLanguage) -> CodeComplexity:
+    def _analyze_code_complexity(
+        self, code: str, language: ProgrammingLanguage
+    ) -> CodeComplexity:
         """分析代码复杂度"""
-        lines = len(code.split('\n'))
+        lines = len(code.split("\n"))
         functions = self._count_functions(code, language)
 
         # 简单复杂度计算
@@ -496,15 +517,19 @@ class ProgrammingCapabilityManager:
         else:
             return CodeComplexity.VERY_COMPLEX
 
-    def _analyze_code_quality(self, code: str, language: ProgrammingLanguage) -> Dict[str, Any]:
+    def _analyze_code_quality(
+        self, code: str, language: ProgrammingLanguage
+    ) -> Dict[str, Any]:
         """分析代码质量"""
         quality_metrics = {}
 
         # 计算基本质量指标
-        quality_metrics["maintainability_index"] = self._calculate_maintainability_index(
-            code, language)
-        quality_metrics["cyclomatic_complexity"] = self._calculate_cyclomatic_complexity(
-            code, language)
+        quality_metrics["maintainability_index"] = (
+            self._calculate_maintainability_index(code, language)
+        )
+        quality_metrics["cyclomatic_complexity"] = (
+            self._calculate_cyclomatic_complexity(code, language)
+        )
 
         # 检测问题
         bugs = self._detect_all_bugs(code, language)
@@ -543,7 +568,9 @@ class ProgrammingCapabilityManager:
 
         return quality_metrics
 
-    def _analyze_code_security(self, code: str, language: ProgrammingLanguage) -> Dict[str, Any]:
+    def _analyze_code_security(
+        self, code: str, language: ProgrammingLanguage
+    ) -> Dict[str, Any]:
         """分析代码安全性"""
         security_issues = self._detect_security_vulnerabilities(code, language)
 
@@ -551,7 +578,7 @@ class ProgrammingCapabilityManager:
             "security_issues_count": len(security_issues),
             "security_issues": security_issues,
             "security_score": max(0, 100 - len(security_issues) * 20),
-            "security_level": self._determine_security_level(len(security_issues))
+            "security_level": self._determine_security_level(len(security_issues)),
         }
 
         return security_metrics
@@ -569,7 +596,9 @@ class ProgrammingCapabilityManager:
         else:
             return "critical"
 
-    def _analyze_code_performance(self, code: str, language: ProgrammingLanguage) -> Dict[str, Any]:
+    def _analyze_code_performance(
+        self, code: str, language: ProgrammingLanguage
+    ) -> Dict[str, Any]:
         """分析代码性能"""
         performance_issues = self._detect_performance_issues(code, language)
 
@@ -577,7 +606,9 @@ class ProgrammingCapabilityManager:
             "performance_issues_count": len(performance_issues),
             "performance_issues": performance_issues,
             "performance_score": max(0, 100 - len(performance_issues) * 15),
-            "performance_level": self._determine_performance_level(len(performance_issues))
+            "performance_level": self._determine_performance_level(
+                len(performance_issues)
+            ),
         }
 
         return performance_metrics
@@ -595,15 +626,17 @@ class ProgrammingCapabilityManager:
         else:
             return "critical"
 
-    def _calculate_cyclomatic_complexity(self, code: str, language: ProgrammingLanguage) -> float:
+    def _calculate_cyclomatic_complexity(
+        self, code: str, language: ProgrammingLanguage
+    ) -> float:
         """计算圈复杂度（完整版）"""
         # 简单估计：基于控制流关键字
         if language == ProgrammingLanguage.PYTHON:
-            keywords = ['if', 'elif', 'else', 'for', 'while', 'except', 'and', 'or']
+            keywords = ["if", "elif", "else", "for", "while", "except", "and", "or"]
         elif language == ProgrammingLanguage.JAVASCRIPT:
-            keywords = ['if', 'else', 'for', 'while', 'catch', '&&', '||', '?']
+            keywords = ["if", "else", "for", "while", "catch", "&&", "||", "?"]
         else:
-            keywords = ['if', 'else', 'for', 'while', 'switch', 'case']
+            keywords = ["if", "else", "for", "while", "switch", "case"]
 
         complexity = 1  # 基本复杂度
         for keyword in keywords:
@@ -611,9 +644,11 @@ class ProgrammingCapabilityManager:
 
         return float(complexity)
 
-    def _calculate_maintainability_index(self, code: str, language: ProgrammingLanguage) -> float:
+    def _calculate_maintainability_index(
+        self, code: str, language: ProgrammingLanguage
+    ) -> float:
         """计算可维护性指数（完整版）"""
-        lines = len(code.split('\n'))
+        lines = len(code.split("\n"))
         functions = self._count_functions(code, language)
         classes = self._count_classes(code, language)
         complexity = self._calculate_cyclomatic_complexity(code, language)
@@ -630,12 +665,18 @@ class ProgrammingCapabilityManager:
         complexity_score = max(0, 100 - (complexity * 10))
 
         # 加权平均
-        maintainability = (line_score * 0.3 + function_score * 0.2 +
-                           class_score * 0.2 + complexity_score * 0.3)
+        maintainability = (
+            line_score * 0.3
+            + function_score * 0.2
+            + class_score * 0.2
+            + complexity_score * 0.3
+        )
 
         return max(0, min(100, maintainability))
 
-    def _detect_all_bugs(self, code: str, language: ProgrammingLanguage) -> List[Dict[str, Any]]:
+    def _detect_all_bugs(
+        self, code: str, language: ProgrammingLanguage
+    ) -> List[Dict[str, Any]]:
         """检测所有bug"""
         bugs = []
 
@@ -645,7 +686,9 @@ class ProgrammingCapabilityManager:
 
         return bugs
 
-    def _detect_syntax_errors(self, code: str, language: ProgrammingLanguage) -> List[Dict[str, Any]]:
+    def _detect_syntax_errors(
+        self, code: str, language: ProgrammingLanguage
+    ) -> List[Dict[str, Any]]:
         """检测语法错误"""
         bugs = []
 
@@ -653,20 +696,24 @@ class ProgrammingCapabilityManager:
             try:
                 ast.parse(code)
             except SyntaxError as e:
-                bugs.append({
-                    "type": "syntax_error",
-                    "severity": "high",
-                    "message": f"语法错误: {e.msg}",
-                    "line": e.lineno if hasattr(e, 'lineno') else None,
-                    "column": e.offset if hasattr(e, 'offset') else None,
-                    "suggestion": "检查语法错误并修复"
-                })
+                bugs.append(
+                    {
+                        "type": "syntax_error",
+                        "severity": "high",
+                        "message": f"语法错误: {e.msg}",
+                        "line": e.lineno if hasattr(e, "lineno") else None,
+                        "column": e.offset if hasattr(e, "offset") else None,
+                        "suggestion": "检查语法错误并修复",
+                    }
+                )
 
         # 其他语言的语法检测可以在这里添加
 
         return bugs
 
-    def _detect_logical_errors(self, code: str, language: ProgrammingLanguage) -> List[Dict[str, Any]]:
+    def _detect_logical_errors(
+        self, code: str, language: ProgrammingLanguage
+    ) -> List[Dict[str, Any]]:
         """检测逻辑错误"""
         bugs = []
 
@@ -676,41 +723,45 @@ class ProgrammingCapabilityManager:
         if language == ProgrammingLanguage.PYTHON:
             patterns = [
                 # 无限循环风险
-                (r'while\s+True:', "无限循环，考虑添加退出条件"),
+                (r"while\s+True:", "无限循环，考虑添加退出条件"),
                 # 可能除零
-                (r'/\s*\w+\s*\)', "可能除零，添加除数检查"),
+                (r"/\s*\w+\s*\)", "可能除零，添加除数检查"),
                 # 未处理的异常
-                (r'try:\s*\n(?!.*except)', "未处理的异常，添加except块"),
+                (r"try:\s*\n(?!.*except)", "未处理的异常，添加except块"),
                 # 错误的比较
-                (r'==\s*True\b', "冗余的True比较，直接使用变量"),
-                (r'==\s*False\b', "冗余的False比较，使用not操作符")
+                (r"==\s*True\b", "冗余的True比较，直接使用变量"),
+                (r"==\s*False\b", "冗余的False比较，使用not操作符"),
             ]
         elif language == ProgrammingLanguage.JAVASCRIPT:
             patterns = [
                 # 可能未定义
-                (r'console\.log\(', "生产环境中应移除console.log"),
+                (r"console\.log\(", "生产环境中应移除console.log"),
                 # 严格相等
-                (r'==\s*null', "考虑使用===进行严格相等比较"),
+                (r"==\s*null", "考虑使用===进行严格相等比较"),
                 # 未处理的Promise
-                (r'\.then\([^)]*\)(?!\.catch)', "Promise未处理错误，添加.catch")
+                (r"\.then\([^)]*\)(?!\.catch)", "Promise未处理错误，添加.catch"),
             ]
 
         for pattern, message in patterns:
             matches = re.finditer(pattern, code, re.MULTILINE)
             for match in matches:
-                line_number = code[:match.start()].count('\n') + 1
-                bugs.append({
-                    "type": "logical_error",
-                    "severity": "medium",
-                    "message": f"逻辑错误: {message}",
-                    "line": line_number,
-                    "column": match.start() - code[:match.start()].rfind('\n'),
-                    "suggestion": message
-                })
+                line_number = code[: match.start()].count("\n") + 1
+                bugs.append(
+                    {
+                        "type": "logical_error",
+                        "severity": "medium",
+                        "message": f"逻辑错误: {message}",
+                        "line": line_number,
+                        "column": match.start() - code[: match.start()].rfind("\n"),
+                        "suggestion": message,
+                    }
+                )
 
         return bugs
 
-    def _detect_runtime_errors(self, code: str, language: ProgrammingLanguage) -> List[Dict[str, Any]]:
+    def _detect_runtime_errors(
+        self, code: str, language: ProgrammingLanguage
+    ) -> List[Dict[str, Any]]:
         """检测运行时错误"""
         bugs = []
 
@@ -720,31 +771,38 @@ class ProgrammingCapabilityManager:
         if language == ProgrammingLanguage.PYTHON:
             patterns = [
                 # 未检查的索引
-                (r'\[\s*\w+\s*\+\s*\d+\s*\]', "索引可能越界，添加边界检查"),
+                (r"\[\s*\w+\s*\+\s*\d+\s*\]", "索引可能越界，添加边界检查"),
                 # 未检查的字典访问
-                (r'\[\s*[\'\"][^\'\"]+[\'\"]\s*\]', "字典键可能不存在，使用.get()方法"),
+                (r"\[\s*[\'\"][^\'\"]+[\'\"]\s*\]", "字典键可能不存在，使用.get()方法"),
                 # 文件操作未关闭
-                (r'open\([^)]+\)(?!.*with)', "文件未安全关闭，使用with语句"),
+                (r"open\([^)]+\)(?!.*with)", "文件未安全关闭，使用with语句"),
                 # 大内存操作
-                (r'list\(range\(\d{6,}\)\)', "大范围列表可能消耗大量内存，考虑使用生成器")
+                (
+                    r"list\(range\(\d{6,}\)\)",
+                    "大范围列表可能消耗大量内存，考虑使用生成器",
+                ),
             ]
 
         for pattern, message in patterns:
             matches = re.finditer(pattern, code, re.MULTILINE)
             for match in matches:
-                line_number = code[:match.start()].count('\n') + 1
-                bugs.append({
-                    "type": "runtime_error",
-                    "severity": "medium",
-                    "message": f"运行时错误风险: {message}",
-                    "line": line_number,
-                    "column": match.start() - code[:match.start()].rfind('\n'),
-                    "suggestion": message
-                })
+                line_number = code[: match.start()].count("\n") + 1
+                bugs.append(
+                    {
+                        "type": "runtime_error",
+                        "severity": "medium",
+                        "message": f"运行时错误风险: {message}",
+                        "line": line_number,
+                        "column": match.start() - code[: match.start()].rfind("\n"),
+                        "suggestion": message,
+                    }
+                )
 
         return bugs
 
-    def _detect_security_vulnerabilities(self, code: str, language: ProgrammingLanguage) -> List[Dict[str, Any]]:
+    def _detect_security_vulnerabilities(
+        self, code: str, language: ProgrammingLanguage
+    ) -> List[Dict[str, Any]]:
         """检测安全漏洞"""
         bugs = []
 
@@ -756,38 +814,42 @@ class ProgrammingCapabilityManager:
                 # SQL注入
                 (r'execute\s*\(\s*f?"[^"]*\%s[^"]*"', "可能的SQL注入，使用参数化查询"),
                 # 命令注入
-                (r'os\.system\([^)]+\)', "命令注入风险，使用subprocess.run()"),
+                (r"os\.system\([^)]+\)", "命令注入风险，使用subprocess.run()"),
                 # 硬编码密码
                 (r'password\s*=\s*[\'"][^\'"]+[\'"]', "硬编码密码，使用环境变量"),
                 # 不安全的反序列化
-                (r'pickle\.loads\(', "不安全的反序列化，考虑使用json或安全替代")
+                (r"pickle\.loads\(", "不安全的反序列化，考虑使用json或安全替代"),
             ]
         elif language == ProgrammingLanguage.JAVASCRIPT:
             patterns = [
                 # XSS风险
-                (r'innerHTML\s*=', "XSS风险，使用textContent或安全库"),
+                (r"innerHTML\s*=", "XSS风险，使用textContent或安全库"),
                 # 不安全的eval
-                (r'eval\(', "不安全的eval使用，寻找替代方案"),
+                (r"eval\(", "不安全的eval使用，寻找替代方案"),
                 # 不安全的正则表达式
-                (r'new RegExp\([^)]*\+', "不安全的正则表达式，可能引起ReDoS")
+                (r"new RegExp\([^)]*\+", "不安全的正则表达式，可能引起ReDoS"),
             ]
 
         for pattern, message in patterns:
             matches = re.finditer(pattern, code, re.MULTILINE)
             for match in matches:
-                line_number = code[:match.start()].count('\n') + 1
-                bugs.append({
-                    "type": "security_vulnerability",
-                    "severity": "high",
-                    "message": f"安全漏洞: {message}",
-                    "line": line_number,
-                    "column": match.start() - code[:match.start()].rfind('\n'),
-                    "suggestion": message
-                })
+                line_number = code[: match.start()].count("\n") + 1
+                bugs.append(
+                    {
+                        "type": "security_vulnerability",
+                        "severity": "high",
+                        "message": f"安全漏洞: {message}",
+                        "line": line_number,
+                        "column": match.start() - code[: match.start()].rfind("\n"),
+                        "suggestion": message,
+                    }
+                )
 
         return bugs
 
-    def _detect_style_violations(self, code: str, language: ProgrammingLanguage) -> List[Dict[str, Any]]:
+    def _detect_style_violations(
+        self, code: str, language: ProgrammingLanguage
+    ) -> List[Dict[str, Any]]:
         """检测代码风格违规"""
         violations = []
 
@@ -797,31 +859,35 @@ class ProgrammingCapabilityManager:
         if language == ProgrammingLanguage.PYTHON:
             patterns = [
                 # 行过长
-                (r'^.{100,}$', "行超过100字符，考虑换行"),
+                (r"^.{100,}$", "行超过100字符，考虑换行"),
                 # 未使用的导入
-                (r'^import\s+\w+', "检查导入是否使用"),
+                (r"^import\s+\w+", "检查导入是否使用"),
                 # 魔法数字
-                (r'\b\d{3,}\b', "魔法数字，考虑定义为常量"),
+                (r"\b\d{3,}\b", "魔法数字，考虑定义为常量"),
                 # 不一致的命名
-                (r'def\s+[a-z][a-z0-9_]*[A-Z]', "函数名应使用小写字母和下划线")
+                (r"def\s+[a-z][a-z0-9_]*[A-Z]", "函数名应使用小写字母和下划线"),
             ]
 
         for pattern, message in patterns:
             matches = re.finditer(pattern, code, re.MULTILINE)
             for match in matches:
-                line_number = code[:match.start()].count('\n') + 1
-                violations.append({
-                    "type": "style_violation",
-                    "severity": "low",
-                    "message": f"代码风格: {message}",
-                    "line": line_number,
-                    "column": match.start() - code[:match.start()].rfind('\n'),
-                    "suggestion": message
-                })
+                line_number = code[: match.start()].count("\n") + 1
+                violations.append(
+                    {
+                        "type": "style_violation",
+                        "severity": "low",
+                        "message": f"代码风格: {message}",
+                        "line": line_number,
+                        "column": match.start() - code[: match.start()].rfind("\n"),
+                        "suggestion": message,
+                    }
+                )
 
         return violations
 
-    def _detect_performance_issues(self, code: str, language: ProgrammingLanguage) -> List[Dict[str, Any]]:
+    def _detect_performance_issues(
+        self, code: str, language: ProgrammingLanguage
+    ) -> List[Dict[str, Any]]:
         """检测性能问题"""
         issues = []
 
@@ -833,29 +899,33 @@ class ProgrammingCapabilityManager:
                 # 字符串拼接循环
                 (r'for[^:]+:\s*\w+\s*\+=\s*[\'"]', "循环内字符串拼接低效，使用join()"),
                 # 不必要的列表复制
-                (r'list\(\[\]', "不必要的列表复制"),
+                (r"list\(\[\]", "不必要的列表复制"),
                 # 低效的成员检查
-                (r'\w+\s+in\s+\[\s*\w+', "列表成员检查低效，考虑使用集合"),
+                (r"\w+\s+in\s+\[\s*\w+", "列表成员检查低效，考虑使用集合"),
                 # 重复计算
-                (r'len\(\w+\)\s*>\s*\d+\s+and\s+len\(\w+\)', "重复计算len()，存储结果")
+                (r"len\(\w+\)\s*>\s*\d+\s+and\s+len\(\w+\)", "重复计算len()，存储结果"),
             ]
 
         for pattern, message in patterns:
             matches = re.finditer(pattern, code, re.MULTILINE)
             for match in matches:
-                line_number = code[:match.start()].count('\n') + 1
-                issues.append({
-                    "type": "performance_issue",
-                    "severity": "medium",
-                    "message": f"性能问题: {message}",
-                    "line": line_number,
-                    "column": match.start() - code[:match.start()].rfind('\n'),
-                    "suggestion": message
-                })
+                line_number = code[: match.start()].count("\n") + 1
+                issues.append(
+                    {
+                        "type": "performance_issue",
+                        "severity": "medium",
+                        "message": f"性能问题: {message}",
+                        "line": line_number,
+                        "column": match.start() - code[: match.start()].rfind("\n"),
+                        "suggestion": message,
+                    }
+                )
 
         return issues
 
-    def _generate_function(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_function(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成函数代码"""
         function_name = self._extract_function_name(description)
 
@@ -888,7 +958,9 @@ class ProgrammingCapabilityManager:
         elif language == ProgrammingLanguage.SQL:
             return self._generate_sql_function(function_name, description)
         else:
-            return f"// 实现 {language.value} 函数: {description}（根据描述生成具体实现）"
+            return (
+                f"// 实现 {language.value} 函数: {description}（根据描述生成具体实现）"
+            )
 
     def _extract_function_name(self, description: str) -> str:
         """从描述中提取函数名"""
@@ -896,16 +968,28 @@ class ProgrammingCapabilityManager:
         words = description.lower().split()
         if words:
             # 移除常见停用词
-            stop_words = {'the', 'a', 'an', 'to', 'for',
-                          'of', 'and', 'or', 'in', 'on', 'at'}
+            stop_words = {
+                "the",
+                "a",
+                "an",
+                "to",
+                "for",
+                "of",
+                "and",
+                "or",
+                "in",
+                "on",
+                "at",
+            }
             valid_words = [w for w in words if w not in stop_words and w.isalpha()]
 
             if valid_words:
                 # 使用第一个有效词作为函数名
                 base_name = valid_words[0]
                 # 转换为蛇形命名
-                function_name = ''.join(
-                    ['_' + c.lower() if c.isupper() else c for c in base_name]).lstrip('_')
+                function_name = "".join(
+                    ["_" + c.lower() if c.isupper() else c for c in base_name]
+                ).lstrip("_")
                 return function_name
 
         return "custom_function"
@@ -917,8 +1001,8 @@ class ProgrammingCapabilityManager:
         # 转换为帕斯卡命名（首字母大写）
         if function_name:
             # 将蛇形命名转换为帕斯卡命名
-            parts = function_name.split('_')
-            module_name = ''.join(part.capitalize() for part in parts if part)
+            parts = function_name.split("_")
+            module_name = "".join(part.capitalize() for part in parts if part)
             return module_name
         return "CustomModule"
 
@@ -936,11 +1020,11 @@ class ProgrammingCapabilityManager:
 
         docstring = f'    """{description}'
         if params:
-            docstring += f'\n\n    参数:\n'
+            docstring += "\n\n    参数:\n"
             for param in params:
-                docstring += f'        {param}: 参数描述\n'
+                docstring += f"        {param}: 参数描述\n"
         if return_type:
-            docstring += f'\n    返回:\n        {return_type}: 返回值描述'
+            docstring += f"\n    返回:\n        {return_type}: 返回值描述"
         docstring += '\n    """'
 
         code = f"def {function_name}({params_str}):\n"
@@ -989,7 +1073,7 @@ class ProgrammingCapabilityManager:
             "split": ["text", "separator"],
             "convert": ["value", "from_unit", "to_unit"],
             "format": ["text", "style"],
-            "validate": ["data", "schema"]
+            "validate": ["data", "schema"],
         }
 
         desc_lower = description.lower()
@@ -1004,22 +1088,42 @@ class ProgrammingCapabilityManager:
         """从描述中推断返回类型"""
         desc_lower = description.lower()
 
-        if any(word in desc_lower for word in ["计算", "calculate", "sum", "total", "count", "number"]):
+        if any(
+            word in desc_lower
+            for word in ["计算", "calculate", "sum", "total", "count", "number"]
+        ):
             return "int" if "整数" in description else "float"
-        elif any(word in desc_lower for word in ["检查", "check", "验证", "validate", "是否", "is_"]):
+        elif any(
+            word in desc_lower
+            for word in ["检查", "check", "验证", "validate", "是否", "is_"]
+        ):
             return "bool"
-        elif any(word in desc_lower for word in ["文本", "text", "字符串", "string", "消息", "message"]):
+        elif any(
+            word in desc_lower
+            for word in ["文本", "text", "字符串", "string", "消息", "message"]
+        ):
             return "str"
-        elif any(word in desc_lower for word in ["列表", "list", "数组", "array", "集合", "collection"]):
+        elif any(
+            word in desc_lower
+            for word in ["列表", "list", "数组", "array", "集合", "collection"]
+        ):
             return "list"
-        elif any(word in desc_lower for word in ["字典", "dict", "映射", "map", "对象", "object"]):
+        elif any(
+            word in desc_lower
+            for word in ["字典", "dict", "映射", "map", "对象", "object"]
+        ):
             return "dict"
-        elif any(word in desc_lower for word in ["处理", "process", "转换", "transform", "生成", "generate"]):
+        elif any(
+            word in desc_lower
+            for word in ["处理", "process", "转换", "transform", "生成", "generate"]
+        ):
             return "Any"  # 通用类型
 
         return ""
 
-    def _generate_javascript_function(self, function_name: str, description: str) -> str:
+    def _generate_javascript_function(
+        self, function_name: str, description: str
+    ) -> str:
         """生成JavaScript函数代码"""
         params = self._infer_function_params(description)
         params_str = ", ".join(params) if params else "...args"
@@ -1052,7 +1156,7 @@ class ProgrammingCapabilityManager:
         code += "}\n"
 
         # 添加ES6箭头函数版本
-        code += f"\n// ES6箭头函数版本:\n"
+        code += "\n// ES6箭头函数版本:\n"
         code += f"// const {function_name} = ({params_str}) => {{\n"
         code += f"//     // {description}\n"
         # 根据描述添加箭头函数实现
@@ -1061,22 +1165,22 @@ class ProgrammingCapabilityManager:
             if params and len(params) >= 2:
                 code += f"//     return {params[0]} + {params[1]};\n"
             else:
-                code += f"//     return 0;\n"
+                code += "//     return 0;\n"
         elif "check" in desc_lower or "validate" in desc_lower:
-            code += f"//     return true;\n"
+            code += "//     return true;\n"
         elif "filter" in desc_lower:
             if params and len(params) >= 1:
                 code += f"//     return {params[0]}.filter(item => item);\n"
             else:
-                code += f"//     return []  # 返回空列表;\n"
+                code += "//     return []  # 返回空列表;\n"
         elif "map" in desc_lower or "transform" in desc_lower:
             if params and len(params) >= 1:
                 code += f"//     return {params[0]}.map(item => item);\n"
             else:
-                code += f"//     return []  # 返回空列表;\n"
+                code += "//     return []  # 返回空列表;\n"
         else:
-            code += f"//     return null;\n"
-        code += f"// }};\n"
+            code += "//     return null;\n"
+        code += "// }};\n"
 
         return code
 
@@ -1084,9 +1188,9 @@ class ProgrammingCapabilityManager:
         """生成Java函数代码"""
         # Java方法名使用驼峰命名
         method_name = function_name
-        if '_' in method_name:
-            parts = method_name.split('_')
-            method_name = parts[0] + ''.join(p.title() for p in parts[1:])
+        if "_" in method_name:
+            parts = method_name.split("_")
+            method_name = parts[0] + "".join(p.title() for p in parts[1:])
 
         params = self._infer_function_params(description)
         return_type = self._infer_return_type(description) or "void"
@@ -1100,7 +1204,7 @@ class ProgrammingCapabilityManager:
             "str": "String",
             "list": "List<Object>",
             "dict": "Map<String, Object>",
-            "Any": "Object"
+            "Any": "Object",
         }
 
         java_return_type = type_mapping.get(return_type, "Object")
@@ -1156,7 +1260,7 @@ class ProgrammingCapabilityManager:
             "str": "std::string",
             "list": "std::vector<auto>",
             "dict": "std::map<std::string, auto>",
-            "Any": "auto"
+            "Any": "auto",
         }
 
         cpp_return_type = type_mapping.get(return_type, "void")
@@ -1216,7 +1320,7 @@ class ProgrammingCapabilityManager:
             # void 函数，添加一些操作
             if "print" in desc_lower or "log" in desc_lower:
                 if params and len(params) >= 1:
-                    code += f'    std::cout << {params[0]} << std::endl;\n'
+                    code += f"    std::cout << {params[0]} << std::endl;\n"
                 else:
                     code += '    std::cout << "操作完成" << std::endl;\n'
             else:
@@ -1226,7 +1330,9 @@ class ProgrammingCapabilityManager:
 
         return code
 
-    def _generate_typescript_function(self, function_name: str, description: str) -> str:
+    def _generate_typescript_function(
+        self, function_name: str, description: str
+    ) -> str:
         """生成TypeScript函数代码"""
         params = self._infer_function_params(description)
         return_type = self._infer_return_type(description) or "any"
@@ -1240,7 +1346,7 @@ class ProgrammingCapabilityManager:
             "str": "string",
             "list": "any[]",
             "dict": "Record<string, any>",
-            "Any": "any"
+            "Any": "any",
         }
 
         ts_return_type = type_mapping.get(return_type, "any")
@@ -1309,7 +1415,7 @@ class ProgrammingCapabilityManager:
             # void 函数，添加一些操作
             if "print" in desc_lower or "log" in desc_lower:
                 if params and len(params) >= 1:
-                    code += f'    console.log({params[0]});\n'
+                    code += f"    console.log({params[0]});\n"
                 else:
                     code += '    console.log("操作完成");\n'
             else:
@@ -1318,7 +1424,7 @@ class ProgrammingCapabilityManager:
         code += "}\n"
 
         # 添加箭头函数版本
-        code += f"\n// 箭头函数版本:\n"
+        code += "\n// 箭头函数版本:\n"
         code += f"// const {function_name} = ({params_str}): {ts_return_type} => {{\n"
         code += f"//     // {description}\n"
         # 根据描述关键词生成箭头函数实现
@@ -1330,56 +1436,56 @@ class ProgrammingCapabilityManager:
                 if params and len(params) >= 2:
                     code += f"//     return {params[0]} + {params[1]};\n"
                 else:
-                    code += f"//     return 0;\n"
+                    code += "//     return 0;\n"
             elif "check" in desc_lower or "validate" in desc_lower:
-                code += f"//     return true;\n"
+                code += "//     return true;\n"
             elif "filter" in desc_lower:
                 if params and len(params) >= 1:
                     code += f"//     return {params[0]}.filter((item: any) => item);\n"
                 else:
-                    code += f"//     return []  # 返回空列表;\n"
+                    code += "//     return []  # 返回空列表;\n"
             elif "map" in desc_lower or "transform" in desc_lower:
                 if params and len(params) >= 1:
                     code += f"//     return {params[0]}.map((item: any) => item);\n"
                 else:
-                    code += f"//     return []  # 返回空列表;\n"
+                    code += "//     return []  # 返回空列表;\n"
             elif "get" in desc_lower or "retrieve" in desc_lower:
                 if ts_return_type == "number":
-                    code += f"//     return 0;\n"
+                    code += "//     return 0;\n"
                 elif ts_return_type == "boolean":
-                    code += f"//     return true;\n"
+                    code += "//     return true;\n"
                 elif ts_return_type == "string":
-                    code += f"//     return '';\n"
+                    code += "//     return '';\n"
                 elif ts_return_type == "any[]":
-                    code += f"//     return []  # 返回空列表;\n"
+                    code += "//     return []  # 返回空列表;\n"
                 elif ts_return_type == "Record<string, any>":
                     code += f"//     return {{}};\n"
                 else:
-                    code += f"//     return null;\n"
+                    code += "//     return null;\n"
             else:
                 # 默认返回语句
                 if ts_return_type == "number":
-                    code += f"//     return 0;\n"
+                    code += "//     return 0;\n"
                 elif ts_return_type == "boolean":
-                    code += f"//     return true;\n"
+                    code += "//     return true;\n"
                 elif ts_return_type == "string":
-                    code += f"//     return '';\n"
+                    code += "//     return '';\n"
                 elif ts_return_type == "any[]":
-                    code += f"//     return []  # 返回空列表;\n"
+                    code += "//     return []  # 返回空列表;\n"
                 elif ts_return_type == "Record<string, any>":
                     code += f"//     return {{}};\n"
                 else:
-                    code += f"//     return null;\n"
+                    code += "//     return null;\n"
         else:
             # void 箭头函数，添加一些操作
             if "print" in desc_lower or "log" in desc_lower:
                 if params and len(params) >= 1:
                     code += f"//     console.log({params[0]});\n"
                 else:
-                    code += f'//     console.log("操作完成");\n'
+                    code += '//     console.log("操作完成");\n'
             else:
-                code += f"//     // 执行操作\n"
-        code += f"// }};\n"
+                code += "//     // 执行操作\n"
+        code += "// }};\n"
 
         return code
 
@@ -1397,7 +1503,7 @@ class ProgrammingCapabilityManager:
             "str": "char*",
             "list": "void*",
             "dict": "void*",
-            "Any": "void*"
+            "Any": "void*",
         }
 
         c_return_type = type_mapping.get(return_type, "void")
@@ -1477,7 +1583,7 @@ class ProgrammingCapabilityManager:
             "str": "String",
             "list": "Vec<Box<dyn Any>>",
             "dict": "HashMap<String, Box<dyn Any>>",
-            "Any": "Box<dyn Any>"
+            "Any": "Box<dyn Any>",
         }
 
         rust_return_type = type_mapping.get(return_type, "()")
@@ -1508,7 +1614,9 @@ class ProgrammingCapabilityManager:
                 code += "    true\n"
             elif "filter" in desc_lower:
                 if params and len(params) >= 1:
-                    code += f"    {params[0]}.into_iter().filter(|item| true).collect()\n"
+                    code += (
+                        f"    {params[0]}.into_iter().filter(|item| true).collect()\n"
+                    )
                 else:
                     code += "    Vec::new()\n"
             elif "map" in desc_lower or "transform" in desc_lower:
@@ -1568,9 +1676,9 @@ class ProgrammingCapabilityManager:
         """生成Go函数代码"""
         # Go函数名使用驼峰命名
         func_name = function_name
-        if '_' in func_name:
-            parts = func_name.split('_')
-            func_name = parts[0] + ''.join(p.title() for p in parts[1:])
+        if "_" in func_name:
+            parts = func_name.split("_")
+            func_name = parts[0] + "".join(p.title() for p in parts[1:])
 
         params = self._infer_function_params(description)
         return_type = self._infer_return_type(description) or ""
@@ -1584,7 +1692,7 @@ class ProgrammingCapabilityManager:
             "str": "string",
             "list": "[]interface{}",
             "dict": "map[string]interface{}",
-            "Any": "interface{}"
+            "Any": "interface{}",
         }
 
         go_return_type = type_mapping.get(return_type, "")
@@ -1629,9 +1737,9 @@ class ProgrammingCapabilityManager:
         """生成C#函数代码"""
         # C#方法名使用帕斯卡命名
         method_name = function_name
-        if '_' in method_name:
-            parts = method_name.split('_')
-            method_name = ''.join(p.title() for p in parts)
+        if "_" in method_name:
+            parts = method_name.split("_")
+            method_name = "".join(p.title() for p in parts)
 
         params = self._infer_function_params(description)
         return_type = self._infer_return_type(description) or "void"
@@ -1645,7 +1753,7 @@ class ProgrammingCapabilityManager:
             "str": "string",
             "list": "List<object>",
             "dict": "Dictionary<string, object>",
-            "Any": "object"
+            "Any": "object",
         }
 
         csharp_return_type = type_mapping.get(return_type, "void")
@@ -1689,8 +1797,9 @@ class ProgrammingCapabilityManager:
     def _generate_php_function(self, function_name: str, description: str) -> str:
         """生成PHP函数代码"""
         params = self._infer_function_params(description)
-        params_str = ", ".join(
-            [f"${param}" for param in params]) if params else "...$args"
+        params_str = (
+            ", ".join([f"${param}" for param in params]) if params else "...$args"
+        )
 
         code = f"function {function_name}({params_str})\n"
         code += "{\n"
@@ -1748,7 +1857,7 @@ class ProgrammingCapabilityManager:
             "str": "String",
             "list": "[Any]",
             "dict": "[String: Any]",
-            "Any": "Any"
+            "Any": "Any",
         }
 
         swift_return_type = type_mapping.get(return_type, "Void")
@@ -1801,7 +1910,7 @@ class ProgrammingCapabilityManager:
             "str": "String",
             "list": "List<Any>",
             "dict": "Map<String, Any>",
-            "Any": "Any"
+            "Any": "Any",
         }
 
         kotlin_return_type = type_mapping.get(return_type, "Unit")
@@ -1888,20 +1997,20 @@ class ProgrammingCapabilityManager:
             if attributes:
                 example_attr = attributes[0]
                 code += f"\n    def get_{example_attr}(self):\n"
-                code += f"        \"\"\"获取{example_attr}属性\"\"\"\n"
+                code += f'        """获取{example_attr}属性"""\n'
                 code += f"        return self.{example_attr}\n\n"
                 code += f"    def set_{example_attr}(self, value):\n"
-                code += f"        \"\"\"设置{example_attr}属性\"\"\"\n"
+                code += f'        """设置{example_attr}属性"""\n'
                 code += f"        self.{example_attr} = value\n"
             else:
-                code += f"\n    def example_method(self):\n"
-                code += f"        \"\"\"示例方法\"\"\"\n"
-                code += f"        return \"这是一个{description}类\"\n"
+                code += "\n    def example_method(self):\n"
+                code += '        """示例方法"""\n'
+                code += f'        return "这是一个{description}类"\n'
 
             # 生成字符串表示方法
-            code += f"\n    def __str__(self):\n"
-            code += f"        \"\"\"字符串表示\"\"\"\n"
-            code += f"        return f\"{class_name}({', '.join([f'{attr}={{self.{attr}}}' for attr in attributes])})\"\n"
+            code += "\n    def __str__(self):\n"
+            code += '        """字符串表示"""\n'
+            code += "        return f\"{class_name}({', '.join([f'{attr}={{self.{attr}}}' for attr in attributes])})\"\n"
 
             return code
         elif language == ProgrammingLanguage.JAVA:
@@ -1944,7 +2053,7 @@ class ProgrammingCapabilityManager:
 
             # 构造函数
             if attributes:
-                code += f"    constructor("
+                code += "    constructor("
                 code += ", ".join([f"{attr} = null" for attr in attributes])
                 code += ") {\n"
                 for attr in attributes:
@@ -1993,7 +2102,7 @@ class ProgrammingCapabilityManager:
                 code += f"    private {attr}: any;\n"
 
             # 构造函数
-            code += f"\n    constructor("
+            code += "\n    constructor("
             if attributes:
                 code += ", ".join([f"{attr}: any = null" for attr in attributes])
             code += ") {\n"
@@ -2019,14 +2128,14 @@ class ProgrammingCapabilityManager:
             attributes = self._extract_class_attributes(description)
 
             code = f"class {class_name} {{\n"
-            code += f"private:\n"
+            code += "private:\n"
 
             # 私有成员变量
             for attr in attributes:
                 code += f"    std::string {attr};\n"
 
-            code += f"\npublic:\n"
-            code += f"    // 构造函数\n"
+            code += "\npublic:\n"
+            code += "    // 构造函数\n"
             code += f"    {class_name}("
             if attributes:
                 code += ", ".join([f"std::string {attr}" for attr in attributes])
@@ -2046,14 +2155,14 @@ class ProgrammingCapabilityManager:
                 code += "    }\n"
 
             # toString方法
-            code += f"\n    std::string toString() const {{\n"
-            code += f"        return \"{class_name}(\""
+            code += "\n    std::string toString() const {{\n"
+            code += f'        return "{class_name}("'
             if attributes:
                 for i, attr in enumerate(attributes):
                     if i > 0:
-                        code += ' + \", \"'
-                    code += f' + std::to_string(this->{attr})'
-            code += " + \")\";\n"
+                        code += ' + ", "'
+                    code += f" + std::to_string(this->{attr})"
+            code += ' + ")";\n'
             code += "    }\n"
             code += "};\n"
             return code
@@ -2080,14 +2189,15 @@ class ProgrammingCapabilityManager:
             code += "    }\n"
 
             # ToString方法
-            code += f"\n    public override string ToString()\n"
+            code += "\n    public override string ToString()\n"
             code += "    {\n"
-            code += f"        return $\"{class_name}("
+            code += f'        return $"{class_name}('
             if attributes:
                 attrs_str = "; ".join(
-                    [f"{attr.title()}={{this.{attr.title()}}}" for attr in attributes])
+                    [f"{attr.title()}={{this.{attr.title()}}}" for attr in attributes]
+                )
                 code += attrs_str
-            code += ")\";\n"
+            code += ')";\n'
             code += "    }\n"
             code += "}\n"
             return code
@@ -2103,7 +2213,7 @@ class ProgrammingCapabilityManager:
 
             code += f"impl {class_name} {{\n"
             # 构造函数
-            code += f"    fn new("
+            code += "    fn new("
             if attributes:
                 code += ", ".join([f"{attr}: String" for attr in attributes])
             code += ") -> Self {\n"
@@ -2123,16 +2233,16 @@ class ProgrammingCapabilityManager:
                 code += "    }\n"
 
             # to_string方法
-            code += f"    fn to_string(&self) -> String {{\n"
-            code += f"        format!(\"{class_name}("
+            code += "    fn to_string(&self) -> String {{\n"
+            code += f'        format!("{class_name}('
             if attributes:
                 attrs_fmt = ", ".join([f"{attr}: {{}}"] * len(attributes))
                 code += attrs_fmt
-                code += ")\""
+                code += ')"'
                 for attr in attributes:
                     code += f", self.{attr}"
             else:
-                code += ")\""
+                code += ')"'
             code += ")\n"
             code += "    }\n"
             code += "}\n"
@@ -2169,15 +2279,15 @@ class ProgrammingCapabilityManager:
 
             # String方法
             code += f"func (c *{class_name}) String() string {{\n"
-            code += f"    return fmt.Sprintf(\"{class_name}("
+            code += f'    return fmt.Sprintf("{class_name}('
             if attributes:
                 attrs_fmt = ", ".join([f"{attr.title()}: %s"] * len(attributes))
                 code += attrs_fmt
-                code += ")\""
+                code += ')"'
                 for attr in attributes:
                     code += f", c.{attr.title()}"
             else:
-                code += ")\""
+                code += ')"'
             code += ")\n"
             code += "}\n"
             return code
@@ -2191,7 +2301,7 @@ class ProgrammingCapabilityManager:
         # 使用帕斯卡命名法
         function_name = self._extract_function_name(description)
         # 转换为帕斯卡命名：首字母大写
-        return function_name.title().replace('_', '')
+        return function_name.title().replace("_", "")
 
     def _extract_class_attributes(self, description: str) -> List[str]:
         """从描述中提取类属性"""
@@ -2209,7 +2319,7 @@ class ProgrammingCapabilityManager:
             "电影": ["片名", "导演", "演员", "时长", "上映年份"],
             "音乐": ["歌名", "歌手", "专辑", "时长", "流派"],
             "文件": ["文件名", "大小", "类型", "创建时间", "路径"],
-            "任务": ["标题", "描述", "优先级", "状态", "截止时间"]
+            "任务": ["标题", "描述", "优先级", "状态", "截止时间"],
         }
 
         # 尝试匹配已知类别
@@ -2222,7 +2332,7 @@ class ProgrammingCapabilityManager:
         # 如果没有匹配到已知类别，提取描述中的名词作为属性
         if not attributes:
             # 简单分词提取名词（中文）
-            words = re.findall(r'[\u4e00-\u9fff]{2,4}', description)
+            words = re.findall(r"[\u4e00-\u9fff]{2,4}", description)
             if words:
                 # 取前3个不同的词作为属性
                 attributes = list(dict.fromkeys(words))[:3]
@@ -2234,18 +2344,20 @@ class ProgrammingCapabilityManager:
         snake_attributes = []
         for attr in attributes:
             # 完整处理）
-            if re.search(r'[\u4e00-\u9fff]', attr):
+            if re.search(r"[\u4e00-\u9fff]", attr):
                 # 中文转拼音实现，实际应该使用拼音库
-                pinyin_name = re.sub(r'[^\w]', '_', attr.lower())
+                pinyin_name = re.sub(r"[^\w]", "_", attr.lower())
                 snake_attributes.append(pinyin_name)
             else:
                 # 已经是英文或拼音，转换为snake_case
-                snake_name = re.sub(r'[^a-zA-Z0-9]+', '_', attr.lower())
+                snake_name = re.sub(r"[^a-zA-Z0-9]+", "_", attr.lower())
                 snake_attributes.append(snake_name)
 
         return snake_attributes
 
-    def _generate_algorithm(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_algorithm(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成算法代码"""
         desc_lower = description.lower()
 
@@ -2282,230 +2394,236 @@ class ProgrammingCapabilityManager:
             # 对于其他语言，生成算法框架
             return self._generate_algorithm_framework(description, language)
 
-    def _generate_sort_algorithm(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_sort_algorithm(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成排序算法"""
         code = "def quick_sort(arr):\n"
         code += '    """快速排序算法"""\n'
-        code += '    if len(arr) <= 1:\n'
-        code += '        return arr\n'
-        code += '    pivot = arr[len(arr) // 2]\n'
-        code += '    left = [x for x in arr if x < pivot]\n'
-        code += '    middle = [x for x in arr if x == pivot]\n'
-        code += '    right = [x for x in arr if x > pivot]\n'
-        code += '    return quick_sort(left) + middle + quick_sort(right)\n\n'
-        code += 'def bubble_sort(arr):\n'
+        code += "    if len(arr) <= 1:\n"
+        code += "        return arr\n"
+        code += "    pivot = arr[len(arr) // 2]\n"
+        code += "    left = [x for x in arr if x < pivot]\n"
+        code += "    middle = [x for x in arr if x == pivot]\n"
+        code += "    right = [x for x in arr if x > pivot]\n"
+        code += "    return quick_sort(left) + middle + quick_sort(right)\n\n"
+        code += "def bubble_sort(arr):\n"
         code += '    """冒泡排序算法"""\n'
-        code += '    n = len(arr)\n'
-        code += '    for i in range(n):\n'
-        code += '        for j in range(0, n - i - 1):\n'
-        code += '            if arr[j] > arr[j + 1]:\n'
-        code += '                arr[j], arr[j + 1] = arr[j + 1], arr[j]\n'
-        code += '    return arr\n'
+        code += "    n = len(arr)\n"
+        code += "    for i in range(n):\n"
+        code += "        for j in range(0, n - i - 1):\n"
+        code += "            if arr[j] > arr[j + 1]:\n"
+        code += "                arr[j], arr[j + 1] = arr[j + 1], arr[j]\n"
+        code += "    return arr\n"
 
         return code
 
-    def _generate_search_algorithm(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_search_algorithm(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成搜索算法"""
         code = "def binary_search(arr, target):\n"
         code += '    """二分搜索算法"""\n'
-        code += '    left, right = 0, len(arr) - 1\n'
-        code += '    while left <= right:\n'
-        code += '        mid = left + (right - left) // 2\n'
-        code += '        if arr[mid] == target:\n'
-        code += '            return mid\n'
-        code += '        elif arr[mid] < target:\n'
-        code += '            left = mid + 1\n'
-        code += '        else:\n'
-        code += '            right = mid - 1\n'
-        code += '    return -1\n\n'
-        code += 'def linear_search(arr, target):\n'
+        code += "    left, right = 0, len(arr) - 1\n"
+        code += "    while left <= right:\n"
+        code += "        mid = left + (right - left) // 2\n"
+        code += "        if arr[mid] == target:\n"
+        code += "            return mid\n"
+        code += "        elif arr[mid] < target:\n"
+        code += "            left = mid + 1\n"
+        code += "        else:\n"
+        code += "            right = mid - 1\n"
+        code += "    return -1\n\n"
+        code += "def linear_search(arr, target):\n"
         code += '    """线性搜索算法"""\n'
-        code += '    for i, item in enumerate(arr):\n'
-        code += '        if item == target:\n'
-        code += '            return i\n'
-        code += '    return -1\n'
+        code += "    for i, item in enumerate(arr):\n"
+        code += "        if item == target:\n"
+        code += "            return i\n"
+        code += "    return -1\n"
 
         return code
 
-    def _generate_graph_algorithm(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_graph_algorithm(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成图算法"""
         if language == ProgrammingLanguage.PYTHON:
             code = "from collections import deque\n\n"
             code += "def bfs(graph, start):\n"
             code += '    """广度优先搜索"""\n'
-            code += '    visited = set()\n'
-            code += '    queue = deque([start])\n'
-            code += '    visited.add(start)\n'
-            code += '    while queue:\n'
-            code += '        vertex = queue.popleft()\n'
-            code += '        for neighbor in graph.get(vertex, []):\n'
-            code += '            if neighbor not in visited:\n'
-            code += '                visited.add(neighbor)\n'
-            code += '                queue.append(neighbor)\n'
-            code += '    return visited\n\n'
+            code += "    visited = set()\n"
+            code += "    queue = deque([start])\n"
+            code += "    visited.add(start)\n"
+            code += "    while queue:\n"
+            code += "        vertex = queue.popleft()\n"
+            code += "        for neighbor in graph.get(vertex, []):\n"
+            code += "            if neighbor not in visited:\n"
+            code += "                visited.add(neighbor)\n"
+            code += "                queue.append(neighbor)\n"
+            code += "    return visited\n\n"
             code += "def dfs(graph, start):\n"
             code += '    """深度优先搜索"""\n'
-            code += '    visited = set()\n'
-            code += '    def dfs_recursive(vertex):\n'
-            code += '        visited.add(vertex)\n'
-            code += '        for neighbor in graph.get(vertex, []):\n'
-            code += '            if neighbor not in visited:\n'
-            code += '                dfs_recursive(neighbor)\n'
-            code += '    dfs_recursive(start)\n'
-            code += '    return visited\n\n'
+            code += "    visited = set()\n"
+            code += "    def dfs_recursive(vertex):\n"
+            code += "        visited.add(vertex)\n"
+            code += "        for neighbor in graph.get(vertex, []):\n"
+            code += "            if neighbor not in visited:\n"
+            code += "                dfs_recursive(neighbor)\n"
+            code += "    dfs_recursive(start)\n"
+            code += "    return visited\n\n"
             code += "def has_cycle(graph):\n"
             code += '    """检测图中是否有环"""\n'
-            code += '    visited = set()\n'
-            code += '    recursion_stack = set()\n'
-            code += '    def has_cycle_util(vertex):\n'
-            code += '        visited.add(vertex)\n'
-            code += '        recursion_stack.add(vertex)\n'
-            code += '        for neighbor in graph.get(vertex, []):\n'
-            code += '            if neighbor not in visited:\n'
-            code += '                if has_cycle_util(neighbor):\n'
-            code += '                    return True\n'
-            code += '            elif neighbor in recursion_stack:\n'
-            code += '                return True\n'
-            code += '        recursion_stack.remove(vertex)\n'
-            code += '        return False\n'
-            code += '    for vertex in graph:\n'
-            code += '        if vertex not in visited:\n'
-            code += '            if has_cycle_util(vertex):\n'
-            code += '                return True\n'
-            code += '    return False\n'
+            code += "    visited = set()\n"
+            code += "    recursion_stack = set()\n"
+            code += "    def has_cycle_util(vertex):\n"
+            code += "        visited.add(vertex)\n"
+            code += "        recursion_stack.add(vertex)\n"
+            code += "        for neighbor in graph.get(vertex, []):\n"
+            code += "            if neighbor not in visited:\n"
+            code += "                if has_cycle_util(neighbor):\n"
+            code += "                    return True\n"
+            code += "            elif neighbor in recursion_stack:\n"
+            code += "                return True\n"
+            code += "        recursion_stack.remove(vertex)\n"
+            code += "        return False\n"
+            code += "    for vertex in graph:\n"
+            code += "        if vertex not in visited:\n"
+            code += "            if has_cycle_util(vertex):\n"
+            code += "                return True\n"
+            code += "    return False\n"
             return code
         elif language == ProgrammingLanguage.JAVASCRIPT:
             code = "// 图算法 - JavaScript实现\n"
             code += "function bfs(graph, start) {\n"
-            code += '    // 广度优先搜索\n'
-            code += '    const visited = new Set();\n'
-            code += '    const queue = [start];\n'
-            code += '    visited.add(start);\n'
-            code += '    while (queue.length > 0) {\n'
-            code += '        const vertex = queue.shift();\n'
-            code += '        const neighbors = graph[vertex] || [];\n'
-            code += '        for (const neighbor of neighbors) {\n'
-            code += '            if (!visited.has(neighbor)) {\n'
-            code += '                visited.add(neighbor);\n'
-            code += '                queue.push(neighbor);\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    return visited;\n'
-            code += '}\n\n'
+            code += "    // 广度优先搜索\n"
+            code += "    const visited = new Set();\n"
+            code += "    const queue = [start];\n"
+            code += "    visited.add(start);\n"
+            code += "    while (queue.length > 0) {\n"
+            code += "        const vertex = queue.shift();\n"
+            code += "        const neighbors = graph[vertex] || [];\n"
+            code += "        for (const neighbor of neighbors) {\n"
+            code += "            if (!visited.has(neighbor)) {\n"
+            code += "                visited.add(neighbor);\n"
+            code += "                queue.push(neighbor);\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    return visited;\n"
+            code += "}\n\n"
             code += "function dfs(graph, start) {\n"
-            code += '    // 深度优先搜索\n'
-            code += '    const visited = new Set();\n'
-            code += '    function dfsRecursive(vertex) {\n'
-            code += '        visited.add(vertex);\n'
-            code += '        const neighbors = graph[vertex] || [];\n'
-            code += '        for (const neighbor of neighbors) {\n'
-            code += '            if (!visited.has(neighbor)) {\n'
-            code += '                dfsRecursive(neighbor);\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    dfsRecursive(start);\n'
-            code += '    return visited;\n'
-            code += '}\n\n'
+            code += "    // 深度优先搜索\n"
+            code += "    const visited = new Set();\n"
+            code += "    function dfsRecursive(vertex) {\n"
+            code += "        visited.add(vertex);\n"
+            code += "        const neighbors = graph[vertex] || [];\n"
+            code += "        for (const neighbor of neighbors) {\n"
+            code += "            if (!visited.has(neighbor)) {\n"
+            code += "                dfsRecursive(neighbor);\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    dfsRecursive(start);\n"
+            code += "    return visited;\n"
+            code += "}\n\n"
             code += "function hasCycle(graph) {\n"
-            code += '    // 检测图中是否有环\n'
-            code += '    const visited = new Set();\n'
-            code += '    const recursionStack = new Set();\n'
-            code += '    function hasCycleUtil(vertex) {\n'
-            code += '        visited.add(vertex);\n'
-            code += '        recursionStack.add(vertex);\n'
-            code += '        const neighbors = graph[vertex] || [];\n'
-            code += '        for (const neighbor of neighbors) {\n'
-            code += '            if (!visited.has(neighbor)) {\n'
-            code += '                if (hasCycleUtil(neighbor)) {\n'
-            code += '                    return true;\n'
-            code += '                }\n'
-            code += '            } else if (recursionStack.has(neighbor)) {\n'
-            code += '                return true;\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '        recursionStack.delete(vertex);\n'
-            code += '        return false;\n'
-            code += '    }\n'
-            code += '    for (const vertex in graph) {\n'
-            code += '        if (!visited.has(vertex)) {\n'
-            code += '            if (hasCycleUtil(vertex)) {\n'
-            code += '                return true;\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    return false;\n'
-            code += '}\n'
+            code += "    // 检测图中是否有环\n"
+            code += "    const visited = new Set();\n"
+            code += "    const recursionStack = new Set();\n"
+            code += "    function hasCycleUtil(vertex) {\n"
+            code += "        visited.add(vertex);\n"
+            code += "        recursionStack.add(vertex);\n"
+            code += "        const neighbors = graph[vertex] || [];\n"
+            code += "        for (const neighbor of neighbors) {\n"
+            code += "            if (!visited.has(neighbor)) {\n"
+            code += "                if (hasCycleUtil(neighbor)) {\n"
+            code += "                    return true;\n"
+            code += "                }\n"
+            code += "            } else if (recursionStack.has(neighbor)) {\n"
+            code += "                return true;\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "        recursionStack.delete(vertex);\n"
+            code += "        return false;\n"
+            code += "    }\n"
+            code += "    for (const vertex in graph) {\n"
+            code += "        if (!visited.has(vertex)) {\n"
+            code += "            if (hasCycleUtil(vertex)) {\n"
+            code += "                return true;\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    return false;\n"
+            code += "}\n"
             return code
         elif language == ProgrammingLanguage.JAVA:
             code = "// 图算法 - Java实现\n"
             code += "import java.util.*;\n\n"
             code += "public class GraphAlgorithms {\n"
-            code += '    // 广度优先搜索\n'
-            code += '    public static Set<Integer> bfs(Map<Integer, List<Integer>> graph, int start) {\n'
-            code += '        Set<Integer> visited = new HashSet<>();\n'
-            code += '        Queue<Integer> queue = new LinkedList<>();\n'
-            code += '        queue.add(start);\n'
-            code += '        visited.add(start);\n'
-            code += '        while (!queue.isEmpty()) {\n'
-            code += '            int vertex = queue.poll();\n'
-            code += '            List<Integer> neighbors = graph.getOrDefault(vertex, new ArrayList<>());\n'
-            code += '            for (int neighbor : neighbors) {\n'
-            code += '                if (!visited.contains(neighbor)) {\n'
-            code += '                    visited.add(neighbor);\n'
-            code += '                    queue.add(neighbor);\n'
-            code += '                }\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '        return visited;\n'
-            code += '    }\n\n'
-            code += '    // 深度优先搜索\n'
-            code += '    public static Set<Integer> dfs(Map<Integer, List<Integer>> graph, int start) {\n'
-            code += '        Set<Integer> visited = new HashSet<>();\n'
-            code += '        dfsRecursive(graph, start, visited);\n'
-            code += '        return visited;\n'
-            code += '    }\n\n'
-            code += '    private static void dfsRecursive(Map<Integer, List<Integer>> graph, int vertex, Set<Integer> visited) {\n'
-            code += '        visited.add(vertex);\n'
-            code += '        List<Integer> neighbors = graph.getOrDefault(vertex, new ArrayList<>());\n'
-            code += '        for (int neighbor : neighbors) {\n'
-            code += '            if (!visited.contains(neighbor)) {\n'
-            code += '                dfsRecursive(graph, neighbor, visited);\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n\n'
-            code += '    // 检测图中是否有环\n'
-            code += '    public static boolean hasCycle(Map<Integer, List<Integer>> graph) {\n'
-            code += '        Set<Integer> visited = new HashSet<>();\n'
-            code += '        Set<Integer> recursionStack = new HashSet<>();\n'
-            code += '        for (int vertex : graph.keySet()) {\n'
-            code += '            if (!visited.contains(vertex)) {\n'
-            code += '                if (hasCycleUtil(graph, vertex, visited, recursionStack)) {\n'
-            code += '                    return true;\n'
-            code += '                }\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '        return false;\n'
-            code += '    }\n\n'
-            code += '    private static boolean hasCycleUtil(Map<Integer, List<Integer>> graph, int vertex, \n'
-            code += '                                         Set<Integer> visited, Set<Integer> recursionStack) {\n'
-            code += '        visited.add(vertex);\n'
-            code += '        recursionStack.add(vertex);\n'
-            code += '        List<Integer> neighbors = graph.getOrDefault(vertex, new ArrayList<>());\n'
-            code += '        for (int neighbor : neighbors) {\n'
-            code += '            if (!visited.contains(neighbor)) {\n'
-            code += '                if (hasCycleUtil(graph, neighbor, visited, recursionStack)) {\n'
-            code += '                    return true;\n'
-            code += '                }\n'
-            code += '            } else if (recursionStack.contains(neighbor)) {\n'
-            code += '                return true;\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '        recursionStack.remove(vertex);\n'
-            code += '        return false;\n'
-            code += '    }\n'
-            code += '}\n'
+            code += "    // 广度优先搜索\n"
+            code += "    public static Set<Integer> bfs(Map<Integer, List<Integer>> graph, int start) {\n"
+            code += "        Set<Integer> visited = new HashSet<>();\n"
+            code += "        Queue<Integer> queue = new LinkedList<>();\n"
+            code += "        queue.add(start);\n"
+            code += "        visited.add(start);\n"
+            code += "        while (!queue.isEmpty()) {\n"
+            code += "            int vertex = queue.poll();\n"
+            code += "            List<Integer> neighbors = graph.getOrDefault(vertex, new ArrayList<>());\n"
+            code += "            for (int neighbor : neighbors) {\n"
+            code += "                if (!visited.contains(neighbor)) {\n"
+            code += "                    visited.add(neighbor);\n"
+            code += "                    queue.add(neighbor);\n"
+            code += "                }\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "        return visited;\n"
+            code += "    }\n\n"
+            code += "    // 深度优先搜索\n"
+            code += "    public static Set<Integer> dfs(Map<Integer, List<Integer>> graph, int start) {\n"
+            code += "        Set<Integer> visited = new HashSet<>();\n"
+            code += "        dfsRecursive(graph, start, visited);\n"
+            code += "        return visited;\n"
+            code += "    }\n\n"
+            code += "    private static void dfsRecursive(Map<Integer, List<Integer>> graph, int vertex, Set<Integer> visited) {\n"
+            code += "        visited.add(vertex);\n"
+            code += "        List<Integer> neighbors = graph.getOrDefault(vertex, new ArrayList<>());\n"
+            code += "        for (int neighbor : neighbors) {\n"
+            code += "            if (!visited.contains(neighbor)) {\n"
+            code += "                dfsRecursive(graph, neighbor, visited);\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n\n"
+            code += "    // 检测图中是否有环\n"
+            code += "    public static boolean hasCycle(Map<Integer, List<Integer>> graph) {\n"
+            code += "        Set<Integer> visited = new HashSet<>();\n"
+            code += "        Set<Integer> recursionStack = new HashSet<>();\n"
+            code += "        for (int vertex : graph.keySet()) {\n"
+            code += "            if (!visited.contains(vertex)) {\n"
+            code += "                if (hasCycleUtil(graph, vertex, visited, recursionStack)) {\n"
+            code += "                    return true;\n"
+            code += "                }\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "        return false;\n"
+            code += "    }\n\n"
+            code += "    private static boolean hasCycleUtil(Map<Integer, List<Integer>> graph, int vertex, \n"
+            code += "                                         Set<Integer> visited, Set<Integer> recursionStack) {\n"
+            code += "        visited.add(vertex);\n"
+            code += "        recursionStack.add(vertex);\n"
+            code += "        List<Integer> neighbors = graph.getOrDefault(vertex, new ArrayList<>());\n"
+            code += "        for (int neighbor : neighbors) {\n"
+            code += "            if (!visited.contains(neighbor)) {\n"
+            code += "                if (hasCycleUtil(graph, neighbor, visited, recursionStack)) {\n"
+            code += "                    return true;\n"
+            code += "                }\n"
+            code += "            } else if (recursionStack.contains(neighbor)) {\n"
+            code += "                return true;\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "        recursionStack.remove(vertex);\n"
+            code += "        return false;\n"
+            code += "    }\n"
+            code += "}\n"
             return code
         elif language == ProgrammingLanguage.CPP:
             code = "// 图算法 - C++实现\n"
@@ -2517,204 +2635,208 @@ class ProgrammingCapabilityManager:
             code += "using namespace std;\n\n"
             code += "// 广度优先搜索\n"
             code += "unordered_set<int> bfs(unordered_map<int, vector<int>>& graph, int start) {\n"
-            code += '    unordered_set<int> visited;\n'
-            code += '    queue<int> q;\n'
-            code += '    q.push(start);\n'
-            code += '    visited.insert(start);\n'
-            code += '    while (!q.empty()) {\n'
-            code += '        int vertex = q.front();\n'
-            code += '        q.pop();\n'
-            code += '        if (graph.find(vertex) != graph.end()) {\n'
-            code += '            for (int neighbor : graph[vertex]) {\n'
-            code += '                if (visited.find(neighbor) == visited.end()) {\n'
-            code += '                    visited.insert(neighbor);\n'
-            code += '                    q.push(neighbor);\n'
-            code += '                }\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    return visited;\n'
-            code += '}\n\n'
+            code += "    unordered_set<int> visited;\n"
+            code += "    queue<int> q;\n"
+            code += "    q.push(start);\n"
+            code += "    visited.insert(start);\n"
+            code += "    while (!q.empty()) {\n"
+            code += "        int vertex = q.front();\n"
+            code += "        q.pop();\n"
+            code += "        if (graph.find(vertex) != graph.end()) {\n"
+            code += "            for (int neighbor : graph[vertex]) {\n"
+            code += "                if (visited.find(neighbor) == visited.end()) {\n"
+            code += "                    visited.insert(neighbor);\n"
+            code += "                    q.push(neighbor);\n"
+            code += "                }\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    return visited;\n"
+            code += "}\n\n"
             code += "// 深度优先搜索\n"
             code += "void dfsUtil(unordered_map<int, vector<int>>& graph, int vertex, unordered_set<int>& visited) {\n"
-            code += '    visited.insert(vertex);\n'
-            code += '    if (graph.find(vertex) != graph.end()) {\n'
-            code += '        for (int neighbor : graph[vertex]) {\n'
-            code += '            if (visited.find(neighbor) == visited.end()) {\n'
-            code += '                dfsUtil(graph, neighbor, visited);\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '}\n\n'
+            code += "    visited.insert(vertex);\n"
+            code += "    if (graph.find(vertex) != graph.end()) {\n"
+            code += "        for (int neighbor : graph[vertex]) {\n"
+            code += "            if (visited.find(neighbor) == visited.end()) {\n"
+            code += "                dfsUtil(graph, neighbor, visited);\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "}\n\n"
             code += "unordered_set<int> dfs(unordered_map<int, vector<int>>& graph, int start) {\n"
-            code += '    unordered_set<int> visited;\n'
-            code += '    dfsUtil(graph, start, visited);\n'
-            code += '    return visited;\n'
-            code += '}\n\n'
+            code += "    unordered_set<int> visited;\n"
+            code += "    dfsUtil(graph, start, visited);\n"
+            code += "    return visited;\n"
+            code += "}\n\n"
             code += "// 检测图中是否有环\n"
             code += "bool hasCycleUtil(unordered_map<int, vector<int>>& graph, int vertex, \n"
-            code += '                 unordered_set<int>& visited, unordered_set<int>& recursionStack) {\n'
-            code += '    visited.insert(vertex);\n'
-            code += '    recursionStack.insert(vertex);\n'
-            code += '    if (graph.find(vertex) != graph.end()) {\n'
-            code += '        for (int neighbor : graph[vertex]) {\n'
-            code += '            if (visited.find(neighbor) == visited.end()) {\n'
-            code += '                if (hasCycleUtil(graph, neighbor, visited, recursionStack)) {\n'
-            code += '                    return true;\n'
-            code += '                }\n'
-            code += '            } else if (recursionStack.find(neighbor) != recursionStack.end()) {\n'
-            code += '                return true;\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    recursionStack.erase(vertex);\n'
-            code += '    return false;\n'
-            code += '}\n\n'
+            code += "                 unordered_set<int>& visited, unordered_set<int>& recursionStack) {\n"
+            code += "    visited.insert(vertex);\n"
+            code += "    recursionStack.insert(vertex);\n"
+            code += "    if (graph.find(vertex) != graph.end()) {\n"
+            code += "        for (int neighbor : graph[vertex]) {\n"
+            code += "            if (visited.find(neighbor) == visited.end()) {\n"
+            code += "                if (hasCycleUtil(graph, neighbor, visited, recursionStack)) {\n"
+            code += "                    return true;\n"
+            code += "                }\n"
+            code += "            } else if (recursionStack.find(neighbor) != recursionStack.end()) {\n"
+            code += "                return true;\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    recursionStack.erase(vertex);\n"
+            code += "    return false;\n"
+            code += "}\n\n"
             code += "bool hasCycle(unordered_map<int, vector<int>>& graph) {\n"
-            code += '    unordered_set<int> visited;\n'
-            code += '    unordered_set<int> recursionStack;\n'
-            code += '    for (auto& pair : graph) {\n'
-            code += '        int vertex = pair.first;\n'
-            code += '        if (visited.find(vertex) == visited.end()) {\n'
-            code += '            if (hasCycleUtil(graph, vertex, visited, recursionStack)) {\n'
-            code += '                return true;\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    return false;\n'
-            code += '}\n'
+            code += "    unordered_set<int> visited;\n"
+            code += "    unordered_set<int> recursionStack;\n"
+            code += "    for (auto& pair : graph) {\n"
+            code += "        int vertex = pair.first;\n"
+            code += "        if (visited.find(vertex) == visited.end()) {\n"
+            code += "            if (hasCycleUtil(graph, vertex, visited, recursionStack)) {\n"
+            code += "                return true;\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    return false;\n"
+            code += "}\n"
             return code
         else:
             # 对于其他语言，提供算法描述
             return f"// 图算法: {description}\n// 实现广度优先搜索(BFS)、深度优先搜索(DFS)和环检测算法"
 
-    def _generate_tree_algorithm(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_tree_algorithm(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成树算法"""
         if language == ProgrammingLanguage.PYTHON:
             code = "class TreeNode:\n"
             code += '    """树节点类"""\n'
-            code += '    def __init__(self, value):\n'
-            code += '        self.value = value\n'
-            code += '        self.left = None\n'
-            code += '        self.right = None\n\n'
+            code += "    def __init__(self, value):\n"
+            code += "        self.value = value\n"
+            code += "        self.left = None\n"
+            code += "        self.right = None\n\n"
             code += "def inorder_traversal(root):\n"
             code += '    """中序遍历"""\n'
-            code += '    result = []\n'
-            code += '    def inorder(node):\n'
-            code += '        if node:\n'
-            code += '            inorder(node.left)\n'
-            code += '            result.append(node.value)\n'
-            code += '            inorder(node.right)\n'
-            code += '    inorder(root)\n'
-            code += '    return result\n\n'
+            code += "    result = []\n"
+            code += "    def inorder(node):\n"
+            code += "        if node:\n"
+            code += "            inorder(node.left)\n"
+            code += "            result.append(node.value)\n"
+            code += "            inorder(node.right)\n"
+            code += "    inorder(root)\n"
+            code += "    return result\n\n"
             code += "def tree_height(root):\n"
             code += '    """计算树的高度"""\n'
-            code += '    if not root:\n'
-            code += '        return 0\n'
-            code += '    left_height = tree_height(root.left)\n'
-            code += '    right_height = tree_height(root.right)\n'
-            code += '    return max(left_height, right_height) + 1\n\n'
+            code += "    if not root:\n"
+            code += "        return 0\n"
+            code += "    left_height = tree_height(root.left)\n"
+            code += "    right_height = tree_height(root.right)\n"
+            code += "    return max(left_height, right_height) + 1\n\n"
             code += "def is_bst(root):\n"
             code += '    """检查是否为二叉搜索树"""\n'
-            code += '    def is_bst_util(node, min_val, max_val):\n'
-            code += '        if not node:\n'
-            code += '            return True\n'
-            code += '        if node.value <= min_val or node.value >= max_val:\n'
-            code += '            return False\n'
-            code += '        return (is_bst_util(node.left, min_val, node.value) and\n'
-            code += '                is_bst_util(node.right, node.value, max_val))\n'
+            code += "    def is_bst_util(node, min_val, max_val):\n"
+            code += "        if not node:\n"
+            code += "            return True\n"
+            code += "        if node.value <= min_val or node.value >= max_val:\n"
+            code += "            return False\n"
+            code += "        return (is_bst_util(node.left, min_val, node.value) and\n"
+            code += "                is_bst_util(node.right, node.value, max_val))\n"
             code += '    return is_bst_util(root, float("-inf"), float("inf"))\n'
             return code
         elif language == ProgrammingLanguage.JAVASCRIPT:
             code = "// 树算法 - JavaScript实现\n"
             code += "class TreeNode {\n"
-            code += '    constructor(value) {\n'
-            code += '        this.value = value;\n'
-            code += '        this.left = null;\n'
-            code += '        this.right = null;\n'
-            code += '    }\n'
-            code += '}\n\n'
+            code += "    constructor(value) {\n"
+            code += "        this.value = value;\n"
+            code += "        this.left = null;\n"
+            code += "        this.right = null;\n"
+            code += "    }\n"
+            code += "}\n\n"
             code += "function inorderTraversal(root) {\n"
-            code += '    // 中序遍历\n'
-            code += '    const result = [];\n'
-            code += '    function inorder(node) {\n'
-            code += '        if (node) {\n'
-            code += '            inorder(node.left);\n'
-            code += '            result.push(node.value);\n'
-            code += '            inorder(node.right);\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    inorder(root);\n'
-            code += '    return result;\n'
-            code += '}\n\n'
+            code += "    // 中序遍历\n"
+            code += "    const result = [];\n"
+            code += "    function inorder(node) {\n"
+            code += "        if (node) {\n"
+            code += "            inorder(node.left);\n"
+            code += "            result.push(node.value);\n"
+            code += "            inorder(node.right);\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    inorder(root);\n"
+            code += "    return result;\n"
+            code += "}\n\n"
             code += "function treeHeight(root) {\n"
-            code += '    // 计算树的高度\n'
-            code += '    if (!root) return 0;\n'
-            code += '    const leftHeight = treeHeight(root.left);\n'
-            code += '    const rightHeight = treeHeight(root.right);\n'
-            code += '    return Math.max(leftHeight, rightHeight) + 1;\n'
-            code += '}\n\n'
+            code += "    // 计算树的高度\n"
+            code += "    if (!root) return 0;\n"
+            code += "    const leftHeight = treeHeight(root.left);\n"
+            code += "    const rightHeight = treeHeight(root.right);\n"
+            code += "    return Math.max(leftHeight, rightHeight) + 1;\n"
+            code += "}\n\n"
             code += "function isBST(root) {\n"
-            code += '    // 检查是否为二叉搜索树\n'
-            code += '    function isBSTUtil(node, minVal, maxVal) {\n'
-            code += '        if (!node) return true;\n'
-            code += '        if (node.value <= minVal || node.value >= maxVal) return false;\n'
-            code += '        return isBSTUtil(node.left, minVal, node.value) &&\n'
-            code += '               isBSTUtil(node.right, node.value, maxVal);\n'
-            code += '    }\n'
-            code += '    return isBSTUtil(root, -Infinity, Infinity);\n'
-            code += '}\n'
+            code += "    // 检查是否为二叉搜索树\n"
+            code += "    function isBSTUtil(node, minVal, maxVal) {\n"
+            code += "        if (!node) return true;\n"
+            code += "        if (node.value <= minVal || node.value >= maxVal) return false;\n"
+            code += "        return isBSTUtil(node.left, minVal, node.value) &&\n"
+            code += "               isBSTUtil(node.right, node.value, maxVal);\n"
+            code += "    }\n"
+            code += "    return isBSTUtil(root, -Infinity, Infinity);\n"
+            code += "}\n"
             return code
         elif language == ProgrammingLanguage.JAVA:
             code = "// 树算法 - Java实现\n"
             code += "import java.util.*;\n\n"
             code += "class TreeNode {\n"
-            code += '    int value;\n'
-            code += '    TreeNode left;\n'
-            code += '    TreeNode right;\n'
-            code += '    \n'
-            code += '    TreeNode(int value) {\n'
-            code += '        this.value = value;\n'
-            code += '        this.left = null;\n'
-            code += '        this.right = null;\n'
-            code += '    }\n'
-            code += '}\n\n'
+            code += "    int value;\n"
+            code += "    TreeNode left;\n"
+            code += "    TreeNode right;\n"
+            code += "    \n"
+            code += "    TreeNode(int value) {\n"
+            code += "        this.value = value;\n"
+            code += "        this.left = null;\n"
+            code += "        this.right = null;\n"
+            code += "    }\n"
+            code += "}\n\n"
             code += "class TreeAlgorithms {\n"
-            code += '    // 中序遍历\n'
-            code += '    public static List<Integer> inorderTraversal(TreeNode root) {\n'
-            code += '        List<Integer> result = new ArrayList<>();\n'
-            code += '        inorder(root, result);\n'
-            code += '        return result;\n'
-            code += '    }\n'
-            code += '    \n'
-            code += '    private static void inorder(TreeNode node, List<Integer> result) {\n'
-            code += '        if (node != null) {\n'
-            code += '            inorder(node.left, result);\n'
-            code += '            result.add(node.value);\n'
-            code += '            inorder(node.right, result);\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    \n'
-            code += '    // 计算树的高度\n'
-            code += '    public static int treeHeight(TreeNode root) {\n'
-            code += '        if (root == null) return 0;\n'
-            code += '        int leftHeight = treeHeight(root.left);\n'
-            code += '        int rightHeight = treeHeight(root.right);\n'
-            code += '        return Math.max(leftHeight, rightHeight) + 1;\n'
-            code += '    }\n'
-            code += '    \n'
-            code += '    // 检查是否为二叉搜索树\n'
-            code += '    public static boolean isBST(TreeNode root) {\n'
-            code += '        return isBSTUtil(root, Integer.MIN_VALUE, Integer.MAX_VALUE);\n'
-            code += '    }\n'
-            code += '    \n'
-            code += '    private static boolean isBSTUtil(TreeNode node, int minVal, int maxVal) {\n'
-            code += '        if (node == null) return true;\n'
-            code += '        if (node.value <= minVal || node.value >= maxVal) return false;\n'
-            code += '        return isBSTUtil(node.left, minVal, node.value) &&\n'
-            code += '               isBSTUtil(node.right, node.value, maxVal);\n'
-            code += '    }\n'
-            code += '}\n'
+            code += "    // 中序遍历\n"
+            code += (
+                "    public static List<Integer> inorderTraversal(TreeNode root) {\n"
+            )
+            code += "        List<Integer> result = new ArrayList<>();\n"
+            code += "        inorder(root, result);\n"
+            code += "        return result;\n"
+            code += "    }\n"
+            code += "    \n"
+            code += "    private static void inorder(TreeNode node, List<Integer> result) {\n"
+            code += "        if (node != null) {\n"
+            code += "            inorder(node.left, result);\n"
+            code += "            result.add(node.value);\n"
+            code += "            inorder(node.right, result);\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    \n"
+            code += "    // 计算树的高度\n"
+            code += "    public static int treeHeight(TreeNode root) {\n"
+            code += "        if (root == null) return 0;\n"
+            code += "        int leftHeight = treeHeight(root.left);\n"
+            code += "        int rightHeight = treeHeight(root.right);\n"
+            code += "        return Math.max(leftHeight, rightHeight) + 1;\n"
+            code += "    }\n"
+            code += "    \n"
+            code += "    // 检查是否为二叉搜索树\n"
+            code += "    public static boolean isBST(TreeNode root) {\n"
+            code += "        return isBSTUtil(root, Integer.MIN_VALUE, Integer.MAX_VALUE);\n"
+            code += "    }\n"
+            code += "    \n"
+            code += "    private static boolean isBSTUtil(TreeNode node, int minVal, int maxVal) {\n"
+            code += "        if (node == null) return true;\n"
+            code += "        if (node.value <= minVal || node.value >= maxVal) return false;\n"
+            code += "        return isBSTUtil(node.left, minVal, node.value) &&\n"
+            code += "               isBSTUtil(node.right, node.value, maxVal);\n"
+            code += "    }\n"
+            code += "}\n"
             return code
         elif language == ProgrammingLanguage.CPP:
             code = "// 树算法 - C++实现\n"
@@ -2724,175 +2846,179 @@ class ProgrammingCapabilityManager:
             code += "#include <climits>\n\n"
             code += "using namespace std;\n\n"
             code += "struct TreeNode {\n"
-            code += '    int value;\n'
-            code += '    TreeNode* left;\n'
-            code += '    TreeNode* right;\n'
-            code += '    \n'
-            code += '    TreeNode(int val) : value(val), left(nullptr), right(nullptr) {}\n'
-            code += '};\n\n'
+            code += "    int value;\n"
+            code += "    TreeNode* left;\n"
+            code += "    TreeNode* right;\n"
+            code += "    \n"
+            code += (
+                "    TreeNode(int val) : value(val), left(nullptr), right(nullptr) {}\n"
+            )
+            code += "};\n\n"
             code += "void inorderTraversal(TreeNode* root, vector<int>& result) {\n"
-            code += '    // 中序遍历辅助函数\n'
-            code += '    if (root) {\n'
-            code += '        inorderTraversal(root->left, result);\n'
-            code += '        result.push_back(root->value);\n'
-            code += '        inorderTraversal(root->right, result);\n'
-            code += '    }\n'
-            code += '}\n\n'
+            code += "    // 中序遍历辅助函数\n"
+            code += "    if (root) {\n"
+            code += "        inorderTraversal(root->left, result);\n"
+            code += "        result.push_back(root->value);\n"
+            code += "        inorderTraversal(root->right, result);\n"
+            code += "    }\n"
+            code += "}\n\n"
             code += "vector<int> inorderTraversal(TreeNode* root) {\n"
-            code += '    // 中序遍历\n'
-            code += '    vector<int> result;\n'
-            code += '    inorderTraversal(root, result);\n'
-            code += '    return result;\n'
-            code += '}\n\n'
+            code += "    // 中序遍历\n"
+            code += "    vector<int> result;\n"
+            code += "    inorderTraversal(root, result);\n"
+            code += "    return result;\n"
+            code += "}\n\n"
             code += "int treeHeight(TreeNode* root) {\n"
-            code += '    // 计算树的高度\n'
-            code += '    if (!root) return 0;\n'
-            code += '    int leftHeight = treeHeight(root->left);\n'
-            code += '    int rightHeight = treeHeight(root->right);\n'
-            code += '    return max(leftHeight, rightHeight) + 1;\n'
-            code += '}\n\n'
+            code += "    // 计算树的高度\n"
+            code += "    if (!root) return 0;\n"
+            code += "    int leftHeight = treeHeight(root->left);\n"
+            code += "    int rightHeight = treeHeight(root->right);\n"
+            code += "    return max(leftHeight, rightHeight) + 1;\n"
+            code += "}\n\n"
             code += "bool isBSTUtil(TreeNode* node, int minVal, int maxVal) {\n"
-            code += '    // 检查二叉搜索树辅助函数\n'
-            code += '    if (!node) return true;\n'
-            code += '    if (node->value <= minVal || node->value >= maxVal) return false;\n'
-            code += '    return isBSTUtil(node->left, minVal, node->value) &&\n'
-            code += '           isBSTUtil(node->right, node->value, maxVal);\n'
-            code += '}\n\n'
+            code += "    // 检查二叉搜索树辅助函数\n"
+            code += "    if (!node) return true;\n"
+            code += "    if (node->value <= minVal || node->value >= maxVal) return false;\n"
+            code += "    return isBSTUtil(node->left, minVal, node->value) &&\n"
+            code += "           isBSTUtil(node->right, node->value, maxVal);\n"
+            code += "}\n\n"
             code += "bool isBST(TreeNode* root) {\n"
-            code += '    // 检查是否为二叉搜索树\n'
-            code += '    return isBSTUtil(root, INT_MIN, INT_MAX);\n'
-            code += '}\n'
+            code += "    // 检查是否为二叉搜索树\n"
+            code += "    return isBSTUtil(root, INT_MIN, INT_MAX);\n"
+            code += "}\n"
             return code
         else:
             return f"// 树算法: {description}\n// 该语言暂不支持树算法，请使用Python、JavaScript、Java或C++"
 
-    def _generate_dp_algorithm(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_dp_algorithm(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成动态规划算法"""
         if language == ProgrammingLanguage.PYTHON:
             code = "def fibonacci_dp(n):\n"
             code += '    """斐波那契数列动态规划"""\n'
-            code += '    if n <= 1:\n'
-            code += '        return n\n'
-            code += '    dp = [0] * (n + 1)\n'
-            code += '    dp[1] = 1\n'
-            code += '    for i in range(2, n + 1):\n'
-            code += '        dp[i] = dp[i-1] + dp[i-2]\n'
-            code += '    return dp[n]\n\n'
+            code += "    if n <= 1:\n"
+            code += "        return n\n"
+            code += "    dp = [0] * (n + 1)\n"
+            code += "    dp[1] = 1\n"
+            code += "    for i in range(2, n + 1):\n"
+            code += "        dp[i] = dp[i-1] + dp[i-2]\n"
+            code += "    return dp[n]\n\n"
             code += "def knapsack_dp(weights, values, capacity):\n"
             code += '    """0-1背包问题动态规划"""\n'
-            code += '    n = len(weights)\n'
-            code += '    dp = [[0] * (capacity + 1) for _ in range(n + 1)]\n'
-            code += '    for i in range(1, n + 1):\n'
-            code += '        for w in range(1, capacity + 1):\n'
-            code += '            if weights[i-1] <= w:\n'
-            code += '                dp[i][w] = max(dp[i-1][w], dp[i-1][w-weights[i-1]] + values[i-1])\n'
-            code += '            else:\n'
-            code += '                dp[i][w] = dp[i-1][w]\n'
-            code += '    return dp[n][capacity]\n\n'
+            code += "    n = len(weights)\n"
+            code += "    dp = [[0] * (capacity + 1) for _ in range(n + 1)]\n"
+            code += "    for i in range(1, n + 1):\n"
+            code += "        for w in range(1, capacity + 1):\n"
+            code += "            if weights[i-1] <= w:\n"
+            code += "                dp[i][w] = max(dp[i-1][w], dp[i-1][w-weights[i-1]] + values[i-1])\n"
+            code += "            else:\n"
+            code += "                dp[i][w] = dp[i-1][w]\n"
+            code += "    return dp[n][capacity]\n\n"
             code += "def longest_common_subsequence(text1, text2):\n"
             code += '    """最长公共子序列动态规划"""\n'
-            code += '    m, n = len(text1), len(text2)\n'
-            code += '    dp = [[0] * (n + 1) for _ in range(m + 1)]\n'
-            code += '    for i in range(1, m + 1):\n'
-            code += '        for j in range(1, n + 1):\n'
-            code += '            if text1[i-1] == text2[j-1]:\n'
-            code += '                dp[i][j] = dp[i-1][j-1] + 1\n'
-            code += '            else:\n'
-            code += '                dp[i][j] = max(dp[i-1][j], dp[i][j-1])\n'
-            code += '    return dp[m][n]\n'
+            code += "    m, n = len(text1), len(text2)\n"
+            code += "    dp = [[0] * (n + 1) for _ in range(m + 1)]\n"
+            code += "    for i in range(1, m + 1):\n"
+            code += "        for j in range(1, n + 1):\n"
+            code += "            if text1[i-1] == text2[j-1]:\n"
+            code += "                dp[i][j] = dp[i-1][j-1] + 1\n"
+            code += "            else:\n"
+            code += "                dp[i][j] = max(dp[i-1][j], dp[i][j-1])\n"
+            code += "    return dp[m][n]\n"
             return code
         elif language == ProgrammingLanguage.JAVASCRIPT:
             code = "// 动态规划算法 - JavaScript实现\n"
             code += "function fibonacciDP(n) {\n"
-            code += '    // 斐波那契数列动态规划\n'
-            code += '    if (n <= 1) return n;\n'
-            code += '    const dp = new Array(n + 1).fill(0);\n'
-            code += '    dp[1] = 1;\n'
-            code += '    for (let i = 2; i <= n; i++) {\n'
-            code += '        dp[i] = dp[i-1] + dp[i-2];\n'
-            code += '    }\n'
-            code += '    return dp[n];\n'
-            code += '}\n\n'
+            code += "    // 斐波那契数列动态规划\n"
+            code += "    if (n <= 1) return n;\n"
+            code += "    const dp = new Array(n + 1).fill(0);\n"
+            code += "    dp[1] = 1;\n"
+            code += "    for (let i = 2; i <= n; i++) {\n"
+            code += "        dp[i] = dp[i-1] + dp[i-2];\n"
+            code += "    }\n"
+            code += "    return dp[n];\n"
+            code += "}\n\n"
             code += "function knapsackDP(weights, values, capacity) {\n"
-            code += '    // 0-1背包问题动态规划\n'
-            code += '    const n = weights.length;\n'
-            code += '    const dp = Array.from({length: n + 1}, () => new Array(capacity + 1).fill(0));\n'
-            code += '    for (let i = 1; i <= n; i++) {\n'
-            code += '        for (let w = 1; w <= capacity; w++) {\n'
-            code += '            if (weights[i-1] <= w) {\n'
-            code += '                dp[i][w] = Math.max(dp[i-1][w], dp[i-1][w-weights[i-1]] + values[i-1]);\n'
-            code += '            } else {\n'
-            code += '                dp[i][w] = dp[i-1][w];\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    return dp[n][capacity];\n'
-            code += '}\n\n'
+            code += "    // 0-1背包问题动态规划\n"
+            code += "    const n = weights.length;\n"
+            code += "    const dp = Array.from({length: n + 1}, () => new Array(capacity + 1).fill(0));\n"
+            code += "    for (let i = 1; i <= n; i++) {\n"
+            code += "        for (let w = 1; w <= capacity; w++) {\n"
+            code += "            if (weights[i-1] <= w) {\n"
+            code += "                dp[i][w] = Math.max(dp[i-1][w], dp[i-1][w-weights[i-1]] + values[i-1]);\n"
+            code += "            } else {\n"
+            code += "                dp[i][w] = dp[i-1][w];\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    return dp[n][capacity];\n"
+            code += "}\n\n"
             code += "function longestCommonSubsequence(text1, text2) {\n"
-            code += '    // 最长公共子序列动态规划\n'
-            code += '    const m = text1.length;\n'
-            code += '    const n = text2.length;\n'
-            code += '    const dp = Array.from({length: m + 1}, () => new Array(n + 1).fill(0));\n'
-            code += '    for (let i = 1; i <= m; i++) {\n'
-            code += '        for (let j = 1; j <= n; j++) {\n'
-            code += '            if (text1[i-1] === text2[j-1]) {\n'
-            code += '                dp[i][j] = dp[i-1][j-1] + 1;\n'
-            code += '            } else {\n'
-            code += '                dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    return dp[m][n];\n'
-            code += '}\n'
+            code += "    // 最长公共子序列动态规划\n"
+            code += "    const m = text1.length;\n"
+            code += "    const n = text2.length;\n"
+            code += "    const dp = Array.from({length: m + 1}, () => new Array(n + 1).fill(0));\n"
+            code += "    for (let i = 1; i <= m; i++) {\n"
+            code += "        for (let j = 1; j <= n; j++) {\n"
+            code += "            if (text1[i-1] === text2[j-1]) {\n"
+            code += "                dp[i][j] = dp[i-1][j-1] + 1;\n"
+            code += "            } else {\n"
+            code += "                dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    return dp[m][n];\n"
+            code += "}\n"
             return code
         elif language == ProgrammingLanguage.JAVA:
             code = "// 动态规划算法 - Java实现\n"
             code += "import java.util.*;\n\n"
             code += "public class DPAlgorithms {\n"
-            code += '    // 斐波那契数列动态规划\n'
-            code += '    public static int fibonacciDP(int n) {\n'
-            code += '        if (n <= 1) return n;\n'
-            code += '        int[] dp = new int[n + 1];\n'
-            code += '        dp[1] = 1;\n'
-            code += '        for (int i = 2; i <= n; i++) {\n'
-            code += '            dp[i] = dp[i-1] + dp[i-2];\n'
-            code += '        }\n'
-            code += '        return dp[n];\n'
-            code += '    }\n'
-            code += '    \n'
-            code += '    // 0-1背包问题动态规划\n'
-            code += '    public static int knapsackDP(int[] weights, int[] values, int capacity) {\n'
-            code += '        int n = weights.length;\n'
-            code += '        int[][] dp = new int[n + 1][capacity + 1];\n'
-            code += '        for (int i = 1; i <= n; i++) {\n'
-            code += '            for (int w = 1; w <= capacity; w++) {\n'
-            code += '                if (weights[i-1] <= w) {\n'
-            code += '                    dp[i][w] = Math.max(dp[i-1][w], dp[i-1][w-weights[i-1]] + values[i-1]);\n'
-            code += '                } else {\n'
-            code += '                    dp[i][w] = dp[i-1][w];\n'
-            code += '                }\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '        return dp[n][capacity];\n'
-            code += '    }\n'
-            code += '    \n'
-            code += '    // 最长公共子序列动态规划\n'
-            code += '    public static int longestCommonSubsequence(String text1, String text2) {\n'
-            code += '        int m = text1.length();\n'
-            code += '        int n = text2.length();\n'
-            code += '        int[][] dp = new int[m + 1][n + 1];\n'
-            code += '        for (int i = 1; i <= m; i++) {\n'
-            code += '            for (int j = 1; j <= n; j++) {\n'
-            code += '                if (text1.charAt(i-1) == text2.charAt(j-1)) {\n'
-            code += '                    dp[i][j] = dp[i-1][j-1] + 1;\n'
-            code += '                } else {\n'
-            code += '                    dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);\n'
-            code += '                }\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '        return dp[m][n];\n'
-            code += '    }\n'
-            code += '}\n'
+            code += "    // 斐波那契数列动态规划\n"
+            code += "    public static int fibonacciDP(int n) {\n"
+            code += "        if (n <= 1) return n;\n"
+            code += "        int[] dp = new int[n + 1];\n"
+            code += "        dp[1] = 1;\n"
+            code += "        for (int i = 2; i <= n; i++) {\n"
+            code += "            dp[i] = dp[i-1] + dp[i-2];\n"
+            code += "        }\n"
+            code += "        return dp[n];\n"
+            code += "    }\n"
+            code += "    \n"
+            code += "    // 0-1背包问题动态规划\n"
+            code += "    public static int knapsackDP(int[] weights, int[] values, int capacity) {\n"
+            code += "        int n = weights.length;\n"
+            code += "        int[][] dp = new int[n + 1][capacity + 1];\n"
+            code += "        for (int i = 1; i <= n; i++) {\n"
+            code += "            for (int w = 1; w <= capacity; w++) {\n"
+            code += "                if (weights[i-1] <= w) {\n"
+            code += "                    dp[i][w] = Math.max(dp[i-1][w], dp[i-1][w-weights[i-1]] + values[i-1]);\n"
+            code += "                } else {\n"
+            code += "                    dp[i][w] = dp[i-1][w];\n"
+            code += "                }\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "        return dp[n][capacity];\n"
+            code += "    }\n"
+            code += "    \n"
+            code += "    // 最长公共子序列动态规划\n"
+            code += "    public static int longestCommonSubsequence(String text1, String text2) {\n"
+            code += "        int m = text1.length();\n"
+            code += "        int n = text2.length();\n"
+            code += "        int[][] dp = new int[m + 1][n + 1];\n"
+            code += "        for (int i = 1; i <= m; i++) {\n"
+            code += "            for (int j = 1; j <= n; j++) {\n"
+            code += "                if (text1.charAt(i-1) == text2.charAt(j-1)) {\n"
+            code += "                    dp[i][j] = dp[i-1][j-1] + 1;\n"
+            code += "                } else {\n"
+            code += "                    dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);\n"
+            code += "                }\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "        return dp[m][n];\n"
+            code += "    }\n"
+            code += "}\n"
             return code
         elif language == ProgrammingLanguage.CPP:
             code = "// 动态规划算法 - C++实现\n"
@@ -2902,222 +3028,226 @@ class ProgrammingCapabilityManager:
             code += "#include <string>\n\n"
             code += "using namespace std;\n\n"
             code += "int fibonacciDP(int n) {\n"
-            code += '    // 斐波那契数列动态规划\n'
-            code += '    if (n <= 1) return n;\n'
-            code += '    vector<int> dp(n + 1, 0);\n'
-            code += '    dp[1] = 1;\n'
-            code += '    for (int i = 2; i <= n; i++) {\n'
-            code += '        dp[i] = dp[i-1] + dp[i-2];\n'
-            code += '    }\n'
-            code += '    return dp[n];\n'
-            code += '}\n\n'
+            code += "    // 斐波那契数列动态规划\n"
+            code += "    if (n <= 1) return n;\n"
+            code += "    vector<int> dp(n + 1, 0);\n"
+            code += "    dp[1] = 1;\n"
+            code += "    for (int i = 2; i <= n; i++) {\n"
+            code += "        dp[i] = dp[i-1] + dp[i-2];\n"
+            code += "    }\n"
+            code += "    return dp[n];\n"
+            code += "}\n\n"
             code += "int knapsackDP(vector<int>& weights, vector<int>& values, int capacity) {\n"
-            code += '    // 0-1背包问题动态规划\n'
-            code += '    int n = weights.size();\n'
-            code += '    vector<vector<int>> dp(n + 1, vector<int>(capacity + 1, 0));\n'
-            code += '    for (int i = 1; i <= n; i++) {\n'
-            code += '        for (int w = 1; w <= capacity; w++) {\n'
-            code += '            if (weights[i-1] <= w) {\n'
-            code += '                dp[i][w] = max(dp[i-1][w], dp[i-1][w-weights[i-1]] + values[i-1]);\n'
-            code += '            } else {\n'
-            code += '                dp[i][w] = dp[i-1][w];\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    return dp[n][capacity];\n'
-            code += '}\n\n'
+            code += "    // 0-1背包问题动态规划\n"
+            code += "    int n = weights.size();\n"
+            code += "    vector<vector<int>> dp(n + 1, vector<int>(capacity + 1, 0));\n"
+            code += "    for (int i = 1; i <= n; i++) {\n"
+            code += "        for (int w = 1; w <= capacity; w++) {\n"
+            code += "            if (weights[i-1] <= w) {\n"
+            code += "                dp[i][w] = max(dp[i-1][w], dp[i-1][w-weights[i-1]] + values[i-1]);\n"
+            code += "            } else {\n"
+            code += "                dp[i][w] = dp[i-1][w];\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    return dp[n][capacity];\n"
+            code += "}\n\n"
             code += "int longestCommonSubsequence(string text1, string text2) {\n"
-            code += '    // 最长公共子序列动态规划\n'
-            code += '    int m = text1.length();\n'
-            code += '    int n = text2.length();\n'
-            code += '    vector<vector<int>> dp(m + 1, vector<int>(n + 1, 0));\n'
-            code += '    for (int i = 1; i <= m; i++) {\n'
-            code += '        for (int j = 1; j <= n; j++) {\n'
-            code += '            if (text1[i-1] == text2[j-1]) {\n'
-            code += '                dp[i][j] = dp[i-1][j-1] + 1;\n'
-            code += '            } else {\n'
-            code += '                dp[i][j] = max(dp[i-1][j], dp[i][j-1]);\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    return dp[m][n];\n'
-            code += '}\n'
+            code += "    // 最长公共子序列动态规划\n"
+            code += "    int m = text1.length();\n"
+            code += "    int n = text2.length();\n"
+            code += "    vector<vector<int>> dp(m + 1, vector<int>(n + 1, 0));\n"
+            code += "    for (int i = 1; i <= m; i++) {\n"
+            code += "        for (int j = 1; j <= n; j++) {\n"
+            code += "            if (text1[i-1] == text2[j-1]) {\n"
+            code += "                dp[i][j] = dp[i-1][j-1] + 1;\n"
+            code += "            } else {\n"
+            code += "                dp[i][j] = max(dp[i-1][j], dp[i][j-1]);\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    return dp[m][n];\n"
+            code += "}\n"
             return code
         else:
             return f"// 动态规划算法: {description}\n// 该语言暂不支持动态规划算法，请使用Python、JavaScript、Java或C++"
 
-    def _generate_shortest_path_algorithm(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_shortest_path_algorithm(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成最短路径算法"""
         if language == ProgrammingLanguage.PYTHON:
             code = "import heapq\n\n"
             code += "def dijkstra(graph, start):\n"
             code += '    """Dijkstra最短路径算法"""\n'
             code += '    distances = {node: float("inf") for node in graph}\n'
-            code += '    distances[start] = 0\n'
-            code += '    pq = [(0, start)]\n'
-            code += '    while pq:\n'
-            code += '        current_distance, current_node = heapq.heappop(pq)\n'
-            code += '        if current_distance > distances[current_node]:\n'
-            code += '            continue\n'
-            code += '        for neighbor, weight in graph[current_node].items():\n'
-            code += '            distance = current_distance + weight\n'
-            code += '            if distance < distances[neighbor]:\n'
-            code += '                distances[neighbor] = distance\n'
-            code += '                heapq.heappush(pq, (distance, neighbor))\n'
-            code += '    return distances\n\n'
+            code += "    distances[start] = 0\n"
+            code += "    pq = [(0, start)]\n"
+            code += "    while pq:\n"
+            code += "        current_distance, current_node = heapq.heappop(pq)\n"
+            code += "        if current_distance > distances[current_node]:\n"
+            code += "            continue\n"
+            code += "        for neighbor, weight in graph[current_node].items():\n"
+            code += "            distance = current_distance + weight\n"
+            code += "            if distance < distances[neighbor]:\n"
+            code += "                distances[neighbor] = distance\n"
+            code += "                heapq.heappush(pq, (distance, neighbor))\n"
+            code += "    return distances\n\n"
             code += "def floyd_warshall(graph):\n"
             code += '    """Floyd-Warshall最短路径算法"""\n'
-            code += '    nodes = list(graph.keys())\n'
-            code += '    n = len(nodes)\n'
+            code += "    nodes = list(graph.keys())\n"
+            code += "    n = len(nodes)\n"
             code += '    dist = [[float("inf")] * n for _ in range(n)]\n'
-            code += '    for i in range(n):\n'
-            code += '        dist[i][i] = 0\n'
-            code += '    for u in graph:\n'
-            code += '        for v, w in graph[u].items():\n'
-            code += '            i, j = nodes.index(u), nodes.index(v)\n'
-            code += '            dist[i][j] = w\n'
-            code += '    for k in range(n):\n'
-            code += '        for i in range(n):\n'
-            code += '            for j in range(n):\n'
-            code += '                if dist[i][k] + dist[k][j] < dist[i][j]:\n'
-            code += '                    dist[i][j] = dist[i][k] + dist[k][j]\n'
-            code += '    return {nodes[i]: {nodes[j]: dist[i][j] for j in range(n)} for i in range(n)}\n'
+            code += "    for i in range(n):\n"
+            code += "        dist[i][i] = 0\n"
+            code += "    for u in graph:\n"
+            code += "        for v, w in graph[u].items():\n"
+            code += "            i, j = nodes.index(u), nodes.index(v)\n"
+            code += "            dist[i][j] = w\n"
+            code += "    for k in range(n):\n"
+            code += "        for i in range(n):\n"
+            code += "            for j in range(n):\n"
+            code += "                if dist[i][k] + dist[k][j] < dist[i][j]:\n"
+            code += "                    dist[i][j] = dist[i][k] + dist[k][j]\n"
+            code += "    return {nodes[i]: {nodes[j]: dist[i][j] for j in range(n)} for i in range(n)}\n"
             return code
         elif language == ProgrammingLanguage.JAVASCRIPT:
             code = "// 最短路径算法 - JavaScript实现\n"
             code += "function dijkstra(graph, start) {\n"
-            code += '    // Dijkstra最短路径算法\n'
-            code += '    const distances = {};\n'
-            code += '    for (const node in graph) {\n'
-            code += '        distances[node] = Infinity;\n'
-            code += '    }\n'
-            code += '    distances[start] = 0;\n'
-            code += '    const pq = [[0, start]];\n'
-            code += '    while (pq.length > 0) {\n'
-            code += '        pq.sort((a, b) => a[0] - b[0]);\n'
-            code += '        const [currentDistance, currentNode] = pq.shift();\n'
-            code += '        if (currentDistance > distances[currentNode]) continue;\n'
-            code += '        const neighbors = graph[currentNode] || {};\n'
-            code += '        for (const neighbor in neighbors) {\n'
-            code += '            const weight = neighbors[neighbor];\n'
-            code += '            const distance = currentDistance + weight;\n'
-            code += '            if (distance < distances[neighbor]) {\n'
-            code += '                distances[neighbor] = distance;\n'
-            code += '                pq.push([distance, neighbor]);\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    return distances;\n'
-            code += '}\n\n'
+            code += "    // Dijkstra最短路径算法\n"
+            code += "    const distances = {};\n"
+            code += "    for (const node in graph) {\n"
+            code += "        distances[node] = Infinity;\n"
+            code += "    }\n"
+            code += "    distances[start] = 0;\n"
+            code += "    const pq = [[0, start]];\n"
+            code += "    while (pq.length > 0) {\n"
+            code += "        pq.sort((a, b) => a[0] - b[0]);\n"
+            code += "        const [currentDistance, currentNode] = pq.shift();\n"
+            code += "        if (currentDistance > distances[currentNode]) continue;\n"
+            code += "        const neighbors = graph[currentNode] || {};\n"
+            code += "        for (const neighbor in neighbors) {\n"
+            code += "            const weight = neighbors[neighbor];\n"
+            code += "            const distance = currentDistance + weight;\n"
+            code += "            if (distance < distances[neighbor]) {\n"
+            code += "                distances[neighbor] = distance;\n"
+            code += "                pq.push([distance, neighbor]);\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    return distances;\n"
+            code += "}\n\n"
             code += "function floydWarshall(graph) {\n"
-            code += '    // Floyd-Warshall最短路径算法\n'
-            code += '    const nodes = Object.keys(graph);\n'
-            code += '    const n = nodes.length;\n'
-            code += '    const dist = Array.from({length: n}, () => Array(n).fill(Infinity));\n'
-            code += '    for (let i = 0; i < n; i++) {\n'
-            code += '        dist[i][i] = 0;\n'
-            code += '    }\n'
-            code += '    for (const u in graph) {\n'
-            code += '        const uIndex = nodes.indexOf(u);\n'
-            code += '        for (const v in graph[u]) {\n'
-            code += '            const vIndex = nodes.indexOf(v);\n'
-            code += '            dist[uIndex][vIndex] = graph[u][v];\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    for (let k = 0; k < n; k++) {\n'
-            code += '        for (let i = 0; i < n; i++) {\n'
-            code += '            for (let j = 0; j < n; j++) {\n'
-            code += '                if (dist[i][k] + dist[k][j] < dist[i][j]) {\n'
-            code += '                    dist[i][j] = dist[i][k] + dist[k][j];\n'
-            code += '                }\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    const result = {};\n'
-            code += '    for (let i = 0; i < n; i++) {\n'
-            code += '        result[nodes[i]] = {};\n'
-            code += '        for (let j = 0; j < n; j++) {\n'
-            code += '            result[nodes[i]][nodes[j]] = dist[i][j];\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    return result;\n'
-            code += '}\n'
+            code += "    // Floyd-Warshall最短路径算法\n"
+            code += "    const nodes = Object.keys(graph);\n"
+            code += "    const n = nodes.length;\n"
+            code += "    const dist = Array.from({length: n}, () => Array(n).fill(Infinity));\n"
+            code += "    for (let i = 0; i < n; i++) {\n"
+            code += "        dist[i][i] = 0;\n"
+            code += "    }\n"
+            code += "    for (const u in graph) {\n"
+            code += "        const uIndex = nodes.indexOf(u);\n"
+            code += "        for (const v in graph[u]) {\n"
+            code += "            const vIndex = nodes.indexOf(v);\n"
+            code += "            dist[uIndex][vIndex] = graph[u][v];\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    for (let k = 0; k < n; k++) {\n"
+            code += "        for (let i = 0; i < n; i++) {\n"
+            code += "            for (let j = 0; j < n; j++) {\n"
+            code += "                if (dist[i][k] + dist[k][j] < dist[i][j]) {\n"
+            code += "                    dist[i][j] = dist[i][k] + dist[k][j];\n"
+            code += "                }\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    const result = {};\n"
+            code += "    for (let i = 0; i < n; i++) {\n"
+            code += "        result[nodes[i]] = {};\n"
+            code += "        for (let j = 0; j < n; j++) {\n"
+            code += "            result[nodes[i]][nodes[j]] = dist[i][j];\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    return result;\n"
+            code += "}\n"
             return code
         elif language == ProgrammingLanguage.JAVA:
             code = "// 最短路径算法 - Java实现\n"
             code += "import java.util.*;\n\n"
             code += "public class ShortestPathAlgorithms {\n"
-            code += '    // Dijkstra最短路径算法\n'
-            code += '    public static Map<String, Double> dijkstra(Map<String, Map<String, Double>> graph, String start) {\n'
-            code += '        Map<String, Double> distances = new HashMap<>();\n'
-            code += '        for (String node : graph.keySet()) {\n'
-            code += '            distances.put(node, Double.POSITIVE_INFINITY);\n'
-            code += '        }\n'
-            code += '        distances.put(start, 0.0);\n'
-            code += '        PriorityQueue<Map.Entry<Double, String>> pq = new PriorityQueue<>(Map.Entry.comparingByKey());\n'
-            code += '        pq.add(new AbstractMap.SimpleEntry<>(0.0, start));\n'
-            code += '        while (!pq.isEmpty()) {\n'
-            code += '            Map.Entry<Double, String> entry = pq.poll();\n'
-            code += '            double currentDistance = entry.getKey();\n'
-            code += '            String currentNode = entry.getValue();\n'
-            code += '            if (currentDistance > distances.get(currentNode)) continue;\n'
-            code += '            Map<String, Double> neighbors = graph.getOrDefault(currentNode, new HashMap<>());\n'
-            code += '            for (Map.Entry<String, Double> neighbor : neighbors.entrySet()) {\n'
-            code += '                String neighborNode = neighbor.getKey();\n'
-            code += '                double weight = neighbor.getValue();\n'
-            code += '                double distance = currentDistance + weight;\n'
-            code += '                if (distance < distances.get(neighborNode)) {\n'
-            code += '                    distances.put(neighborNode, distance);\n'
-            code += '                    pq.add(new AbstractMap.SimpleEntry<>(distance, neighborNode));\n'
-            code += '                }\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '        return distances;\n'
-            code += '    }\n'
-            code += '    \n'
-            code += '    // Floyd-Warshall最短路径算法\n'
-            code += '    public static Map<String, Map<String, Double>> floydWarshall(Map<String, Map<String, Double>> graph) {\n'
-            code += '        List<String> nodes = new ArrayList<>(graph.keySet());\n'
-            code += '        int n = nodes.size();\n'
-            code += '        double[][] dist = new double[n][n];\n'
-            code += '        for (int i = 0; i < n; i++) {\n'
-            code += '            Arrays.fill(dist[i], Double.POSITIVE_INFINITY);\n'
-            code += '            dist[i][i] = 0;\n'
-            code += '        }\n'
-            code += '        for (int i = 0; i < n; i++) {\n'
-            code += '            String u = nodes.get(i);\n'
-            code += '            Map<String, Double> neighbors = graph.get(u);\n'
-            code += '            if (neighbors != null) {\n'
-            code += '                for (int j = 0; j < n; j++) {\n'
-            code += '                    String v = nodes.get(j);\n'
-            code += '                    if (neighbors.containsKey(v)) {\n'
-            code += '                        dist[i][j] = neighbors.get(v);\n'
-            code += '                    }\n'
-            code += '                }\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '        for (int k = 0; k < n; k++) {\n'
-            code += '            for (int i = 0; i < n; i++) {\n'
-            code += '                for (int j = 0; j < n; j++) {\n'
-            code += '                    if (dist[i][k] + dist[k][j] < dist[i][j]) {\n'
-            code += '                        dist[i][j] = dist[i][k] + dist[k][j];\n'
-            code += '                    }\n'
-            code += '                }\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '        Map<String, Map<String, Double>> result = new HashMap<>();\n'
-            code += '        for (int i = 0; i < n; i++) {\n'
-            code += '            String nodeI = nodes.get(i);\n'
-            code += '            Map<String, Double> row = new HashMap<>();\n'
-            code += '            for (int j = 0; j < n; j++) {\n'
-            code += '                String nodeJ = nodes.get(j);\n'
-            code += '                row.put(nodeJ, dist[i][j]);\n'
-            code += '            }\n'
-            code += '            result.put(nodeI, row);\n'
-            code += '        }\n'
-            code += '        return result;\n'
-            code += '    }\n'
-            code += '}\n'
+            code += "    // Dijkstra最短路径算法\n"
+            code += "    public static Map<String, Double> dijkstra(Map<String, Map<String, Double>> graph, String start) {\n"
+            code += "        Map<String, Double> distances = new HashMap<>();\n"
+            code += "        for (String node : graph.keySet()) {\n"
+            code += "            distances.put(node, Double.POSITIVE_INFINITY);\n"
+            code += "        }\n"
+            code += "        distances.put(start, 0.0);\n"
+            code += "        PriorityQueue<Map.Entry<Double, String>> pq = new PriorityQueue<>(Map.Entry.comparingByKey());\n"
+            code += "        pq.add(new AbstractMap.SimpleEntry<>(0.0, start));\n"
+            code += "        while (!pq.isEmpty()) {\n"
+            code += "            Map.Entry<Double, String> entry = pq.poll();\n"
+            code += "            double currentDistance = entry.getKey();\n"
+            code += "            String currentNode = entry.getValue();\n"
+            code += "            if (currentDistance > distances.get(currentNode)) continue;\n"
+            code += "            Map<String, Double> neighbors = graph.getOrDefault(currentNode, new HashMap<>());\n"
+            code += "            for (Map.Entry<String, Double> neighbor : neighbors.entrySet()) {\n"
+            code += "                String neighborNode = neighbor.getKey();\n"
+            code += "                double weight = neighbor.getValue();\n"
+            code += "                double distance = currentDistance + weight;\n"
+            code += "                if (distance < distances.get(neighborNode)) {\n"
+            code += "                    distances.put(neighborNode, distance);\n"
+            code += "                    pq.add(new AbstractMap.SimpleEntry<>(distance, neighborNode));\n"
+            code += "                }\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "        return distances;\n"
+            code += "    }\n"
+            code += "    \n"
+            code += "    // Floyd-Warshall最短路径算法\n"
+            code += "    public static Map<String, Map<String, Double>> floydWarshall(Map<String, Map<String, Double>> graph) {\n"
+            code += "        List<String> nodes = new ArrayList<>(graph.keySet());\n"
+            code += "        int n = nodes.size();\n"
+            code += "        double[][] dist = new double[n][n];\n"
+            code += "        for (int i = 0; i < n; i++) {\n"
+            code += "            Arrays.fill(dist[i], Double.POSITIVE_INFINITY);\n"
+            code += "            dist[i][i] = 0;\n"
+            code += "        }\n"
+            code += "        for (int i = 0; i < n; i++) {\n"
+            code += "            String u = nodes.get(i);\n"
+            code += "            Map<String, Double> neighbors = graph.get(u);\n"
+            code += "            if (neighbors != null) {\n"
+            code += "                for (int j = 0; j < n; j++) {\n"
+            code += "                    String v = nodes.get(j);\n"
+            code += "                    if (neighbors.containsKey(v)) {\n"
+            code += "                        dist[i][j] = neighbors.get(v);\n"
+            code += "                    }\n"
+            code += "                }\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "        for (int k = 0; k < n; k++) {\n"
+            code += "            for (int i = 0; i < n; i++) {\n"
+            code += "                for (int j = 0; j < n; j++) {\n"
+            code += "                    if (dist[i][k] + dist[k][j] < dist[i][j]) {\n"
+            code += "                        dist[i][j] = dist[i][k] + dist[k][j];\n"
+            code += "                    }\n"
+            code += "                }\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += (
+                "        Map<String, Map<String, Double>> result = new HashMap<>();\n"
+            )
+            code += "        for (int i = 0; i < n; i++) {\n"
+            code += "            String nodeI = nodes.get(i);\n"
+            code += "            Map<String, Double> row = new HashMap<>();\n"
+            code += "            for (int j = 0; j < n; j++) {\n"
+            code += "                String nodeJ = nodes.get(j);\n"
+            code += "                row.put(nodeJ, dist[i][j]);\n"
+            code += "            }\n"
+            code += "            result.put(nodeI, row);\n"
+            code += "        }\n"
+            code += "        return result;\n"
+            code += "    }\n"
+            code += "}\n"
             return code
         elif language == ProgrammingLanguage.CPP:
             code = "// 最短路径算法 - C++实现\n"
@@ -3129,76 +3259,80 @@ class ProgrammingCapabilityManager:
             code += "#include <algorithm>\n\n"
             code += "using namespace std;\n\n"
             code += "map<string, double> dijkstra(map<string, map<string, double>>& graph, string start) {\n"
-            code += '    // Dijkstra最短路径算法\n'
-            code += '    map<string, double> distances;\n'
-            code += '    for (auto& pair : graph) {\n'
-            code += '        distances[pair.first] = numeric_limits<double>::infinity();\n'
-            code += '    }\n'
-            code += '    distances[start] = 0;\n'
-            code += '    priority_queue<pair<double, string>, vector<pair<double, string>>, greater<pair<double, string>>> pq;\n'
-            code += '    pq.push({0, start});\n'
-            code += '    while (!pq.empty()) {\n'
-            code += '        auto [currentDistance, currentNode] = pq.top();\n'
-            code += '        pq.pop();\n'
-            code += '        if (currentDistance > distances[currentNode]) continue;\n'
-            code += '        for (auto& neighbor : graph[currentNode]) {\n'
-            code += '            string neighborNode = neighbor.first;\n'
-            code += '            double weight = neighbor.second;\n'
-            code += '            double distance = currentDistance + weight;\n'
-            code += '            if (distance < distances[neighborNode]) {\n'
-            code += '                distances[neighborNode] = distance;\n'
-            code += '                pq.push({distance, neighborNode});\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    return distances;\n'
-            code += '}\n\n'
+            code += "    // Dijkstra最短路径算法\n"
+            code += "    map<string, double> distances;\n"
+            code += "    for (auto& pair : graph) {\n"
+            code += (
+                "        distances[pair.first] = numeric_limits<double>::infinity();\n"
+            )
+            code += "    }\n"
+            code += "    distances[start] = 0;\n"
+            code += "    priority_queue<pair<double, string>, vector<pair<double, string>>, greater<pair<double, string>>> pq;\n"
+            code += "    pq.push({0, start});\n"
+            code += "    while (!pq.empty()) {\n"
+            code += "        auto [currentDistance, currentNode] = pq.top();\n"
+            code += "        pq.pop();\n"
+            code += "        if (currentDistance > distances[currentNode]) continue;\n"
+            code += "        for (auto& neighbor : graph[currentNode]) {\n"
+            code += "            string neighborNode = neighbor.first;\n"
+            code += "            double weight = neighbor.second;\n"
+            code += "            double distance = currentDistance + weight;\n"
+            code += "            if (distance < distances[neighborNode]) {\n"
+            code += "                distances[neighborNode] = distance;\n"
+            code += "                pq.push({distance, neighborNode});\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    return distances;\n"
+            code += "}\n\n"
             code += "map<string, map<string, double>> floydWarshall(map<string, map<string, double>>& graph) {\n"
-            code += '    // Floyd-Warshall最短路径算法\n'
-            code += '    vector<string> nodes;\n'
-            code += '    for (auto& pair : graph) {\n'
-            code += '        nodes.push_back(pair.first);\n'
-            code += '    }\n'
-            code += '    int n = nodes.size();\n'
-            code += '    vector<vector<double>> dist(n, vector<double>(n, numeric_limits<double>::infinity()));\n'
-            code += '    for (int i = 0; i < n; i++) {\n'
-            code += '        dist[i][i] = 0;\n'
-            code += '    }\n'
-            code += '    for (int i = 0; i < n; i++) {\n'
-            code += '        string u = nodes[i];\n'
-            code += '        for (int j = 0; j < n; j++) {\n'
-            code += '            string v = nodes[j];\n'
-            code += '            if (graph[u].find(v) != graph[u].end()) {\n'
-            code += '                dist[i][j] = graph[u][v];\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    for (int k = 0; k < n; k++) {\n'
-            code += '        for (int i = 0; i < n; i++) {\n'
-            code += '            for (int j = 0; j < n; j++) {\n'
-            code += '                if (dist[i][k] + dist[k][j] < dist[i][j]) {\n'
-            code += '                    dist[i][j] = dist[i][k] + dist[k][j];\n'
-            code += '                }\n'
-            code += '            }\n'
-            code += '        }\n'
-            code += '    }\n'
-            code += '    map<string, map<string, double>> result;\n'
-            code += '    for (int i = 0; i < n; i++) {\n'
-            code += '        string nodeI = nodes[i];\n'
-            code += '        map<string, double> row;\n'
-            code += '        for (int j = 0; j < n; j++) {\n'
-            code += '            string nodeJ = nodes[j];\n'
-            code += '            row[nodeJ] = dist[i][j];\n'
-            code += '        }\n'
-            code += '        result[nodeI] = row;\n'
-            code += '    }\n'
-            code += '    return result;\n'
-            code += '}\n'
+            code += "    // Floyd-Warshall最短路径算法\n"
+            code += "    vector<string> nodes;\n"
+            code += "    for (auto& pair : graph) {\n"
+            code += "        nodes.push_back(pair.first);\n"
+            code += "    }\n"
+            code += "    int n = nodes.size();\n"
+            code += "    vector<vector<double>> dist(n, vector<double>(n, numeric_limits<double>::infinity()));\n"
+            code += "    for (int i = 0; i < n; i++) {\n"
+            code += "        dist[i][i] = 0;\n"
+            code += "    }\n"
+            code += "    for (int i = 0; i < n; i++) {\n"
+            code += "        string u = nodes[i];\n"
+            code += "        for (int j = 0; j < n; j++) {\n"
+            code += "            string v = nodes[j];\n"
+            code += "            if (graph[u].find(v) != graph[u].end()) {\n"
+            code += "                dist[i][j] = graph[u][v];\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    for (int k = 0; k < n; k++) {\n"
+            code += "        for (int i = 0; i < n; i++) {\n"
+            code += "            for (int j = 0; j < n; j++) {\n"
+            code += "                if (dist[i][k] + dist[k][j] < dist[i][j]) {\n"
+            code += "                    dist[i][j] = dist[i][k] + dist[k][j];\n"
+            code += "                }\n"
+            code += "            }\n"
+            code += "        }\n"
+            code += "    }\n"
+            code += "    map<string, map<string, double>> result;\n"
+            code += "    for (int i = 0; i < n; i++) {\n"
+            code += "        string nodeI = nodes[i];\n"
+            code += "        map<string, double> row;\n"
+            code += "        for (int j = 0; j < n; j++) {\n"
+            code += "            string nodeJ = nodes[j];\n"
+            code += "            row[nodeJ] = dist[i][j];\n"
+            code += "        }\n"
+            code += "        result[nodeI] = row;\n"
+            code += "    }\n"
+            code += "    return result;\n"
+            code += "}\n"
             return code
         else:
             return f"// 最短路径算法: {description}\n// 该语言暂不支持最短路径算法，请使用Python、JavaScript、Java或C++"
 
-    def _generate_generic_algorithm(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_generic_algorithm(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成通用算法"""
         if language == ProgrammingLanguage.PYTHON:
             # 根据描述生成合适的通用算法
@@ -3210,82 +3344,96 @@ class ProgrammingCapabilityManager:
 
             # 根据描述关键词添加不同实现
             if "计算" in description or "calculate" in desc_lower:
-                code += '    # 计算型算法\n'
-                code += '    result = 0\n'
-                code += '    for item in data:\n'
-                code += '        if isinstance(item, (int, float)):\n'
-                code += '            result += item\n'
-                code += '    return result\n'
+                code += "    # 计算型算法\n"
+                code += "    result = 0\n"
+                code += "    for item in data:\n"
+                code += "        if isinstance(item, (int, float)):\n"
+                code += "            result += item\n"
+                code += "    return result\n"
             elif "查找" in description or "find" in desc_lower:
-                code += '    # 查找型算法\n'
-                code += '    target = data[0] if data else None\n'
-                code += '    for i, item in enumerate(data):\n'
-                code += '        if item == target:\n'
-                code += '            return i\n'
-                code += '    return -1\n'
+                code += "    # 查找型算法\n"
+                code += "    target = data[0] if data else None\n"
+                code += "    for i, item in enumerate(data):\n"
+                code += "        if item == target:\n"
+                code += "            return i\n"
+                code += "    return -1\n"
             elif "过滤" in description or "filter" in desc_lower:
-                code += '    # 过滤型算法\n'
-                code += '    result = []\n'
-                code += '    for item in data:\n'
-                code += '        if item and (isinstance(item, str) and len(item) > 0 or \n'
-                code += '                     isinstance(item, (int, float)) and item > 0):\n'
-                code += '            result.append(item)\n'
-                code += '    return result\n'
-            elif "转换" in description or "transform" in desc_lower or "convert" in desc_lower:
-                code += '    # 转换型算法\n'
-                code += '    result = []\n'
-                code += '    for item in data:\n'
-                code += '        if isinstance(item, str):\n'
-                code += '            result.append(item.upper())\n'
-                code += '        elif isinstance(item, (int, float)):\n'
-                code += '            result.append(str(item))\n'
-                code += '        else:\n'
-                code += '            result.append(item)\n'
-                code += '    return result\n'
+                code += "    # 过滤型算法\n"
+                code += "    result = []\n"
+                code += "    for item in data:\n"
+                code += (
+                    "        if item and (isinstance(item, str) and len(item) > 0 or \n"
+                )
+                code += "                     isinstance(item, (int, float)) and item > 0):\n"
+                code += "            result.append(item)\n"
+                code += "    return result\n"
+            elif (
+                "转换" in description
+                or "transform" in desc_lower
+                or "convert" in desc_lower
+            ):
+                code += "    # 转换型算法\n"
+                code += "    result = []\n"
+                code += "    for item in data:\n"
+                code += "        if isinstance(item, str):\n"
+                code += "            result.append(item.upper())\n"
+                code += "        elif isinstance(item, (int, float)):\n"
+                code += "            result.append(str(item))\n"
+                code += "        else:\n"
+                code += "            result.append(item)\n"
+                code += "    return result\n"
             else:
-                code += '    # 通用处理算法\n'
-                code += '    if isinstance(data, list):\n'
-                code += '        return len(data)\n'
-                code += '    elif isinstance(data, dict):\n'
-                code += '        return len(data.keys())\n'
-                code += '    else:\n'
-                code += '        return str(data)\n'
+                code += "    # 通用处理算法\n"
+                code += "    if isinstance(data, list):\n"
+                code += "        return len(data)\n"
+                code += "    elif isinstance(data, dict):\n"
+                code += "        return len(data.keys())\n"
+                code += "    else:\n"
+                code += "        return str(data)\n"
             return code
         else:
             return f"// 通用算法: {description}\n// 该语言暂不支持通用算法，请使用Python、JavaScript、Java或C++"
 
-    def _generate_algorithm_framework(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_algorithm_framework(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成算法框架"""
         if language == ProgrammingLanguage.JAVA:
             algorithm_name = self._extract_function_name(description).title()
-            return f"public class {algorithm_name}Algorithm {{\n" \
-                f"    public static void main(String[] args) {{\n" \
-                f"        System.out.println(\"算法: {description}\");\n" \
-                f"    }}\n" \
-                f"}}\n"
+            return (
+                f"public class {algorithm_name}Algorithm {{\n"
+                "    public static void main(String[] args) {{\n"
+                f'        System.out.println("算法: {description}");\n'
+                "    }}\n"
+                "}}\n"
+            )
         elif language == ProgrammingLanguage.JAVASCRIPT:
             algorithm_name = self._extract_function_name(description)
-            return f"function {algorithm_name}(data) {{\n" \
-                f"    // {description}\n" \
-                f"    return data;\n" \
-                f"}}\n" \
-                f"\n" \
-                f"// 使用示例:\n" \
+            return (
+                f"function {algorithm_name}(data) {{\n"
+                f"    // {description}\n"
+                "    return data;\n"
+                "}}\n"
+                "\n"
+                "// 使用示例:\n"
                 f"// const result = {algorithm_name}([]);\n"
+            )
         elif language == ProgrammingLanguage.CPP:
             algorithm_name = self._extract_function_name(description)
-            return f"#include <iostream>\n" \
-                f"#include <vector>\n\n" \
-                f"using namespace std;\n\n" \
-                f"void {algorithm_name}(vector<int>& data) {{\n" \
-                f"    // {description}\n" \
-                f"    cout << \"算法执行\" << endl;\n" \
-                f"}}\n\n" \
-                f"int main() {{\n" \
-                f"    vector<int> data = {{1, 2, 3}};\n" \
-                f"    {algorithm_name}(data);\n" \
-                f"    return 0;\n" \
-                f"}}\n"
+            return (
+                "#include <iostream>\n"
+                "#include <vector>\n\n"
+                "using namespace std;\n\n"
+                f"void {algorithm_name}(vector<int>& data) {{\n"
+                f"    // {description}\n"
+                '    cout << "算法执行" << endl;\n'
+                "}}\n\n"
+                "int main() {{\n"
+                f"    vector<int> data = {{1, 2, 3}};\n"
+                f"    {algorithm_name}(data);\n"
+                "    return 0;\n"
+                "}}\n"
+            )
         else:
             return f"// 算法框架: {description}\n// 语言: {language.value}\n// 该语言暂不支持算法框架，请使用Python、JavaScript、Java或C++"
 
@@ -3294,78 +3442,84 @@ class ProgrammingCapabilityManager:
         if language == ProgrammingLanguage.PYTHON:
             test_name = self._extract_function_name(description)
 
-            code = f"import unittest\n\n"
+            code = "import unittest\n\n"
             code += f"def {test_name}_function(input_data):\n"
             code += f'    """被测试函数: {description}"""\n'
-            code += f"    # 模拟实现\n"
-            code += f"    if isinstance(input_data, list):\n"
-            code += f"        return len(input_data)\n"
-            code += f"    elif isinstance(input_data, dict):\n"
-            code += f"        return sum(input_data.values()) if all(isinstance(v, (int, float)) for v in input_data.values()) else 0\n"
-            code += f"    else:\n"
-            code += f"        return str(input_data)\n\n"
+            code += "    # 模拟实现\n"
+            code += "    if isinstance(input_data, list):\n"
+            code += "        return len(input_data)\n"
+            code += "    elif isinstance(input_data, dict):\n"
+            code += "        return sum(input_data.values()) if all(isinstance(v, (int, float)) for v in input_data.values()) else 0\n"
+            code += "    else:\n"
+            code += "        return str(input_data)\n\n"
             code += f"class Test{test_name.title()}(unittest.TestCase):\n"
             code += f'    """测试类: {description}"""\n\n'
 
             # 生成多个测试用例
-            code += f"    def test_basic_functionality(self):\n"
-            code += f'        """测试基本功能"""\n'
+            code += "    def test_basic_functionality(self):\n"
+            code += '        """测试基本功能"""\n'
             code += f"        result = {test_name}_function([1, 2, 3])\n"
-            code += f"        self.assertEqual(result, 3)\n\n"
+            code += "        self.assertEqual(result, 3)\n\n"
 
-            code += f"    def test_empty_input(self):\n"
-            code += f'        """测试空输入"""\n'
+            code += "    def test_empty_input(self):\n"
+            code += '        """测试空输入"""\n'
             code += f"        result = {test_name}_function([])\n"
-            code += f"        self.assertEqual(result, 0)\n\n"
+            code += "        self.assertEqual(result, 0)\n\n"
 
-            code += f"    def test_dict_input(self):\n"
-            code += f'        """测试字典输入"""\n'
-            code += f"        result = {test_name}_function({{'a': 1, 'b': 2, 'c': 3}})\n"
-            code += f"        self.assertEqual(result, 6)\n\n"
+            code += "    def test_dict_input(self):\n"
+            code += '        """测试字典输入"""\n'
+            code += (
+                f"        result = {test_name}_function({{'a': 1, 'b': 2, 'c': 3}})\n"
+            )
+            code += "        self.assertEqual(result, 6)\n\n"
 
-            code += f"    def test_string_input(self):\n"
-            code += f'        """测试字符串输入"""\n'
+            code += "    def test_string_input(self):\n"
+            code += '        """测试字符串输入"""\n'
             code += f"        result = {test_name}_function('test')\n"
-            code += f"        self.assertEqual(result, 'test')\n\n"
+            code += "        self.assertEqual(result, 'test')\n\n"
 
-            code += f"if __name__ == '__main__':\n"
-            code += f"    unittest.main()\n"
+            code += "if __name__ == '__main__':\n"
+            code += "    unittest.main()\n"
 
             return code
         elif language == ProgrammingLanguage.JAVASCRIPT:
             test_name = self._extract_function_name(description)
-            return f"// 测试: {description}\n" \
-                f"function {test_name}(input) {{\n" \
-                f"    // 被测试函数\n" \
-                f"    return input;\n" \
-                f"}}\n\n" \
-                f"// 测试用例\n" \
-                f"console.assert({test_name}([1, 2, 3]).length === 3, '数组长度测试失败');\n" \
-                f"console.assert({test_name}('test') === 'test', '字符串测试失败');\n" \
-                f"console.log('所有测试通过');\n"
+            return (
+                f"// 测试: {description}\n"
+                f"function {test_name}(input) {{\n"
+                "    // 被测试函数\n"
+                "    return input;\n"
+                "}}\n\n"
+                "// 测试用例\n"
+                f"console.assert({test_name}([1, 2, 3]).length === 3, '数组长度测试失败');\n"
+                f"console.assert({test_name}('test') === 'test', '字符串测试失败');\n"
+                "console.log('所有测试通过');\n"
+            )
         elif language == ProgrammingLanguage.JAVA:
             test_name = self._extract_function_name(description).title()
-            return f"import org.junit.Test;\n" \
-                f"import static org.junit.Assert.*;\n\n" \
-                f"public class {test_name}Test {{\n" \
-                f"    \n" \
-                f"    @Test\n" \
-                f"    public void testBasicFunctionality() {{\n" \
-                f"        // 测试基本功能\n" \
-                f"        assertEquals(3, {test_name}.process(new int[]{{1, 2, 3}}));\n" \
-                f"    }}\n" \
-                f"    \n" \
-                f"    @Test\n" \
-                f"    public void testEmptyInput() {{\n" \
-                f"        // 测试空输入\n" \
-                f"        assertEquals(0, {test_name}.process(new int[]{{}}));\n" \
-                f"    }}\n" \
-                f"}}\n\n" \
-                f"class {test_name} {{\n" \
-                f"    public static int process(int[] data) {{\n" \
-                f"        return data.length;\n" \
-                f"    }}\n" \
-                f"}}\n"
+            return (
+                "import org.junit.Test;\n"
+                "import static org.junit.Assert.*;\n\n"
+                f"public class {test_name}Test {{\n"
+                "    \n"
+                "    @Test\n"
+                "    public void testBasicFunctionality() {{\n"
+                "        // 测试基本功能\n"
+                f"        assertEquals(3, {test_name}.process(new int[]{{1, 2, 3}}));\n"
+                "    }}\n"
+                "    \n"
+                "    @Test\n"
+                "    public void testEmptyInput() {{\n"
+                "        // 测试空输入\n"
+                f"        assertEquals(0, {test_name}.process(new int[]{{}}));\n"
+                "    }}\n"
+                "}}\n\n"
+                f"class {test_name} {{\n"
+                "    public static int process(int[] data) {{\n"
+                "        return data.length;\n"
+                "    }}\n"
+                "}}\n"
+            )
         else:
             return f"// 测试代码: {description}\n// 语言: {language.value}\n// 请根据具体语言实现测试框架"
 
@@ -3409,7 +3563,9 @@ class ProgrammingCapabilityManager:
             code += "        processed = []\n"
             code += "        for item in data:\n"
             code += "            if isinstance(item, dict):\n"
-            code += "                item['processed_at'] = datetime.now().isoformat()\n"
+            code += (
+                "                item['processed_at'] = datetime.now().isoformat()\n"
+            )
             code += "                item['module'] = self.config['module_name']\n"
             code += "            processed.append(item)\n"
             code += "        \n"
@@ -3453,51 +3609,55 @@ class ProgrammingCapabilityManager:
             return code
         elif language == ProgrammingLanguage.JAVASCRIPT:
             module_name = self._extract_module_name(description)
-            return f"// {description}模块\n" \
-                f"class {module_name}Module {{\n" \
-                f"    constructor(config) {{\n" \
-                f"        this.config = config || {{}};\n" \
-                f"        this.data = [];\n" \
-                f"        console.log('模块初始化完成: {module_name}');\n" \
-                f"    }}\n\n" \
-                f"    processData(data) {{\n" \
-                f"        if (!Array.isArray(data)) {{\n" \
-                f"            data = [data];\n" \
-                f"        }}\n" \
-                f"        const processed = data.map(item => ({{...item, processedAt: new Date().toISOString()}}));\n" \
-                f"        this.data.push(...processed);\n" \
-                f"        console.log(`处理了 ${{processed.length}} 条数据`);\n" \
-                f"        return processed;\n" \
-                f"    }}\n\n" \
-                f"    getStats() {{\n" \
-                f"        return {{\n" \
-                f"            totalItems: this.data.length,\n" \
-                f"            moduleName: '{module_name}',\n" \
-                f"            lastUpdated: new Date().toISOString()\n" \
-                f"        }};\n" \
-                f"    }}\n\n" \
-                f"    run() {{\n" \
-                f"        console.log('开始运行模块');\n" \
-                f"        const testData = [\n" \
-                f"            {{id: 1, name: '测试数据1'}},\n" \
-                f"            {{id: 2, name: '测试数据2'}},\n" \
-                f"            {{id: 3, name: '测试数据3'}}\n" \
-                f"        ];\n" \
-                f"        const processed = this.processData(testData);\n" \
-                f"        const stats = this.getStats();\n" \
-                f"        console.log(`模块运行完成，处理结果: ${{processed.length}} 条数据`);\n" \
-                f"        console.log('统计信息:', stats);\n" \
-                f"        return processed;\n" \
-                f"    }}\n" \
-                f"}}\n\n" \
-                f"// 使用示例\n" \
-                f"// const module = new {module_name}Module();\n" \
-                f"// const result = module.run();\n" \
+            return (
+                f"// {description}模块\n"
+                f"class {module_name}Module {{\n"
+                f"    constructor(config) {{\n"
+                f"        this.config = config || {{}};\n"
+                f"        this.data = [];\n"
+                f"        console.log('模块初始化完成: {module_name}');\n"
+                f"    }}\n\n"
+                f"    processData(data) {{\n"
+                f"        if (!Array.isArray(data)) {{\n"
+                f"            data = [data];\n"
+                f"        }}\n"
+                f"        const processed = data.map(item => ({{...item, processedAt: new Date().toISOString()}}));\n"
+                f"        this.data.push(...processed);\n"
+                f"        console.log(`处理了 ${{processed.length}} 条数据`);\n"
+                f"        return processed;\n"
+                f"    }}\n\n"
+                f"    getStats() {{\n"
+                f"        return {{\n"
+                f"            totalItems: this.data.length,\n"
+                f"            moduleName: '{module_name}',\n"
+                f"            lastUpdated: new Date().toISOString()\n"
+                f"        }};\n"
+                f"    }}\n\n"
+                f"    run() {{\n"
+                f"        console.log('开始运行模块');\n"
+                f"        const testData = [\n"
+                f"            {{id: 1, name: '测试数据1'}},\n"
+                f"            {{id: 2, name: '测试数据2'}},\n"
+                f"            {{id: 3, name: '测试数据3'}}\n"
+                f"        ];\n"
+                f"        const processed = this.processData(testData);\n"
+                f"        const stats = this.getStats();\n"
+                f"        console.log(`模块运行完成，处理结果: ${{processed.length}} 条数据`);\n"
+                f"        console.log('统计信息:', stats);\n"
+                f"        return processed;\n"
+                f"    }}\n"
+                f"}}\n\n"
+                f"// 使用示例\n"
+                f"// const module = new {module_name}Module();\n"
+                f"// const result = module.run();\n"
                 f"// console.log(result);\n"
+            )
         else:
             return f"// 模块代码: {description}\n// 语言: {language.value}\n// 请根据具体语言实现模块结构"
 
-    def _generate_interface(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_interface(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成接口代码"""
         if language == ProgrammingLanguage.PYTHON:
             interface_name = self._extract_interface_name(description)
@@ -3513,16 +3673,36 @@ class ProgrammingCapabilityManager:
             if not methods:
                 # 如果没有提取到方法，生成一组标准接口方法
                 methods = [
-                    {"name": "initialize", "description": "初始化接口",
-                        "params": "self, config: Dict[str, Any]", "returns": "bool"},
-                    {"name": "process", "description": "处理数据",
-                        "params": "self, data: Any", "returns": "Any"},
-                    {"name": "validate", "description": "验证输入",
-                        "params": "self, input_data: Any", "returns": "bool"},
-                    {"name": "get_status", "description": "获取状态",
-                        "params": "self", "returns": "Dict[str, Any]"},
-                    {"name": "cleanup", "description": "清理资源",
-                        "params": "self", "returns": "None"}
+                    {
+                        "name": "initialize",
+                        "description": "初始化接口",
+                        "params": "self, config: Dict[str, Any]",
+                        "returns": "bool",
+                    },
+                    {
+                        "name": "process",
+                        "description": "处理数据",
+                        "params": "self, data: Any",
+                        "returns": "Any",
+                    },
+                    {
+                        "name": "validate",
+                        "description": "验证输入",
+                        "params": "self, input_data: Any",
+                        "returns": "bool",
+                    },
+                    {
+                        "name": "get_status",
+                        "description": "获取状态",
+                        "params": "self",
+                        "returns": "Dict[str, Any]",
+                    },
+                    {
+                        "name": "cleanup",
+                        "description": "清理资源",
+                        "params": "self",
+                        "returns": "None",
+                    },
                 ]
 
             # 生成抽象方法
@@ -3532,21 +3712,23 @@ class ProgrammingCapabilityManager:
                 returns = method.get("returns", "Any")
                 method_desc = method.get("description", "接口方法")
 
-                code += f"    @abstractmethod\n"
+                code += "    @abstractmethod\n"
                 code += f"    def {method_name}({params}) -> {returns}:\n"
                 code += f'        """{method_desc}"""\n'
-                code += f"        pass\n\n"
+                code += "        pass\n\n"
 
             # 示例实现类
             code += f"\nclass {interface_name}Impl({interface_name}):\n"
             code += f'    """{description}接口实现类"""\n\n'
-            code += f"    def __init__(self, config: Optional[Dict[str, Any]] = None):\n"
-            code += f'        """初始化实现类"""\n'
-            code += f"        super().__init__()\n"
+            code += (
+                "    def __init__(self, config: Optional[Dict[str, Any]] = None):\n"
+            )
+            code += '        """初始化实现类"""\n'
+            code += "        super().__init__()\n"
             code += f"        self.config = config or {{}}\n"
-            code += f"        self.initialized = False\n"
-            code += f"        self.processed_count = 0\n"
-            code += f"        self.start_time = datetime.datetime.now()\n\n"
+            code += "        self.initialized = False\n"
+            code += "        self.processed_count = 0\n"
+            code += "        self.start_time = datetime.datetime.now()\n\n"
 
             # 实现所有抽象方法
             for method in methods:
@@ -3573,18 +3755,18 @@ class ProgrammingCapabilityManager:
 
                 # 根据方法名称和返回类型生成具体实现
                 if method_name == "initialize":
-                    code += f"        if 'enabled' in self.config and not self.config['enabled']:\n"
-                    code += f"            return False\n"
-                    code += f"        self.initialized = True\n"
+                    code += "        if 'enabled' in self.config and not self.config['enabled']:\n"
+                    code += "            return False\n"
+                    code += "        self.initialized = True\n"
                     code += f"        print(f'接口初始化完成: {{self.config}}')\n"
-                    code += f"        return True\n\n"
+                    code += "        return True\n\n"
                 elif method_name == "process":
                     if len(param_names) > 1:  # 有data参数
                         data_param = param_names[1]
-                        code += f"        if not self.initialized:\n"
-                        code += f"            raise RuntimeError('接口未初始化')\n"
-                        code += f"        self.processed_count += 1\n"
-                        code += f"        # 简单处理：如果是字典，添加时间戳\n"
+                        code += "        if not self.initialized:\n"
+                        code += "            raise RuntimeError('接口未初始化')\n"
+                        code += "        self.processed_count += 1\n"
+                        code += "        # 简单处理：如果是字典，添加时间戳\n"
                         code += f"        if isinstance({data_param}, dict):\n"
                         code += f"            {data_param}['processed_at'] = datetime.datetime.now().isoformat()\n"
                         code += f"            {data_param}['processor'] = '{interface_name}'\n"
@@ -3592,133 +3774,136 @@ class ProgrammingCapabilityManager:
                         code += f"        print(f'处理了第{{self.processed_count}}条数据')\n"
                         code += f"        return {data_param}\n\n"
                     else:
-                        code += f"        return None  # 返回None\n\n"
+                        code += "        return None  # 返回None\n\n"
                 elif method_name == "validate":
                     if len(param_names) > 1:  # 有input_data参数
                         input_param = param_names[1]
-                        code += f"        # 基本验证逻辑\n"
+                        code += "        # 基本验证逻辑\n"
                         code += f"        if {input_param} is None:\n"
-                        code += f"            return False\n"
+                        code += "            return False\n"
                         code += f"        if isinstance({input_param}, str) and len({input_param}.strip()) == 0:\n"
-                        code += f"            return False\n"
+                        code += "            return False\n"
                         code += f"        if isinstance({input_param}, (list, dict)) and len({input_param}) == 0:\n"
-                        code += f"            return False\n"
-                        code += f"        return True\n\n"
+                        code += "            return False\n"
+                        code += "        return True\n\n"
                     else:
-                        code += f"        return False\n\n"
+                        code += "        return False\n\n"
                 elif method_name == "get_status":
-                    code += f"        return {{\n"
+                    code += "        return {{\n"
                     code += f"            'interface_name': '{interface_name}',\n"
-                    code += f"            'initialized': self.initialized,\n"
-                    code += f"            'processed_count': self.processed_count,\n"
-                    code += f"            'uptime_seconds': (datetime.datetime.now() - self.start_time).total_seconds(),\n"
-                    code += f"            'config_keys': list(self.config.keys())\n"
-                    code += f"        }}\n\n"
+                    code += "            'initialized': self.initialized,\n"
+                    code += "            'processed_count': self.processed_count,\n"
+                    code += "            'uptime_seconds': (datetime.datetime.now() - self.start_time).total_seconds(),\n"
+                    code += "            'config_keys': list(self.config.keys())\n"
+                    code += "        }}\n\n"
                 elif method_name == "cleanup":
-                    code += f"        self.initialized = False\n"
-                    code += f"        self.processed_count = 0\n"
-                    code += f"        print('接口资源已清理')\n"
-                    code += f"        return None  # 返回None\n\n"
+                    code += "        self.initialized = False\n"
+                    code += "        self.processed_count = 0\n"
+                    code += "        print('接口资源已清理')\n"
+                    code += "        return None  # 返回None\n\n"
                 else:
                     # 通用方法实现
                     if returns == "bool":
-                        code += f"        return True\n\n"
+                        code += "        return True\n\n"
                     elif returns == "int":
-                        code += f"        return 0\n\n"
+                        code += "        return 0\n\n"
                     elif returns == "str":
-                        code += f"        return ''\n\n"
+                        code += "        return ''\n\n"
                     elif returns == "list":
-                        code += f"        return []  # 返回空列表\n\n"
+                        code += "        return []  # 返回空列表\n\n"
                     elif returns == "dict":
                         code += f"        return {{}}\n\n"
                     elif returns == "None" or returns == "NoneType":
-                        code += f"        return None  # 返回None\n\n"
+                        code += "        return None  # 返回None\n\n"
                     else:
-                        code += f"        return None  # 返回None\n\n"
+                        code += "        return None  # 返回None\n\n"
 
             # 使用示例
-            code += f"\n# 使用示例\n"
-            code += f"if __name__ == '__main__':\n"
-            code += f"    # 创建配置\n"
-            code += f"    config = {{\n"
-            code += f"        'name': '测试配置',\n"
-            code += f"        'enabled': True,\n"
-            code += f"        'max_retries': 3\n"
-            code += f"    }}\n"
-            code += f"    \n"
-            code += f"    # 实例化接口\n"
+            code += "\n# 使用示例\n"
+            code += "if __name__ == '__main__':\n"
+            code += "    # 创建配置\n"
+            code += "    config = {{\n"
+            code += "        'name': '测试配置',\n"
+            code += "        'enabled': True,\n"
+            code += "        'max_retries': 3\n"
+            code += "    }}\n"
+            code += "    \n"
+            code += "    # 实例化接口\n"
             code += f"    impl = {interface_name}Impl(config)\n"
-            code += f"    \n"
-            code += f"    # 初始化\n"
-            code += f"    if impl.initialize(config):\n"
-            code += f"        print('初始化成功')\n"
-            code += f"        \n"
-            code += f"        # 处理数据\n"
+            code += "    \n"
+            code += "    # 初始化\n"
+            code += "    if impl.initialize(config):\n"
+            code += "        print('初始化成功')\n"
+            code += "        \n"
+            code += "        # 处理数据\n"
             code += f"        data = {{'id': 1, 'name': '测试数据'}}\n"
-            code += f"        processed = impl.process(data)\n"
+            code += "        processed = impl.process(data)\n"
             code += f"        print(f'处理结果: {{processed}}')\n"
-            code += f"        \n"
-            code += f"        # 获取状态\n"
-            code += f"        status = impl.get_status()\n"
+            code += "        \n"
+            code += "        # 获取状态\n"
+            code += "        status = impl.get_status()\n"
             code += f"        print(f'状态: {{status}}')\n"
-            code += f"        \n"
-            code += f"        # 清理\n"
-            code += f"        impl.cleanup()\n"
-            code += f"    else:\n"
-            code += f"        print('初始化失败')\n"
+            code += "        \n"
+            code += "        # 清理\n"
+            code += "        impl.cleanup()\n"
+            code += "    else:\n"
+            code += "        print('初始化失败')\n"
 
             return code
         elif language == ProgrammingLanguage.JAVA:
-            interface_name = self._extract_interface_name(
-                description).replace("Interface", "")
-            return f"// {description}接口\n" \
-                f"public interface {interface_name} {{\n" \
-                f"    boolean initialize(java.util.Map<String, Object> config);\n" \
-                f"    Object process(Object data);\n" \
-                f"    boolean validate(Object input);\n" \
-                f"    java.util.Map<String, Object> getStatus();\n" \
-                f"    void cleanup();\n" \
-                f"}}\n\n" \
-                f"// 实现类\n" \
-                f"class {interface_name}Impl implements {interface_name} {{\n" \
-                f"    private java.util.Map<String, Object> config;\n" \
-                f"    private boolean initialized = false;\n" \
-                f"    private int processedCount = 0;\n" \
-                f"    \n" \
-                f"    public boolean initialize(java.util.Map<String, Object> config) {{\n" \
-                f"        this.config = config;\n" \
-                f"        this.initialized = true;\n" \
-                f"        System.out.println(\"接口初始化完成\");\n" \
-                f"        return true;\n" \
-                f"    }}\n" \
-                f"    \n" \
-                f"    public Object process(Object data) {{\n" \
-                f"        if (!initialized) {{\n" \
-                f"            throw new RuntimeException(\"接口未初始化\");\n" \
-                f"        }}\n" \
-                f"        processedCount++;\n" \
-                f"        System.out.println(\"处理了第\" + processedCount + \"条数据\");\n" \
-                f"        return data;\n" \
-                f"    }}\n" \
-                f"    \n" \
-                f"    public boolean validate(Object input) {{\n" \
-                f"        return input != null;\n" \
-                f"    }}\n" \
-                f"    \n" \
-                f"    public java.util.Map<String, Object> getStatus() {{\n" \
-                f"        java.util.Map<String, Object> status = new java.util.HashMap<>();\n" \
-                f"        status.put(\"interfaceName\", \"{interface_name}\");\n" \
-                f"        status.put(\"initialized\", initialized);\n" \
-                f"        status.put(\"processedCount\", processedCount);\n" \
-                f"        return status;\n" \
-                f"    }}\n" \
-                f"    \n" \
-                f"    public void cleanup() {{\n" \
-                f"        initialized = false;\n" \
-                f"        processedCount = 0;\n" \
-                f"        System.out.println(\"接口资源已清理\");\n" \
-                f"    }}\n" \
-                f"}}\n"
+            interface_name = self._extract_interface_name(description).replace(
+                "Interface", ""
+            )
+            return (
+                f"// {description}接口\n"
+                f"public interface {interface_name} {{\n"
+                "    boolean initialize(java.util.Map<String, Object> config);\n"
+                "    Object process(Object data);\n"
+                "    boolean validate(Object input);\n"
+                "    java.util.Map<String, Object> getStatus();\n"
+                "    void cleanup();\n"
+                "}}\n\n"
+                "// 实现类\n"
+                f"class {interface_name}Impl implements {interface_name} {{\n"
+                "    private java.util.Map<String, Object> config;\n"
+                "    private boolean initialized = false;\n"
+                "    private int processedCount = 0;\n"
+                "    \n"
+                "    public boolean initialize(java.util.Map<String, Object> config) {{\n"
+                "        this.config = config;\n"
+                "        this.initialized = true;\n"
+                '        System.out.println("接口初始化完成");\n'
+                "        return true;\n"
+                "    }}\n"
+                "    \n"
+                "    public Object process(Object data) {{\n"
+                "        if (!initialized) {{\n"
+                '            throw new RuntimeException("接口未初始化");\n'
+                "        }}\n"
+                "        processedCount++;\n"
+                '        System.out.println("处理了第" + processedCount + "条数据");\n'
+                "        return data;\n"
+                "    }}\n"
+                "    \n"
+                "    public boolean validate(Object input) {{\n"
+                "        return input != null;\n"
+                "    }}\n"
+                "    \n"
+                "    public java.util.Map<String, Object> getStatus() {{\n"
+                "        java.util.Map<String, Object> status = new java.util.HashMap<>();\n"
+                f'        status.put("interfaceName", "{interface_name}");\n'
+                '        status.put("initialized", initialized);\n'
+                '        status.put("processedCount", processedCount);\n'
+                "        return status;\n"
+                "    }}\n"
+                "    \n"
+                "    public void cleanup() {{\n"
+                "        initialized = false;\n"
+                "        processedCount = 0;\n"
+                '        System.out.println("接口资源已清理");\n'
+                "    }}\n"
+                "}}\n"
+            )
         else:
             return f"// 接口代码: {description}\n// 语言: {language.value}\n// 请根据具体语言实现接口模式"
 
@@ -3729,22 +3914,32 @@ class ProgrammingCapabilityManager:
         # 转换为帕斯卡命名（首字母大写）
         if function_name:
             # 将蛇形命名转换为帕斯卡命名
-            parts = function_name.split('_')
-            interface_name = ''.join(part.capitalize() for part in parts if part)
+            parts = function_name.split("_")
+            interface_name = "".join(part.capitalize() for part in parts if part)
             return f"{interface_name}Interface"
         return "CustomInterface"
 
-    def _extract_methods_from_description(self, description: str) -> List[Dict[str, Any]]:
+    def _extract_methods_from_description(
+        self, description: str
+    ) -> List[Dict[str, Any]]:
         """从描述中提取方法信息"""
         methods = []
 
         # 简单实现：基于关键词提取
-        if "方法" in description or "method" in description.lower() or "function" in description.lower():
+        if (
+            "方法" in description
+            or "method" in description.lower()
+            or "function" in description.lower()
+        ):
             # 尝试提取多个方法
-            lines = description.split('\n')
+            lines = description.split("\n")
             for line in lines:
                 line = line.strip()
-                if "方法" in line or "method" in line.lower() or "function" in line.lower():
+                if (
+                    "方法" in line
+                    or "method" in line.lower()
+                    or "function" in line.lower()
+                ):
                     # 简单提取
                     method_name = "execute"
                     if "方法" in line:
@@ -3756,12 +3951,14 @@ class ProgrammingCapabilityManager:
                         if parts[0].strip():
                             method_name = parts[0].strip()
 
-                    methods.append({
-                        "name": method_name,
-                        "description": line,
-                        "params": "self",
-                        "returns": "bool"
-                    })
+                    methods.append(
+                        {
+                            "name": method_name,
+                            "description": line,
+                            "params": "self",
+                            "returns": "bool",
+                        }
+                    )
 
         # 如果没有提取到方法，返回空列表
         return methods
@@ -3771,278 +3968,297 @@ class ProgrammingCapabilityManager:
         if language == ProgrammingLanguage.PYTHON:
             script_name = self._extract_script_name(description)
 
-            code = f'#!/usr/bin/env python3\n'
-            code += f'# -*- coding: utf-8 -*-\n'
-            code += f'\n'
+            code = "#!/usr/bin/env python3\n"
+            code += "# -*- coding: utf-8 -*-\n"
+            code += "\n"
             code += f'"""\n{description}\n"""\n\n'
-            code += f'import sys\nimport os\nimport argparse\nimport json\nimport csv\nimport logging\nfrom datetime import datetime\nfrom pathlib import Path\n\n'
-            code += f'# 配置日志\n'
-            code += f'logging.basicConfig(\n'
-            code += f'    level=logging.INFO,\n'
-            code += f'    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"\n'
-            code += f')\n'
-            code += f'logger = logging.getLogger(__name__)\n\n'
-            code += f'def process_input_file(input_path):\n'
+            code += f"import sys\nimport os\nimport argparse\nimport json\nimport csv\nimport logging\nfrom datetime import datetime\nfrom pathlib import Path\n\n"
+            code += f"# 配置日志\n"
+            code += f"logging.basicConfig(\n"
+            code += f"    level=logging.INFO,\n"
+            code += (
+                f'    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"\n'
+            )
+            code += f")\n"
+            code += f"logger = logging.getLogger(__name__)\n\n"
+            code += f"def process_input_file(input_path):\n"
             code += f'    """处理输入文件"""\n'
-            code += f'    if not os.path.exists(input_path):\n'
+            code += f"    if not os.path.exists(input_path):\n"
             code += f'        logger.error(f"输入文件不存在: {{input_path}}")\n'
-            code += f'        return None  # 返回None\n'
-            code += f'    \n'
-            code += f'    try:\n'
-            code += f'        # 根据文件扩展名选择处理方式\n'
-            code += f'        ext = os.path.splitext(input_path)[1].lower()\n'
-            code += f'        \n'
+            code += f"        return None  # 返回None\n"
+            code += f"    \n"
+            code += f"    try:\n"
+            code += f"        # 根据文件扩展名选择处理方式\n"
+            code += f"        ext = os.path.splitext(input_path)[1].lower()\n"
+            code += f"        \n"
             code += f'        if ext == ".json":\n'
             code += f'            with open(input_path, "r", encoding="utf-8") as f:\n'
-            code += f'                return json.load(f)\n'
+            code += f"                return json.load(f)\n"
             code += f'        elif ext == ".csv":\n'
-            code += f'            data = []\n'
+            code += f"            data = []\n"
             code += f'            with open(input_path, "r", encoding="utf-8") as f:\n'
-            code += f'                reader = csv.DictReader(f)\n'
-            code += f'                for row in reader:\n'
-            code += f'                    data.append(row)\n'
-            code += f'            return data\n'
+            code += f"                reader = csv.DictReader(f)\n"
+            code += f"                for row in reader:\n"
+            code += f"                    data.append(row)\n"
+            code += f"            return data\n"
             code += f'        elif ext in [".txt", ".log"]:\n'
             code += f'            with open(input_path, "r", encoding="utf-8") as f:\n'
-            code += f'                return f.read()\n'
-            code += f'        else:\n'
-            code += f'            # 默认按文本处理\n'
+            code += f"                return f.read()\n"
+            code += f"        else:\n"
+            code += f"            # 默认按文本处理\n"
             code += f'            with open(input_path, "r", encoding="utf-8") as f:\n'
-            code += f'                return f.read()\n'
-            code += f'    except Exception as e:\n'
+            code += f"                return f.read()\n"
+            code += f"    except Exception as e:\n"
             code += f'        logger.error(f"处理输入文件失败: {{e}}")\n'
-            code += f'        return None  # 返回None\n\n'
+            code += f"        return None  # 返回None\n\n"
             code += f'def process_data(data, operation="process"):\n'
             code += f'    """处理数据"""\n'
             code += f'    if operation == "count":\n'
-            code += f'        if isinstance(data, list):\n'
-            code += f'            return len(data)\n'
-            code += f'        elif isinstance(data, dict):\n'
-            code += f'            return len(data)\n'
-            code += f'        elif isinstance(data, str):\n'
-            code += f'            return len(data.split())\n'
+            code += f"        if isinstance(data, list):\n"
+            code += f"            return len(data)\n"
+            code += f"        elif isinstance(data, dict):\n"
+            code += f"            return len(data)\n"
+            code += f"        elif isinstance(data, str):\n"
+            code += f"            return len(data.split())\n"
             code += f'    elif operation == "sum":\n'
-            code += f'        if isinstance(data, list) and all(isinstance(x, (int, float)) for x in data):\n'
-            code += f'            return sum(data)\n'
+            code += f"        if isinstance(data, list) and all(isinstance(x, (int, float)) for x in data):\n"
+            code += f"            return sum(data)\n"
             code += f'    elif operation == "analyze":\n'
-            code += f'        result = {{\n'
+            code += f"        result = {{\n"
             code += f'            "timestamp": datetime.now().isoformat(),\n'
             code += f'            "data_type": type(data).__name__\n'
-            code += f'        }}\n'
-            code += f'        if isinstance(data, list):\n'
+            code += f"        }}\n"
+            code += f"        if isinstance(data, list):\n"
             code += f'            result["length"] = len(data)\n'
-            code += f'            if data and isinstance(data[0], dict):\n'
+            code += f"            if data and isinstance(data[0], dict):\n"
             code += f'                result["keys"] = list(data[0].keys()) if data else []\n'
-            code += f'        elif isinstance(data, dict):\n'
+            code += f"        elif isinstance(data, dict):\n"
             code += f'            result["keys"] = list(data.keys())\n'
             code += f'            result["length"] = len(data)\n'
-            code += f'        elif isinstance(data, str):\n'
+            code += f"        elif isinstance(data, str):\n"
             code += f'            result["length"] = len(data)\n'
             code += f'            result["word_count"] = len(data.split())\n'
-            code += f'        return result\n'
-            code += f'    \n'
-            code += f'    # 默认处理：添加元数据\n'
-            code += f'    if isinstance(data, dict):\n'
+            code += f"        return result\n"
+            code += f"    \n"
+            code += f"    # 默认处理：添加元数据\n"
+            code += f"    if isinstance(data, dict):\n"
             code += f'        data["processed_at"] = datetime.now().isoformat()\n'
             code += f'        data["script"] = "{script_name}"\n'
-            code += f'    elif isinstance(data, list):\n'
-            code += f'        for item in data:\n'
-            code += f'            if isinstance(item, dict):\n'
-            code += f'                item["processed_at"] = datetime.now().isoformat()\n'
+            code += f"    elif isinstance(data, list):\n"
+            code += f"        for item in data:\n"
+            code += f"            if isinstance(item, dict):\n"
+            code += (
+                f'                item["processed_at"] = datetime.now().isoformat()\n'
+            )
             code += f'                item["script"] = "{script_name}"\n'
-            code += f'    \n'
-            code += f'    return data\n\n'
-            code += f'def save_output(data, output_path):\n'
+            code += f"    \n"
+            code += f"    return data\n\n"
+            code += f"def save_output(data, output_path):\n"
             code += f'    """保存输出"""\n'
-            code += f'    try:\n'
-            code += f'        os.makedirs(os.path.dirname(output_path), exist_ok=True)\n'
-            code += f'        \n'
-            code += f'        ext = os.path.splitext(output_path)[1].lower()\n'
-            code += f'        \n'
+            code += f"    try:\n"
+            code += (
+                f"        os.makedirs(os.path.dirname(output_path), exist_ok=True)\n"
+            )
+            code += f"        \n"
+            code += f"        ext = os.path.splitext(output_path)[1].lower()\n"
+            code += f"        \n"
             code += f'        if ext == ".json":\n'
             code += f'            with open(output_path, "w", encoding="utf-8") as f:\n'
-            code += f'                json.dump(data, f, ensure_ascii=False, indent=2)\n'
+            code += (
+                f"                json.dump(data, f, ensure_ascii=False, indent=2)\n"
+            )
             code += f'        elif ext == ".csv":\n'
-            code += f'            if isinstance(data, list) and data and isinstance(data[0], dict):\n'
+            code += f"            if isinstance(data, list) and data and isinstance(data[0], dict):\n"
             code += f'                with open(output_path, "w", encoding="utf-8", newline="") as f:\n'
-            code += f'                    writer = csv.DictWriter(f, fieldnames=data[0].keys())\n'
-            code += f'                    writer.writeheader()\n'
-            code += f'                    writer.writerows(data)\n'
-            code += f'            else:\n'
-            code += f'                # 转换为列表格式\n'
-            code += f'                with open(output_path, "w", encoding="utf-8") as f:\n'
-            code += f'                    if isinstance(data, list):\n'
-            code += f'                        for item in data:\n'
+            code += f"                    writer = csv.DictWriter(f, fieldnames=data[0].keys())\n"
+            code += f"                    writer.writeheader()\n"
+            code += f"                    writer.writerows(data)\n"
+            code += f"            else:\n"
+            code += f"                # 转换为列表格式\n"
+            code += (
+                f'                with open(output_path, "w", encoding="utf-8") as f:\n'
+            )
+            code += f"                    if isinstance(data, list):\n"
+            code += f"                        for item in data:\n"
             code += f'                            f.write(str(item) + "\\n")\n'
-            code += f'                    else:\n'
-            code += f'                        f.write(str(data))\n'
-            code += f'        else:\n'
-            code += f'            # 默认保存为文本\n'
+            code += f"                    else:\n"
+            code += f"                        f.write(str(data))\n"
+            code += f"        else:\n"
+            code += f"            # 默认保存为文本\n"
             code += f'            with open(output_path, "w", encoding="utf-8") as f:\n'
-            code += f'                f.write(str(data))\n'
-            code += f'        \n'
+            code += f"                f.write(str(data))\n"
+            code += f"        \n"
             code += f'        logger.info(f"输出已保存到: {{output_path}}")\n'
-            code += f'        return True\n'
-            code += f'    except Exception as e:\n'
+            code += f"        return True\n"
+            code += f"    except Exception as e:\n"
             code += f'        logger.error(f"保存输出失败: {{e}}")\n'
-            code += f'        return False\n\n'
-            code += f'def main():\n'
+            code += f"        return False\n\n"
+            code += f"def main():\n"
             code += f'    """主函数"""\n'
-            code += f'    parser = argparse.ArgumentParser(description="{description}")\n'
+            code += (
+                f'    parser = argparse.ArgumentParser(description="{description}")\n'
+            )
             code += f'    parser.add_argument("--input", required=True, help="输入文件路径")\n'
             code += f'    parser.add_argument("--output", required=True, help="输出文件路径")\n'
             code += f'    parser.add_argument("--operation", default="process", choices=["process", "count", "sum", "analyze"],\n'
             code += f'                        help="处理操作类型")\n'
             code += f'    parser.add_argument("--verbose", action="store_true", help="详细模式")\n'
             code += f'    parser.add_argument("--dry-run", action="store_true", help="试运行模式，不保存输出")\n'
-            code += f'    \n'
-            code += f'    args = parser.parse_args()\n'
-            code += f'    \n'
-            code += f'    if args.verbose:\n'
-            code += f'        logging.getLogger().setLevel(logging.DEBUG)\n'
+            code += f"    \n"
+            code += f"    args = parser.parse_args()\n"
+            code += f"    \n"
+            code += f"    if args.verbose:\n"
+            code += f"        logging.getLogger().setLevel(logging.DEBUG)\n"
             code += f'        logger.debug("详细模式已启用")\n'
-            code += f'    \n'
+            code += f"    \n"
             code += f'    logger.info(f"脚本开始执行: {{script_name}}")\n'
             code += f'    logger.info(f"输入文件: {{args.input}}")\n'
             code += f'    logger.info(f"输出文件: {{args.output}}")\n'
             code += f'    logger.info(f"操作类型: {{args.operation}}")\n'
-            code += f'    \n'
-            code += f'    # 处理输入\n'
-            code += f'    data = process_input_file(args.input)\n'
-            code += f'    if data is None:\n'
+            code += f"    \n"
+            code += f"    # 处理输入\n"
+            code += f"    data = process_input_file(args.input)\n"
+            code += f"    if data is None:\n"
             code += f'        logger.error("输入处理失败，脚本终止")\n'
-            code += f'        return 1\n'
-            code += f'    \n'
-            code += f'    logger.info(f"输入数据加载成功，类型: {{type(data).__name__}}")\n'
-            code += f'    \n'
-            code += f'    # 处理数据\n'
-            code += f'    processed_data = process_data(data, args.operation)\n'
-            code += f'    \n'
+            code += f"        return 1\n"
+            code += f"    \n"
+            code += (
+                f'    logger.info(f"输入数据加载成功，类型: {{type(data).__name__}}")\n'
+            )
+            code += f"    \n"
+            code += f"    # 处理数据\n"
+            code += f"    processed_data = process_data(data, args.operation)\n"
+            code += f"    \n"
             code += f'    logger.info(f"数据处理完成，结果类型: {{type(processed_data).__name__}}")\n'
-            code += f'    \n'
-            code += f'    # 保存输出\n'
-            code += f'    if not args.dry_run:\n'
-            code += f'        success = save_output(processed_data, args.output)\n'
-            code += f'        if not success:\n'
+            code += f"    \n"
+            code += f"    # 保存输出\n"
+            code += f"    if not args.dry_run:\n"
+            code += f"        success = save_output(processed_data, args.output)\n"
+            code += f"        if not success:\n"
             code += f'            logger.error("输出保存失败")\n'
-            code += f'            return 1\n'
-            code += f'    else:\n'
+            code += f"            return 1\n"
+            code += f"    else:\n"
             code += f'        logger.info("试运行模式，跳过保存输出")\n'
             code += f'        print("处理结果:", processed_data)\n'
-            code += f'    \n'
+            code += f"    \n"
             code += f'    logger.info("脚本执行成功")\n'
-            code += f'    return 0\n\n'
+            code += f"    return 0\n\n"
             code += f'if __name__ == "__main__":\n'
-            code += f'    sys.exit(main())\n'
+            code += f"    sys.exit(main())\n"
 
             return code
-        elif language == ProgrammingLanguage.BASH or language == ProgrammingLanguage.SHELL:
+        elif (
+            language == ProgrammingLanguage.BASH
+            or language == ProgrammingLanguage.SHELL
+        ):
             script_name = self._extract_script_name(description)
-            return f'#!/bin/bash\n' \
-                f'# {description}\n\n' \
-                f'# 配置\n' \
-                f'SCRIPT_NAME="{script_name}"\n' \
-                f'VERSION="1.0.0"\n\n' \
-                f'# 显示帮助信息\n' \
-                f'usage() {{\n' \
-                f'    echo "Usage: $0 [OPTIONS]"\n' \
-                f'    echo "  {description}"\n' \
-                f'    echo ""\n' \
-                f'    echo "Options:"\n' \
-                f'    echo "  -h, --help      显示帮助信息"\n' \
-                f'    echo "  -v, --version   显示版本信息"\n' \
-                f'    echo "  -i, --input     输入文件"\n' \
-                f'    echo "  -o, --output    输出文件"\n' \
-                f'    echo "  --verbose       详细模式"\n' \
-                f'    echo ""\n' \
-                f'    echo "示例:"\n' \
-                f'    echo "  $0 --input data.txt --output result.txt"\n' \
-                f'}}\n\n' \
-                f'# 显示版本信息\n' \
-                f'version() {{\n' \
-                f'    echo "$SCRIPT_NAME v$VERSION"\n' \
-                f'}}\n\n' \
-                f'# 处理输入文件\n' \
-                f'process_input() {{\n' \
-                f'    local input_file="$1"\n' \
-                f'    if [[ ! -f "$input_file" ]]; then\n' \
-                f'        echo "错误: 输入文件不存在: $input_file" >&2\n' \
-                f'        return 1\n' \
-                f'    fi\n' \
-                f'    \n' \
-                f'    # 简单处理：统计行数、词数、字符数\n' \
-                f'    echo "处理文件: $input_file"\n' \
-                f'    local lines=$(wc -l < "$input_file")\n' \
-                f'    local words=$(wc -w < "$input_file")\n' \
-                f'    local chars=$(wc -c < "$input_file")\n' \
-                f'    \n' \
-                f'    echo "统计结果:"\n' \
-                f'    echo "  行数: $lines"\n' \
-                f'    echo "  词数: $words"\n' \
-                f'    echo "  字符数: $chars"\n' \
-                f'    \n' \
-                f'    return 0\n' \
-                f'}}\n\n' \
-                f'# 主函数\n' \
-                f'main() {{\n' \
-                f'    local input_file=""\n' \
-                f'    local output_file=""\n' \
-                f'    local verbose=0\n' \
-                f'    \n' \
-                f'    # 解析命令行参数\n' \
-                f'    while [[ $# -gt 0 ]]; do\n' \
-                f'        case $1 in\n' \
-                f'            -h|--help)\n' \
-                f'                usage\n' \
-                f'                return 0\n' \
-                f'                ;;\n' \
-                f'            -v|--version)\n' \
-                f'                version\n' \
-                f'                return 0\n' \
-                f'                ;;\n' \
-                f'            -i|--input)\n' \
-                f'                input_file="$2"\n' \
-                f'                shift 2\n' \
-                f'                ;;\n' \
-                f'            -o|--output)\n' \
-                f'                output_file="$2"\n' \
-                f'                shift 2\n' \
-                f'                ;;\n' \
-                f'            --verbose)\n' \
-                f'                verbose=1\n' \
-                f'                shift\n' \
-                f'                ;;\n' \
-                f'            *)\n' \
-                f'                echo "未知选项: $1" >&2\n' \
-                f'                usage\n' \
-                f'                return 1\n' \
-                f'                ;;\n' \
-                f'        esac\n' \
-                f'    done\n' \
-                f'    \n' \
-                f'    # 检查必要参数\n' \
-                f'    if [[ -z "$input_file" ]]; then\n' \
-                f'        echo "错误: 必须指定输入文件" >&2\n' \
-                f'        usage\n' \
-                f'        return 1\n' \
-                f'    fi\n' \
-                f'    \n' \
-                f'    # 处理输入\n' \
-                f'    if [[ $verbose -eq 1 ]]; then\n' \
-                f'        echo "详细模式已启用"\n' \
-                f'        echo "脚本: $SCRIPT_NAME"\n' \
-                f'        echo "版本: $VERSION"\n' \
-                f'        echo "输入文件: $input_file"\n' \
-                f'        echo "输出文件: $output_file"\n' \
-                f'    fi\n' \
-                f'    \n' \
-                f'    process_input "$input_file"\n' \
-                f'    \n' \
-                f'    echo "脚本执行完成"\n' \
-                f'    return 0\n' \
-                f'}}\n\n' \
-                f'# 执行主函数\n' \
+            return (
+                f"#!/bin/bash\n"
+                f"# {description}\n\n"
+                f"# 配置\n"
+                f'SCRIPT_NAME="{script_name}"\n'
+                f'VERSION="1.0.0"\n\n'
+                f"# 显示帮助信息\n"
+                f"usage() {{\n"
+                f'    echo "Usage: $0 [OPTIONS]"\n'
+                f'    echo "  {description}"\n'
+                f'    echo ""\n'
+                f'    echo "Options:"\n'
+                f'    echo "  -h, --help      显示帮助信息"\n'
+                f'    echo "  -v, --version   显示版本信息"\n'
+                f'    echo "  -i, --input     输入文件"\n'
+                f'    echo "  -o, --output    输出文件"\n'
+                f'    echo "  --verbose       详细模式"\n'
+                f'    echo ""\n'
+                f'    echo "示例:"\n'
+                f'    echo "  $0 --input data.txt --output result.txt"\n'
+                f"}}\n\n"
+                f"# 显示版本信息\n"
+                f"version() {{\n"
+                f'    echo "$SCRIPT_NAME v$VERSION"\n'
+                f"}}\n\n"
+                f"# 处理输入文件\n"
+                f"process_input() {{\n"
+                f'    local input_file="$1"\n'
+                f'    if [[ ! -f "$input_file" ]]; then\n'
+                f'        echo "错误: 输入文件不存在: $input_file" >&2\n'
+                f"        return 1\n"
+                f"    fi\n"
+                f"    \n"
+                f"    # 简单处理：统计行数、词数、字符数\n"
+                f'    echo "处理文件: $input_file"\n'
+                f'    local lines=$(wc -l < "$input_file")\n'
+                f'    local words=$(wc -w < "$input_file")\n'
+                f'    local chars=$(wc -c < "$input_file")\n'
+                f"    \n"
+                f'    echo "统计结果:"\n'
+                f'    echo "  行数: $lines"\n'
+                f'    echo "  词数: $words"\n'
+                f'    echo "  字符数: $chars"\n'
+                f"    \n"
+                f"    return 0\n"
+                f"}}\n\n"
+                f"# 主函数\n"
+                f"main() {{\n"
+                f'    local input_file=""\n'
+                f'    local output_file=""\n'
+                f"    local verbose=0\n"
+                f"    \n"
+                f"    # 解析命令行参数\n"
+                f"    while [[ $# -gt 0 ]]; do\n"
+                f"        case $1 in\n"
+                f"            -h|--help)\n"
+                f"                usage\n"
+                f"                return 0\n"
+                f"                ;;\n"
+                f"            -v|--version)\n"
+                f"                version\n"
+                f"                return 0\n"
+                f"                ;;\n"
+                f"            -i|--input)\n"
+                f'                input_file="$2"\n'
+                f"                shift 2\n"
+                f"                ;;\n"
+                f"            -o|--output)\n"
+                f'                output_file="$2"\n'
+                f"                shift 2\n"
+                f"                ;;\n"
+                f"            --verbose)\n"
+                f"                verbose=1\n"
+                f"                shift\n"
+                f"                ;;\n"
+                f"            *)\n"
+                f'                echo "未知选项: $1" >&2\n'
+                f"                usage\n"
+                f"                return 1\n"
+                f"                ;;\n"
+                f"        esac\n"
+                f"    done\n"
+                f"    \n"
+                f"    # 检查必要参数\n"
+                f'    if [[ -z "$input_file" ]]; then\n'
+                f'        echo "错误: 必须指定输入文件" >&2\n'
+                f"        usage\n"
+                f"        return 1\n"
+                f"    fi\n"
+                f"    \n"
+                f"    # 处理输入\n"
+                f"    if [[ $verbose -eq 1 ]]; then\n"
+                f'        echo "详细模式已启用"\n'
+                f'        echo "脚本: $SCRIPT_NAME"\n'
+                f'        echo "版本: $VERSION"\n'
+                f'        echo "输入文件: $input_file"\n'
+                f'        echo "输出文件: $output_file"\n'
+                f"    fi\n"
+                f"    \n"
+                f'    process_input "$input_file"\n'
+                f"    \n"
+                f'    echo "脚本执行完成"\n'
+                f"    return 0\n"
+                f"}}\n\n"
+                f"# 执行主函数\n"
                 f'main "$@"\n'
+            )
         else:
             return f"// 脚本代码: {description}\n// 语言: {language.value}\n// 请根据具体语言实现脚本功能"
 
@@ -4059,36 +4275,36 @@ class ProgrammingCapabilityManager:
             api_name = self._extract_api_name(description)
 
             code = f'"""\n{description}\n"""\n\n'
-            code += f'from fastapi import FastAPI, HTTPException\n'
-            code += f'from pydantic import BaseModel\n'
-            code += f'from typing import Optional\n\n'
+            code += "from fastapi import FastAPI, HTTPException\n"
+            code += "from pydantic import BaseModel\n"
+            code += "from typing import Optional\n\n"
             code += f'app = FastAPI(title="{api_name} API", description="{description}")\n\n'
-            code += f'# 请求/响应模型\n'
-            code += f'class {api_name}Request(BaseModel):\n'
-            code += f'    data: str\n'
-            code += f'    options: Optional[dict] = {{}}\n\n'
-            code += f'class {api_name}Response(BaseModel):\n'
-            code += f'    success: bool\n'
-            code += f'    result: dict\n'
-            code += f'    message: Optional[str] = None\n\n'
-            code += f'@app.get("/")\n'
-            code += f'async def root():\n'
+            code += "# 请求/响应模型\n"
+            code += f"class {api_name}Request(BaseModel):\n"
+            code += "    data: str\n"
+            code += f"    options: Optional[dict] = {{}}\n\n"
+            code += f"class {api_name}Response(BaseModel):\n"
+            code += "    success: bool\n"
+            code += "    result: dict\n"
+            code += "    message: Optional[str] = None\n\n"
+            code += '@app.get("/")\n'
+            code += "async def root():\n"
             code += f'    return {{"message": "{api_name} API 运行中"}}\n\n'
-            code += f'@app.post("/process")\n'
-            code += f'async def process_data(request: {api_name}Request) -> {api_name}Response:\n'
-            code += f'    """处理数据"""\n'
-            code += f'    try:\n'
-            code += f'        # 根据请求数据实现具体处理逻辑\n'
+            code += '@app.post("/process")\n'
+            code += f"async def process_data(request: {api_name}Request) -> {api_name}Response:\n"
+            code += '    """处理数据"""\n'
+            code += "    try:\n"
+            code += "        # 根据请求数据实现具体处理逻辑\n"
             code += f'        result = {{"processed": request.data}}\n'
-            code += f'        return {api_name}Response(success=True, result=result)\n'
-            code += f'    except Exception as e:\n'
-            code += f'        raise HTTPException(status_code=500, detail=str(e))\n\n'
-            code += f'@app.get("/health")\n'
-            code += f'async def health_check():\n'
+            code += f"        return {api_name}Response(success=True, result=result)\n"
+            code += "    except Exception as e:\n"
+            code += "        raise HTTPException(status_code=500, detail=str(e))\n\n"
+            code += '@app.get("/health")\n'
+            code += "async def health_check():\n"
             code += f'    return {{"status": "healthy", "service": "{api_name}"}}\n\n'
-            code += f'if __name__ == "__main__":\n'
-            code += f'    import uvicorn\n'
-            code += f'    uvicorn.run(app, host="0.0.0.0", port=8000)\n'
+            code += 'if __name__ == "__main__":\n'
+            code += "    import uvicorn\n"
+            code += '    uvicorn.run(app, host="0.0.0.0", port=8000)\n'
 
             return code
         else:
@@ -4099,92 +4315,96 @@ class ProgrammingCapabilityManager:
         function_name = self._extract_function_name(description)
         if function_name:
             # 转换为帕斯卡命名
-            parts = function_name.split('_')
-            api_name = ''.join(part.capitalize() for part in parts if part)
+            parts = function_name.split("_")
+            api_name = "".join(part.capitalize() for part in parts if part)
             return api_name
         return "CustomAPI"
 
-    def _generate_database(self, description: str, language: ProgrammingLanguage) -> str:
+    def _generate_database(
+        self, description: str, language: ProgrammingLanguage
+    ) -> str:
         """生成数据库代码"""
         if language == ProgrammingLanguage.PYTHON:
             db_name = self._extract_database_name(description)
 
             code = f'"""\n{description}\n"""\n\n'
-            code += f'import sqlite3\n'
-            code += f'from typing import List, Dict, Any, Optional\n'
-            code += f'from dataclasses import dataclass\n'
-            code += f'from datetime import datetime\n\n'
-            code += f'@dataclass\n'
-            code += f'class DatabaseConfig:\n'
+            code += f"import sqlite3\n"
+            code += f"from typing import List, Dict, Any, Optional\n"
+            code += f"from dataclasses import dataclass\n"
+            code += f"from datetime import datetime\n\n"
+            code += f"@dataclass\n"
+            code += f"class DatabaseConfig:\n"
             code += f'    """数据库配置"""\n'
             code += f'    database_path: str = "{db_name}.db"\n'
-            code += f'    timeout: float = 5.0\n'
-            code += f'    check_same_thread: bool = False\n\n'
-            code += f'class {db_name}Database:\n'
+            code += f"    timeout: float = 5.0\n"
+            code += f"    check_same_thread: bool = False\n\n"
+            code += f"class {db_name}Database:\n"
             code += f'    """{description}数据库"""\n\n'
-            code += f'    def __init__(self, config: Optional[DatabaseConfig] = None):\n'
-            code += f'        self.config = config or DatabaseConfig()\n'
-            code += f'        self.connection = None\n'
-            code += f'        self._initialize()\n\n'
-            code += f'    def _initialize(self):\n'
+            code += (
+                f"    def __init__(self, config: Optional[DatabaseConfig] = None):\n"
+            )
+            code += f"        self.config = config or DatabaseConfig()\n"
+            code += f"        self.connection = None\n"
+            code += f"        self._initialize()\n\n"
+            code += f"    def _initialize(self):\n"
             code += f'        """初始化数据库"""\n'
-            code += f'        self.connection = sqlite3.connect(\n'
-            code += f'            self.config.database_path,\n'
-            code += f'            timeout=self.config.timeout,\n'
-            code += f'            check_same_thread=self.config.check_same_thread\n'
-            code += f'        )\n'
-            code += f'        self._create_tables()\n\n'
-            code += f'    def _create_tables(self):\n'
+            code += f"        self.connection = sqlite3.connect(\n"
+            code += f"            self.config.database_path,\n"
+            code += f"            timeout=self.config.timeout,\n"
+            code += f"            check_same_thread=self.config.check_same_thread\n"
+            code += f"        )\n"
+            code += f"        self._create_tables()\n\n"
+            code += f"    def _create_tables(self):\n"
             code += f'        """创建表"""\n'
-            code += f'        cursor = self.connection.cursor()\n\n'
-            code += f'        # 示例表\n'
+            code += f"        cursor = self.connection.cursor()\n\n"
+            code += f"        # 示例表\n"
             code += f'        cursor.execute("""\n'
-            code += f'            CREATE TABLE IF NOT EXISTS records (\n'
-            code += f'                id INTEGER PRIMARY KEY AUTOINCREMENT,\n'
-            code += f'                data TEXT NOT NULL,\n'
-            code += f'                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n'
-            code += f'            )\n'
+            code += f"            CREATE TABLE IF NOT EXISTS records (\n"
+            code += f"                id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
+            code += f"                data TEXT NOT NULL,\n"
+            code += f"                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n"
+            code += f"            )\n"
             code += f'        """)\n\n'
-            code += f'        self.connection.commit()\n'
-            code += f'        cursor.close()\n\n'
-            code += f'    def insert_record(self, data: str) -> int:\n'
+            code += f"        self.connection.commit()\n"
+            code += f"        cursor.close()\n\n"
+            code += f"    def insert_record(self, data: str) -> int:\n"
             code += f'        """插入记录"""\n'
-            code += f'        cursor = self.connection.cursor()\n'
+            code += f"        cursor = self.connection.cursor()\n"
             code += f'        cursor.execute("INSERT INTO records (data) VALUES (?)", (data,))\n'
-            code += f'        record_id = cursor.lastrowid\n'
-            code += f'        self.connection.commit()\n'
-            code += f'        cursor.close()\n'
-            code += f'        return record_id\n\n'
-            code += f'    def get_record(self, record_id: int) -> Optional[Dict[str, Any]]:\n'
+            code += f"        record_id = cursor.lastrowid\n"
+            code += f"        self.connection.commit()\n"
+            code += f"        cursor.close()\n"
+            code += f"        return record_id\n\n"
+            code += f"    def get_record(self, record_id: int) -> Optional[Dict[str, Any]]:\n"
             code += f'        """获取记录"""\n'
-            code += f'        cursor = self.connection.cursor()\n'
+            code += f"        cursor = self.connection.cursor()\n"
             code += f'        cursor.execute("SELECT * FROM records WHERE id = ?", (record_id,))\n'
-            code += f'        row = cursor.fetchone()\n'
-            code += f'        cursor.close()\n\n'
-            code += f'        if row:\n'
-            code += f'            return {{\n'
+            code += f"        row = cursor.fetchone()\n"
+            code += f"        cursor.close()\n\n"
+            code += f"        if row:\n"
+            code += f"            return {{\n"
             code += f'                "id": row[0],\n'
             code += f'                "data": row[1],\n'
             code += f'                "created_at": row[2]\n'
-            code += f'            }}\n'
-            code += f'        return None  # 返回None\n\n'
-            code += f'    def close(self):\n'
+            code += f"            }}\n"
+            code += f"        return None  # 返回None\n\n"
+            code += f"    def close(self):\n"
             code += f'        """关闭数据库连接"""\n'
-            code += f'        if self.connection:\n'
-            code += f'            self.connection.close()\n'
-            code += f'            self.connection = None\n\n'
-            code += f'    def __del__(self):\n'
-            code += f'        self.close()\n\n'
-            code += f'def main():\n'
+            code += f"        if self.connection:\n"
+            code += f"            self.connection.close()\n"
+            code += f"            self.connection = None\n\n"
+            code += f"    def __del__(self):\n"
+            code += f"        self.close()\n\n"
+            code += f"def main():\n"
             code += f'    """示例使用"""\n'
-            code += f'    db = {db_name}Database()\n'
+            code += f"    db = {db_name}Database()\n"
             code += f'    record_id = db.insert_record("测试数据")\n'
             code += f'    print(f"插入记录ID: {{record_id}}")\n'
-            code += f'    record = db.get_record(record_id)\n'
+            code += f"    record = db.get_record(record_id)\n"
             code += f'    print(f"获取记录: {{record}}")\n'
-            code += f'    db.close()\n\n'
+            code += f"    db.close()\n\n"
             code += f'if __name__ == "__main__":\n'
-            code += f'    main()\n'
+            code += f"    main()\n"
 
             return code
         else:
@@ -4195,8 +4415,8 @@ class ProgrammingCapabilityManager:
         function_name = self._extract_function_name(description)
         if function_name:
             # 转换为帕斯卡命名
-            parts = function_name.split('_')
-            db_name = ''.join(part.capitalize() for part in parts if part)
+            parts = function_name.split("_")
+            db_name = "".join(part.capitalize() for part in parts if part)
             return db_name
         return "CustomDatabase"
 
@@ -4206,36 +4426,38 @@ class ProgrammingCapabilityManager:
             app_name = self._extract_web_app_name(description)
 
             code = f'"""\n{description}\n"""\n\n'
-            code += f'from flask import Flask, render_template, request, jsonify\n'
-            code += f'import json\n\n'
-            code += f'app = Flask(__name__)\n\n'
-            code += f'@app.route("/")\n'
-            code += f'def index():\n'
-            code += f'    """主页"""\n'
+            code += "from flask import Flask, render_template, request, jsonify\n"
+            code += "import json\n\n"
+            code += "app = Flask(__name__)\n\n"
+            code += '@app.route("/")\n'
+            code += "def index():\n"
+            code += '    """主页"""\n'
             code += f'    return render_template("index.html", title="{app_name}")\n\n'
-            code += f'@app.route("/api/data", methods=["GET"])\n'
-            code += f'def get_data():\n'
-            code += f'    """获取数据API"""\n'
-            code += f'    data = {{\n'
+            code += '@app.route("/api/data", methods=["GET"])\n'
+            code += "def get_data():\n"
+            code += '    """获取数据API"""\n'
+            code += "    data = {{\n"
             code += f'        "app": "{app_name}",\n'
-            code += f'        "status": "running",\n'
-            code += f'        "version": "1.0.0"\n'
-            code += f'    }}\n'
-            code += f'    return jsonify(data)\n\n'
-            code += f'@app.route("/api/process", methods=["POST"])\n'
-            code += f'def process():\n'
-            code += f'    """处理数据API"""\n'
-            code += f'    try:\n'
-            code += f'        data = request.get_json()\n'
-            code += f'        if not data:\n'
-            code += f'            return jsonify({{"error": "No data provided"}}), 400\n\n'
-            code += f'        # 根据数据实现具体处理逻辑\n'
+            code += '        "status": "running",\n'
+            code += '        "version": "1.0.0"\n'
+            code += "    }}\n"
+            code += "    return jsonify(data)\n\n"
+            code += '@app.route("/api/process", methods=["POST"])\n'
+            code += "def process():\n"
+            code += '    """处理数据API"""\n'
+            code += "    try:\n"
+            code += "        data = request.get_json()\n"
+            code += "        if not data:\n"
+            code += (
+                f'            return jsonify({{"error": "No data provided"}}), 400\n\n'
+            )
+            code += "        # 根据数据实现具体处理逻辑\n"
             code += f'        result = {{"processed": data, "success": True}}\n'
-            code += f'        return jsonify(result)\n'
-            code += f'    except Exception as e:\n'
+            code += "        return jsonify(result)\n"
+            code += "    except Exception as e:\n"
             code += f'        return jsonify({{"error": str(e)}}), 500\n\n'
-            code += f'if __name__ == "__main__":\n'
-            code += f'    app.run(debug=True, host="0.0.0.0", port=5000)\n'
+            code += 'if __name__ == "__main__":\n'
+            code += '    app.run(debug=True, host="0.0.0.0", port=5000)\n'
 
             return code
         else:
@@ -4246,8 +4468,8 @@ class ProgrammingCapabilityManager:
         function_name = self._extract_function_name(description)
         if function_name:
             # 转换为帕斯卡命名
-            parts = function_name.split('_')
-            app_name = ''.join(part.capitalize() for part in parts if part)
+            parts = function_name.split("_")
+            app_name = "".join(part.capitalize() for part in parts if part)
             return app_name
         return "WebApp"
 
@@ -4256,43 +4478,47 @@ class ProgrammingCapabilityManager:
         if language == ProgrammingLanguage.PYTHON:
             cli_name = self._extract_cli_name(description)
 
-            code = f'#!/usr/bin/env python3\n'
-            code += f'# -*- coding: utf-8 -*-\n\n'
+            code = "#!/usr/bin/env python3\n"
+            code += "# -*- coding: utf-8 -*-\n\n"
             code += f'"""\n{description}\n"""\n\n'
-            code += f'import sys\nimport os\nimport argparse\nimport logging\nfrom typing import List\n\n'
+            code += f"import sys\nimport os\nimport argparse\nimport logging\nfrom typing import List\n\n"
             code += f'logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")\n'
             code += f'logger = logging.getLogger("{cli_name}")\n\n'
-            code += f'class {cli_name}CLI:\n'
+            code += f"class {cli_name}CLI:\n"
             code += f'    """{description}命令行工具"""\n\n'
-            code += f'    def __init__(self):\n'
+            code += f"    def __init__(self):\n"
             code += f'        self.parser = argparse.ArgumentParser(description="{description}")\n'
-            code += f'        self._setup_arguments()\n\n'
-            code += f'    def _setup_arguments(self):\n'
+            code += f"        self._setup_arguments()\n\n"
+            code += f"    def _setup_arguments(self):\n"
             code += f'        """设置命令行参数"""\n'
             code += f'        self.parser.add_argument("--version", action="store_true", help="显示版本信息")\n'
             code += f'        self.parser.add_argument("--verbose", action="store_true", help="详细输出模式")\n'
-            code += f'        self.parser.add_argument("--input", help="输入文件路径")\n'
-            code += f'        self.parser.add_argument("--output", help="输出文件路径")\n\n'
-            code += f'    def run(self, args: List[str] = None) -> int:\n'
+            code += (
+                f'        self.parser.add_argument("--input", help="输入文件路径")\n'
+            )
+            code += (
+                f'        self.parser.add_argument("--output", help="输出文件路径")\n\n'
+            )
+            code += f"    def run(self, args: List[str] = None) -> int:\n"
             code += f'        """运行CLI工具"""\n'
-            code += f'        parsed_args = self.parser.parse_args(args)\n\n'
-            code += f'        if parsed_args.version:\n'
+            code += f"        parsed_args = self.parser.parse_args(args)\n\n"
+            code += f"        if parsed_args.version:\n"
             code += f'            print(f"{cli_name} v1.0.0")\n'
-            code += f'            return 0\n\n'
-            code += f'        if parsed_args.verbose:\n'
-            code += f'            logging.getLogger().setLevel(logging.DEBUG)\n'
+            code += f"            return 0\n\n"
+            code += f"        if parsed_args.verbose:\n"
+            code += f"            logging.getLogger().setLevel(logging.DEBUG)\n"
             code += f'            logger.debug("详细模式已启用")\n\n'
             code += f'        logger.info(f"输入文件: {{parsed_args.input}}")\n'
             code += f'        logger.info(f"输出文件: {{parsed_args.output}}")\n\n'
-            code += f'        # 根据输入参数实现具体CLI功能\n'
+            code += f"        # 根据输入参数实现具体CLI功能\n"
             code += f'        print("CLI工具执行完成")\n'
-            code += f'        return 0\n\n'
-            code += f'def main():\n'
+            code += f"        return 0\n\n"
+            code += f"def main():\n"
             code += f'    """主函数"""\n'
-            code += f'    cli = {cli_name}CLI()\n'
-            code += f'    sys.exit(cli.run())\n\n'
+            code += f"    cli = {cli_name}CLI()\n"
+            code += f"    sys.exit(cli.run())\n\n"
             code += f'if __name__ == "__main__":\n'
-            code += f'    main()\n'
+            code += f"    main()\n"
 
             return code
         else:
@@ -4303,8 +4529,8 @@ class ProgrammingCapabilityManager:
         function_name = self._extract_function_name(description)
         if function_name:
             # 转换为帕斯卡命名
-            parts = function_name.split('_')
-            cli_name = ''.join(part.capitalize() for part in parts if part)
+            parts = function_name.split("_")
+            cli_name = "".join(part.capitalize() for part in parts if part)
             return cli_name
         return "CLITool"
 
@@ -4313,89 +4539,91 @@ class ProgrammingCapabilityManager:
         if language == ProgrammingLanguage.PYTHON:
             config_name = self._extract_config_name(description)
 
-            code = f'#!/usr/bin/env python3\n'
-            code += f'# -*- coding: utf-8 -*-\n\n'
+            code = f"#!/usr/bin/env python3\n"
+            code += f"# -*- coding: utf-8 -*-\n\n"
             code += f'"""\n{description}\n配置管理模块\n"""\n\n'
-            code += f'import os\nimport json\nimport yaml\nfrom typing import Dict, Any, Optional\nfrom dataclasses import dataclass, field\nfrom pathlib import Path\n\n'
-            code += f'@dataclass\n'
-            code += f'class {config_name}Config:\n'
+            code += "import os\nimport json\nimport yaml\nfrom typing import Dict, Any, Optional\nfrom dataclasses import dataclass, field\nfrom pathlib import Path\n\n"
+            code += "@dataclass\n"
+            code += f"class {config_name}Config:\n"
             code += f'    """{description}配置"""\n\n'
-            code += f'    # 基本配置\n'
+            code += "    # 基本配置\n"
             code += f'    app_name: str = "{config_name}"\n'
-            code += f'    version: str = "1.0.0"\n'
-            code += f'    debug: bool = False\n'
-            code += f'    log_level: str = "INFO"\n\n'
-            code += f'    # 路径配置\n'
-            code += f'    data_dir: str = "./data"\n'
-            code += f'    log_dir: str = "./logs"\n'
-            code += f'    config_dir: str = "./config"\n\n'
-            code += f'    # 服务配置\n'
-            code += f'    host: str = "localhost"\n'
-            code += f'    port: int = 8000\n'
-            code += f'    timeout: int = 30\n\n'
-            code += f'    # 高级配置\n'
-            code += f'    max_workers: int = 4\n'
-            code += f'    cache_size: int = 1000\n'
-            code += f'    retry_count: int = 3\n\n'
-            code += f'    def to_dict(self) -> Dict[str, Any]:\n'
-            code += f'        """转换为字典"""\n'
-            code += f'        return {{\n'
-            code += f'            "app_name": self.app_name,\n'
-            code += f'            "version": self.version,\n'
-            code += f'            "debug": self.debug,\n'
-            code += f'            "log_level": self.log_level,\n'
-            code += f'            "data_dir": self.data_dir,\n'
-            code += f'            "log_dir": self.log_dir,\n'
-            code += f'            "config_dir": self.config_dir,\n'
-            code += f'            "host": self.host,\n'
-            code += f'            "port": self.port,\n'
-            code += f'            "timeout": self.timeout,\n'
-            code += f'            "max_workers": self.max_workers,\n'
-            code += f'            "cache_size": self.cache_size,\n'
-            code += f'            "retry_count": self.retry_count\n'
-            code += f'        }}\n\n'
-            code += f'    @classmethod\n'
+            code += '    version: str = "1.0.0"\n'
+            code += "    debug: bool = False\n"
+            code += '    log_level: str = "INFO"\n\n'
+            code += "    # 路径配置\n"
+            code += '    data_dir: str = "./data"\n'
+            code += '    log_dir: str = "./logs"\n'
+            code += '    config_dir: str = "./config"\n\n'
+            code += "    # 服务配置\n"
+            code += '    host: str = "localhost"\n'
+            code += "    port: int = 8000\n"
+            code += "    timeout: int = 30\n\n"
+            code += "    # 高级配置\n"
+            code += "    max_workers: int = 4\n"
+            code += "    cache_size: int = 1000\n"
+            code += "    retry_count: int = 3\n\n"
+            code += "    def to_dict(self) -> Dict[str, Any]:\n"
+            code += '        """转换为字典"""\n'
+            code += "        return {{\n"
+            code += '            "app_name": self.app_name,\n'
+            code += '            "version": self.version,\n'
+            code += '            "debug": self.debug,\n'
+            code += '            "log_level": self.log_level,\n'
+            code += '            "data_dir": self.data_dir,\n'
+            code += '            "log_dir": self.log_dir,\n'
+            code += '            "config_dir": self.config_dir,\n'
+            code += '            "host": self.host,\n'
+            code += '            "port": self.port,\n'
+            code += '            "timeout": self.timeout,\n'
+            code += '            "max_workers": self.max_workers,\n'
+            code += '            "cache_size": self.cache_size,\n'
+            code += '            "retry_count": self.retry_count\n'
+            code += "        }}\n\n"
+            code += "    @classmethod\n"
             code += f'    def from_dict(cls, data: Dict[str, Any]) -> "{config_name}Config":\n'
-            code += f'        """从字典创建配置"""\n'
-            code += f'        return cls(**data)\n\n'
-            code += f'    def save(self, filepath: str, format: str = "json"):\n'
-            code += f'        """保存配置到文件"""\n'
-            code += f'        data = self.to_dict()\n'
-            code += f'        os.makedirs(os.path.dirname(filepath), exist_ok=True)\n\n'
-            code += f'        if format == "json":\n'
-            code += f'            with open(filepath, "w", encoding="utf-8") as f:\n'
-            code += f'                json.dump(data, f, indent=2, ensure_ascii=False)\n'
-            code += f'        elif format == "yaml":\n'
-            code += f'            import yaml\n'
-            code += f'            with open(filepath, "w", encoding="utf-8") as f:\n'
-            code += f'                yaml.dump(data, f, default_flow_style=False)\n'
-            code += f'        else:\n'
+            code += '        """从字典创建配置"""\n'
+            code += "        return cls(**data)\n\n"
+            code += '    def save(self, filepath: str, format: str = "json"):\n'
+            code += '        """保存配置到文件"""\n'
+            code += "        data = self.to_dict()\n"
+            code += "        os.makedirs(os.path.dirname(filepath), exist_ok=True)\n\n"
+            code += '        if format == "json":\n'
+            code += '            with open(filepath, "w", encoding="utf-8") as f:\n'
+            code += (
+                "                json.dump(data, f, indent=2, ensure_ascii=False)\n"
+            )
+            code += '        elif format == "yaml":\n'
+            code += "            import yaml\n"
+            code += '            with open(filepath, "w", encoding="utf-8") as f:\n'
+            code += "                yaml.dump(data, f, default_flow_style=False)\n"
+            code += "        else:\n"
             code += f'            raise ValueError(f"不支持的格式: {{format}}")\n\n'
-            code += f'    @classmethod\n'
+            code += "    @classmethod\n"
             code += f'    def load(cls, filepath: str) -> "{config_name}Config":\n'
-            code += f'        """从文件加载配置"""\n'
-            code += f'        if not os.path.exists(filepath):\n'
-            code += f'            return cls()\n\n'
-            code += f'        with open(filepath, "r", encoding="utf-8") as f:\n'
-            code += f'            if filepath.endswith(".json"):\n'
-            code += f'                data = json.load(f)\n'
-            code += f'            elif filepath.endswith((".yaml", ".yml")):\n'
-            code += f'                import yaml\n'
-            code += f'                data = yaml.safe_load(f)\n'
-            code += f'            else:\n'
+            code += '        """从文件加载配置"""\n'
+            code += "        if not os.path.exists(filepath):\n"
+            code += "            return cls()\n\n"
+            code += '        with open(filepath, "r", encoding="utf-8") as f:\n'
+            code += '            if filepath.endswith(".json"):\n'
+            code += "                data = json.load(f)\n"
+            code += '            elif filepath.endswith((".yaml", ".yml")):\n'
+            code += "                import yaml\n"
+            code += "                data = yaml.safe_load(f)\n"
+            code += "            else:\n"
             code += f'                raise ValueError(f"不支持的配置文件格式: {{filepath}}")\n\n'
-            code += f'        return cls.from_dict(data)\n\n'
-            code += f'def main():\n'
-            code += f'    """示例使用"""\n'
-            code += f'    config = {config_name}Config()\n'
+            code += "        return cls.from_dict(data)\n\n"
+            code += "def main():\n"
+            code += '    """示例使用"""\n'
+            code += f"    config = {config_name}Config()\n"
             code += f'    print(f"应用名称: {{config.app_name}}")\n'
             code += f'    print(f"版本: {{config.version}}")\n'
             code += f'    print(f"调试模式: {{config.debug}}")\n\n'
-            code += f'    # 保存配置\n'
-            code += f'    config.save("config.json")\n'
-            code += f'    print("配置已保存到 config.json")\n\n'
-            code += f'if __name__ == "__main__":\n'
-            code += f'    main()\n'
+            code += "    # 保存配置\n"
+            code += '    config.save("config.json")\n'
+            code += '    print("配置已保存到 config.json")\n\n'
+            code += 'if __name__ == "__main__":\n'
+            code += "    main()\n"
 
             return code
         else:
@@ -4406,55 +4634,69 @@ class ProgrammingCapabilityManager:
         function_name = self._extract_function_name(description)
         if function_name:
             # 转换为帕斯卡命名
-            parts = function_name.split('_')
-            config_name = ''.join(part.capitalize() for part in parts if part)
+            parts = function_name.split("_")
+            config_name = "".join(part.capitalize() for part in parts if part)
             return config_name
         return "AppConfig"
 
-    def _suggest_fixes_for_error(self, error_message: str, code: str, language: ProgrammingLanguage) -> List[Dict[str, Any]]:
+    def _suggest_fixes_for_error(
+        self, error_message: str, code: str, language: ProgrammingLanguage
+    ) -> List[Dict[str, Any]]:
         """根据错误信息建议修复"""
         fixes = []
 
         # 常见错误模式匹配
         if "SyntaxError" in error_message:
-            fixes.append({
-                "type": "syntax_error_fix",
-                "description": "修复语法错误",
-                "action": "检查代码语法，特别是括号、引号匹配",
-                "applied": False
-            })
+            fixes.append(
+                {
+                    "type": "syntax_error_fix",
+                    "description": "修复语法错误",
+                    "action": "检查代码语法，特别是括号、引号匹配",
+                    "applied": False,
+                }
+            )
         elif "NameError" in error_message:
-            fixes.append({
-                "type": "name_error_fix",
-                "description": "修复未定义变量错误",
-                "action": "检查变量名拼写或确保变量已定义",
-                "applied": False
-            })
+            fixes.append(
+                {
+                    "type": "name_error_fix",
+                    "description": "修复未定义变量错误",
+                    "action": "检查变量名拼写或确保变量已定义",
+                    "applied": False,
+                }
+            )
         elif "TypeError" in error_message:
-            fixes.append({
-                "type": "type_error_fix",
-                "description": "修复类型错误",
-                "action": "检查函数参数类型或返回值类型",
-                "applied": False
-            })
+            fixes.append(
+                {
+                    "type": "type_error_fix",
+                    "description": "修复类型错误",
+                    "action": "检查函数参数类型或返回值类型",
+                    "applied": False,
+                }
+            )
         elif "IndexError" in error_message:
-            fixes.append({
-                "type": "index_error_fix",
-                "description": "修复索引错误",
-                "action": "检查列表/数组索引是否越界",
-                "applied": False
-            })
+            fixes.append(
+                {
+                    "type": "index_error_fix",
+                    "description": "修复索引错误",
+                    "action": "检查列表/数组索引是否越界",
+                    "applied": False,
+                }
+            )
         else:
-            fixes.append({
-                "type": "general_fix",
-                "description": "一般错误修复",
-                "action": "查看错误堆栈跟踪并分析根本原因",
-                "applied": False
-            })
+            fixes.append(
+                {
+                    "type": "general_fix",
+                    "description": "一般错误修复",
+                    "action": "查看错误堆栈跟踪并分析根本原因",
+                    "applied": False,
+                }
+            )
 
         return fixes
 
-    def _suggest_fixes_for_bugs(self, bugs: List[Dict[str, Any]], code: str, language: ProgrammingLanguage) -> List[Dict[str, Any]]:
+    def _suggest_fixes_for_bugs(
+        self, bugs: List[Dict[str, Any]], code: str, language: ProgrammingLanguage
+    ) -> List[Dict[str, Any]]:
         """根据检测到的bug建议修复"""
         fixes = []
 
@@ -4462,18 +4704,22 @@ class ProgrammingCapabilityManager:
             bug_type = bug.get("type", "")
             suggestion = bug.get("suggestion", "")
 
-            fixes.append({
-                "type": f"{bug_type}_fix",
-                "description": f"修复{bug_type}",
-                "action": suggestion,
-                "applied": False,
-                "line": bug.get("line"),
-                "column": bug.get("column")
-            })
+            fixes.append(
+                {
+                    "type": f"{bug_type}_fix",
+                    "description": f"修复{bug_type}",
+                    "action": suggestion,
+                    "applied": False,
+                    "line": bug.get("line"),
+                    "column": bug.get("column"),
+                }
+            )
 
         return fixes
 
-    def _apply_fixes(self, code: str, fixes: List[Dict[str, Any]], language: ProgrammingLanguage) -> str:
+    def _apply_fixes(
+        self, code: str, fixes: List[Dict[str, Any]], language: ProgrammingLanguage
+    ) -> str:
         """应用修复到代码"""
         if not fixes:
             return code
@@ -4481,11 +4727,13 @@ class ProgrammingCapabilityManager:
         # 完整实现：标记修复建议
         fixed_code = code + "\n\n# 修复建议:\n"
         for i, fix in enumerate(fixes):
-            fixed_code += f"# {i+1}. {fix.get('description')}: {fix.get('action')}\n"
+            fixed_code += f"# {i + 1}. {fix.get('description')}: {fix.get('action')}\n"
 
         return fixed_code
 
-    def _calculate_code_quality_score(self, analysis_result: CodeAnalysisResult) -> float:
+    def _calculate_code_quality_score(
+        self, analysis_result: CodeAnalysisResult
+    ) -> float:
         """计算代码质量分数"""
         # 基于多个指标计算质量分数
         base_score = 100.0
@@ -4506,7 +4754,7 @@ class ProgrammingCapabilityManager:
             CodeComplexity.SIMPLE: 5,
             CodeComplexity.MODERATE: 10,
             CodeComplexity.COMPLEX: 20,
-            CodeComplexity.VERY_COMPLEX: 30
+            CodeComplexity.VERY_COMPLEX: 30,
         }
 
         complexity_deduction = complexity_map.get(analysis_result.complexity, 0)
@@ -4515,12 +4763,18 @@ class ProgrammingCapabilityManager:
         maintainability_bonus = analysis_result.maintainability_index / 100.0 * 20.0
 
         # 最终分数
-        quality_score = base_score - issue_deduction - \
-            complexity_deduction + maintainability_bonus
+        quality_score = (
+            base_score - issue_deduction - complexity_deduction + maintainability_bonus
+        )
 
         return max(0, min(100, quality_score))
 
-    def _generate_optimization_suggestions(self, code: str, language: ProgrammingLanguage, performance_issues: List[Dict[str, Any]]) -> List[str]:
+    def _generate_optimization_suggestions(
+        self,
+        code: str,
+        language: ProgrammingLanguage,
+        performance_issues: List[Dict[str, Any]],
+    ) -> List[str]:
         """生成优化建议"""
         suggestions = []
 
@@ -4538,7 +4792,7 @@ class ProgrammingCapabilityManager:
             "考虑使用更高效的数据结构",
             "避免在循环中进行重复计算",
             "使用内置函数和库代替手动实现",
-            "考虑使用并行处理提高性能"
+            "考虑使用并行处理提高性能",
         ]
 
         for suggestion in generic_suggestions:
@@ -4547,24 +4801,30 @@ class ProgrammingCapabilityManager:
 
         return suggestions[:5]  # 返回前5个建议
 
-    def _generate_refactoring_suggestions(self, code: str, language: ProgrammingLanguage, complexity: CodeComplexity) -> List[str]:
+    def _generate_refactoring_suggestions(
+        self, code: str, language: ProgrammingLanguage, complexity: CodeComplexity
+    ) -> List[str]:
         """生成重构建议"""
         suggestions = []
 
         # 基于复杂度提供重构建议
         if complexity in [CodeComplexity.COMPLEX, CodeComplexity.VERY_COMPLEX]:
-            suggestions.extend([
-                "考虑将大函数拆分为多个小函数",
-                "提取重复代码为公共函数",
-                "使用设计模式重构复杂逻辑",
-                "增加注释和文档说明复杂部分"
-            ])
+            suggestions.extend(
+                [
+                    "考虑将大函数拆分为多个小函数",
+                    "提取重复代码为公共函数",
+                    "使用设计模式重构复杂逻辑",
+                    "增加注释和文档说明复杂部分",
+                ]
+            )
         else:
-            suggestions.extend([
-                "代码结构清晰，保持现状",
-                "考虑添加更多单元测试",
-                "确保代码遵循团队编码规范"
-            ])
+            suggestions.extend(
+                [
+                    "代码结构清晰，保持现状",
+                    "考虑添加更多单元测试",
+                    "确保代码遵循团队编码规范",
+                ]
+            )
 
         return suggestions
 
@@ -4583,8 +4843,8 @@ class ProgrammingCapabilityManager:
                 "code_debugging": True,
                 "bug_detection": True,
                 "performance_optimization": True,
-                "security_analysis": True
-            }
+                "security_analysis": True,
+            },
         }
 
 
@@ -4618,12 +4878,12 @@ class MathematicalCapabilityManager:
             "functional_analysis": self._solve_functional_analysis_problem,
             "differential_equations": self._solve_differential_equations_problem,
             "mathematical_logic": self._solve_mathematical_logic_problem,
-            "combinatorics": self._solve_combinatorics_problem
+            "combinatorics": self._solve_combinatorics_problem,
         }
 
-    def solve_math_problem(self,
-                           problem_statement: str,
-                           domain: Optional[MathematicalDomain] = None) -> MathematicalProblem:
+    def solve_math_problem(
+        self, problem_statement: str, domain: Optional[MathematicalDomain] = None
+    ) -> MathematicalProblem:
         """
         解决数学问题
 
@@ -4634,13 +4894,16 @@ class MathematicalCapabilityManager:
         返回:
             数学问题解决结果
         """
-        self.logger.info(f"开始解决数学问题，领域: {domain.value if domain else '未知'}")
+        self.logger.info(
+            f"开始解决数学问题，领域: {domain.value if domain else '未知'}"
+        )
 
         start_time = time.time()
 
         # 生成问题ID
         problem_id = hashlib.md5(
-            f"{problem_statement}{time.time()}".encode()).hexdigest()[:16]
+            f"{problem_statement}{time.time()}".encode()
+        ).hexdigest()[:16]
 
         # 如果未指定领域，尝试自动识别
         if domain is None:
@@ -4667,7 +4930,7 @@ class MathematicalCapabilityManager:
             final_answer=solution_result.get("answer"),
             verification_result=solution_result.get("verification"),
             time_taken_seconds=execution_time,
-            attempted_methods=solution_result.get("methods", [domain.value])
+            attempted_methods=solution_result.get("methods", [domain.value]),
         )
 
         # 记录历史
@@ -4693,22 +4956,126 @@ class MathematicalCapabilityManager:
 
         # 关键词匹配（所有数学领域）
         keywords = {
-            MathematicalDomain.ALGEBRA: ['equation', 'solve', 'x=', 'polynomial', 'quadratic', 'algebra'],
-            MathematicalDomain.CALCULUS: ['derivative', 'integral', 'limit', 'differentiate', 'integrate', 'calculus'],
-            MathematicalDomain.GEOMETRY: ['triangle', 'circle', 'area', 'volume', 'angle', 'perimeter', 'geometry'],
-            MathematicalDomain.STATISTICS: ['mean', 'median', 'std', 'variance', 'probability', 'distribution', 'statistics'],
-            MathematicalDomain.PROBABILITY: ['probability', 'chance', 'likely', 'odds', 'random', 'probability'],
-            MathematicalDomain.LINEAR_ALGEBRA: ['matrix', 'vector', 'eigenvalue', 'determinant', 'linear', 'linear algebra'],
-            MathematicalDomain.DISCRETE_MATH: ['graph', 'tree', 'set', 'discrete', 'combinatorial', 'discrete math'],
-            MathematicalDomain.NUMBER_THEORY: ['prime', 'modulo', 'gcd', 'lcm', 'number theory', 'diophantine'],
-            MathematicalDomain.DIFFERENTIAL_GEOMETRY: ['manifold', 'curvature', 'connection', 'differential geometry', 'tensor'],
-            MathematicalDomain.TOPOLOGY: ['topology', 'topological', 'homeomorphism', 'homotopy', 'homology', 'cohomology'],
-            MathematicalDomain.COMPLEX_ANALYSIS: ['complex', 'analytic', 'residue', 'conformal', 'complex analysis', 'holomorphic'],
-            MathematicalDomain.FUNCTIONAL_ANALYSIS: ['functional', 'banach', 'hilbert', 'operator', 'functional analysis', 'norm'],
-            MathematicalDomain.DIFFERENTIAL_EQUATIONS: ['differential equation', 'ode', 'pde', 'boundary value', 'initial condition'],
-            MathematicalDomain.MATHEMATICAL_LOGIC: ['logic', 'propositional', 'predicate', 'proof', 'mathematical logic', 'model theory'],
+            MathematicalDomain.ALGEBRA: [
+                "equation",
+                "solve",
+                "x=",
+                "polynomial",
+                "quadratic",
+                "algebra",
+            ],
+            MathematicalDomain.CALCULUS: [
+                "derivative",
+                "integral",
+                "limit",
+                "differentiate",
+                "integrate",
+                "calculus",
+            ],
+            MathematicalDomain.GEOMETRY: [
+                "triangle",
+                "circle",
+                "area",
+                "volume",
+                "angle",
+                "perimeter",
+                "geometry",
+            ],
+            MathematicalDomain.STATISTICS: [
+                "mean",
+                "median",
+                "std",
+                "variance",
+                "probability",
+                "distribution",
+                "statistics",
+            ],
+            MathematicalDomain.PROBABILITY: [
+                "probability",
+                "chance",
+                "likely",
+                "odds",
+                "random",
+                "probability",
+            ],
+            MathematicalDomain.LINEAR_ALGEBRA: [
+                "matrix",
+                "vector",
+                "eigenvalue",
+                "determinant",
+                "linear",
+                "linear algebra",
+            ],
+            MathematicalDomain.DISCRETE_MATH: [
+                "graph",
+                "tree",
+                "set",
+                "discrete",
+                "combinatorial",
+                "discrete math",
+            ],
+            MathematicalDomain.NUMBER_THEORY: [
+                "prime",
+                "modulo",
+                "gcd",
+                "lcm",
+                "number theory",
+                "diophantine",
+            ],
+            MathematicalDomain.DIFFERENTIAL_GEOMETRY: [
+                "manifold",
+                "curvature",
+                "connection",
+                "differential geometry",
+                "tensor",
+            ],
+            MathematicalDomain.TOPOLOGY: [
+                "topology",
+                "topological",
+                "homeomorphism",
+                "homotopy",
+                "homology",
+                "cohomology",
+            ],
+            MathematicalDomain.COMPLEX_ANALYSIS: [
+                "complex",
+                "analytic",
+                "residue",
+                "conformal",
+                "complex analysis",
+                "holomorphic",
+            ],
+            MathematicalDomain.FUNCTIONAL_ANALYSIS: [
+                "functional",
+                "banach",
+                "hilbert",
+                "operator",
+                "functional analysis",
+                "norm",
+            ],
+            MathematicalDomain.DIFFERENTIAL_EQUATIONS: [
+                "differential equation",
+                "ode",
+                "pde",
+                "boundary value",
+                "initial condition",
+            ],
+            MathematicalDomain.MATHEMATICAL_LOGIC: [
+                "logic",
+                "propositional",
+                "predicate",
+                "proof",
+                "mathematical logic",
+                "model theory",
+            ],
             MathematicalDomain.COMBINATORICS: [
-                'combinatorics', 'combination', 'permutation', 'counting', 'enumerate', 'graph enumeration']
+                "combinatorics",
+                "combination",
+                "permutation",
+                "counting",
+                "enumerate",
+                "graph enumeration",
+            ],
         }
 
         max_matches = 0
@@ -4716,7 +5083,8 @@ class MathematicalCapabilityManager:
 
         for domain, domain_keywords in keywords.items():
             matches = sum(
-                1 for keyword in domain_keywords if keyword in statement_lower)
+                1 for keyword in domain_keywords if keyword in statement_lower
+            )
             if matches > max_matches:
                 max_matches = matches
                 best_domain = domain
@@ -4728,44 +5096,53 @@ class MathematicalCapabilityManager:
         steps = []
 
         # 简单代数求解（示例）
-        if "x =" in problem_statement.lower() or "solve for x" in problem_statement.lower():
+        if (
+            "x =" in problem_statement.lower()
+            or "solve for x" in problem_statement.lower()
+        ):
             # 提取方程
             equation_match = re.search(
-                r'([\d\s\+\-\*\/\(\)x]+)\s*=\s*([\d\s\+\-\*\/\(\)x]+)', problem_statement)
+                r"([\d\s\+\-\*\/\(\)x]+)\s*=\s*([\d\s\+\-\*\/\(\)x]+)",
+                problem_statement,
+            )
             if equation_match:
                 left_side = equation_match.group(1).strip()
                 right_side = equation_match.group(2).strip()
 
-                steps.append({
-                    "step": 1,
-                    "description": f"提取方程: {left_side} = {right_side}",
-                    "equation": f"{left_side} = {right_side}"
-                })
+                steps.append(
+                    {
+                        "step": 1,
+                        "description": f"提取方程: {left_side} = {right_side}",
+                        "equation": f"{left_side} = {right_side}",
+                    }
+                )
 
                 # 简单求解（示例）
                 answer = "x = 5"  # 示例答案
 
-                steps.append({
-                    "step": 2,
-                    "description": "求解方程",
-                    "equation": answer
-                })
+                steps.append({"step": 2, "description": "求解方程", "equation": answer})
 
                 return {
                     "steps": steps,
                     "answer": answer,
                     "difficulty": 0.3,
                     "verification": True,
-                    "methods": ["equation_extraction", "algebraic_solution"]
+                    "methods": ["equation_extraction", "algebraic_solution"],
                 }
 
         # 默认返回
         return {
-            "steps": [{"step": 1, "description": "解析代数问题", "equation": problem_statement}],
+            "steps": [
+                {
+                    "step": 1,
+                    "description": "解析代数问题",
+                    "equation": problem_statement,
+                }
+            ],
             "answer": "需要更多信息求解",
             "difficulty": 0.5,
             "verification": False,
-            "methods": ["generic_algebra"]
+            "methods": ["generic_algebra"],
         }
 
     def _solve_calculus_problem(self, problem_statement: str) -> Dict[str, Any]:
@@ -4775,39 +5152,45 @@ class MathematicalCapabilityManager:
         # 检测微积分类型
         if "derivative" in problem_statement.lower():
             # 求导问题
-            func_match = re.search(r'of\s+([^\.]+)', problem_statement, re.IGNORECASE)
+            func_match = re.search(r"of\s+([^\.]+)", problem_statement, re.IGNORECASE)
             if func_match:
                 function = func_match.group(1).strip()
 
-                steps.append({
-                    "step": 1,
-                    "description": f"提取函数: f(x) = {function}",
-                    "equation": f"f(x) = {function}"
-                })
+                steps.append(
+                    {
+                        "step": 1,
+                        "description": f"提取函数: f(x) = {function}",
+                        "equation": f"f(x) = {function}",
+                    }
+                )
 
                 # 简单求导（示例）
-                derivative = "f'(x) = 2x" if "x^2" in function else "f'(x) = 1"
+                derivative = "'(x) = 2x" if "x^2" in function else "f'(x) = 1"
 
-                steps.append({
-                    "step": 2,
-                    "description": "计算导数",
-                    "equation": derivative
-                })
+                steps.append(
+                    {"step": 2, "description": "计算导数", "equation": derivative}
+                )
 
                 return {
                     "steps": steps,
                     "answer": derivative,
                     "difficulty": 0.6,
                     "verification": True,
-                    "methods": ["derivative_calculation"]
+                    "methods": ["derivative_calculation"],
                 }
 
         return {
-            "steps": [{"step": 1, "description": "解析微积分问题", "equation": problem_statement}],
+            "steps": [
+                {
+                    "step": 1,
+                    "description": "解析微积分问题",
+                    "equation": problem_statement,
+                }
+            ],
             "answer": "需要更多信息求解",
             "difficulty": 0.7,
             "verification": False,
-            "methods": ["generic_calculus"]
+            "methods": ["generic_calculus"],
         }
 
     def _solve_geometry_problem(self, problem_statement: str) -> Dict[str, Any]:
@@ -4815,277 +5198,393 @@ class MathematicalCapabilityManager:
         steps = []
 
         # 简单几何问题检测
-        if "area" in problem_statement.lower() or "perimeter" in problem_statement.lower():
+        if (
+            "area" in problem_statement.lower()
+            or "perimeter" in problem_statement.lower()
+        ):
             # 面积或周长问题
             shape = "circle" if "circle" in problem_statement.lower() else "rectangle"
 
-            steps.append({
-                "step": 1,
-                "description": f"识别几何形状: {shape}",
-                "equation": f"形状: {shape}"
-            })
+            steps.append(
+                {
+                    "step": 1,
+                    "description": f"识别几何形状: {shape}",
+                    "equation": f"形状: {shape}",
+                }
+            )
 
             # 简单计算（示例）
             answer = "面积 = 25π" if shape == "circle" else "面积 = 20"
 
-            steps.append({
-                "step": 2,
-                "description": "计算几何属性",
-                "equation": answer
-            })
+            steps.append({"step": 2, "description": "计算几何属性", "equation": answer})
 
             return {
                 "steps": steps,
                 "answer": answer,
                 "difficulty": 0.5,
                 "verification": True,
-                "methods": ["geometry_calculation"]
+                "methods": ["geometry_calculation"],
             }
 
         return {
-            "steps": [{"step": 1, "description": "解析几何问题", "equation": problem_statement}],
+            "steps": [
+                {
+                    "step": 1,
+                    "description": "解析几何问题",
+                    "equation": problem_statement,
+                }
+            ],
             "answer": "需要更多信息求解",
             "difficulty": 0.6,
             "verification": False,
-            "methods": ["generic_geometry"]
+            "methods": ["generic_geometry"],
         }
 
     def _solve_statistics_problem(self, problem_statement: str) -> Dict[str, Any]:
         """解决统计问题"""
         steps = []
 
-        if "mean" in problem_statement.lower() or "average" in problem_statement.lower():
+        if (
+            "mean" in problem_statement.lower()
+            or "average" in problem_statement.lower()
+        ):
             # 平均值问题
-            steps.append({
-                "step": 1,
-                "description": "计算平均值",
-                "equation": "mean = sum(x) / n"
-            })
+            steps.append(
+                {
+                    "step": 1,
+                    "description": "计算平均值",
+                    "equation": "mean = sum(x) / n",
+                }
+            )
 
             answer = "平均值 = 15"  # 示例答案
 
-            steps.append({
-                "step": 2,
-                "description": "计算结果",
-                "equation": answer
-            })
+            steps.append({"step": 2, "description": "计算结果", "equation": answer})
 
             return {
                 "steps": steps,
                 "answer": answer,
                 "difficulty": 0.4,
                 "verification": True,
-                "methods": ["mean_calculation"]
+                "methods": ["mean_calculation"],
             }
 
         return {
-            "steps": [{"step": 1, "description": "解析统计问题", "equation": problem_statement}],
+            "steps": [
+                {
+                    "step": 1,
+                    "description": "解析统计问题",
+                    "equation": problem_statement,
+                }
+            ],
             "answer": "需要更多信息求解",
             "difficulty": 0.5,
             "verification": False,
-            "methods": ["generic_statistics"]
+            "methods": ["generic_statistics"],
         }
 
     def _solve_probability_problem(self, problem_statement: str) -> Dict[str, Any]:
         """解决概率问题"""
         steps = []
 
-        if "probability" in problem_statement.lower() or "chance" in problem_statement.lower():
+        if (
+            "probability" in problem_statement.lower()
+            or "chance" in problem_statement.lower()
+        ):
             # 概率问题
-            steps.append({
-                "step": 1,
-                "description": "计算概率",
-                "equation": "P(A) = favorable / total"
-            })
+            steps.append(
+                {
+                    "step": 1,
+                    "description": "计算概率",
+                    "equation": "P(A) = favorable / total",
+                }
+            )
 
             answer = "概率 = 0.5"  # 示例答案
 
-            steps.append({
-                "step": 2,
-                "description": "计算结果",
-                "equation": answer
-            })
+            steps.append({"step": 2, "description": "计算结果", "equation": answer})
 
             return {
                 "steps": steps,
                 "answer": answer,
                 "difficulty": 0.5,
                 "verification": True,
-                "methods": ["probability_calculation"]
+                "methods": ["probability_calculation"],
             }
 
         return {
-            "steps": [{"step": 1, "description": "解析概率问题", "equation": problem_statement}],
+            "steps": [
+                {
+                    "step": 1,
+                    "description": "解析概率问题",
+                    "equation": problem_statement,
+                }
+            ],
             "answer": "需要更多信息求解",
             "difficulty": 0.6,
             "verification": False,
-            "methods": ["generic_probability"]
+            "methods": ["generic_probability"],
         }
 
     def _solve_linear_algebra_problem(self, problem_statement: str) -> Dict[str, Any]:
         """解决线性代数问题"""
         steps = []
 
-        if "matrix" in problem_statement.lower() or "vector" in problem_statement.lower():
+        if (
+            "matrix" in problem_statement.lower()
+            or "vector" in problem_statement.lower()
+        ):
             # 矩阵或向量问题
-            steps.append({
-                "step": 1,
-                "description": "处理线性代数问题",
-                "equation": "使用矩阵运算"
-            })
+            steps.append(
+                {
+                    "step": 1,
+                    "description": "处理线性代数问题",
+                    "equation": "使用矩阵运算",
+                }
+            )
 
             answer = "解向量 = [1, 2, 3]"  # 示例答案
 
-            steps.append({
-                "step": 2,
-                "description": "计算结果",
-                "equation": answer
-            })
+            steps.append({"step": 2, "description": "计算结果", "equation": answer})
 
             return {
                 "steps": steps,
                 "answer": answer,
                 "difficulty": 0.7,
                 "verification": True,
-                "methods": ["linear_algebra_solution"]
+                "methods": ["linear_algebra_solution"],
             }
 
         return {
-            "steps": [{"step": 1, "description": "解析线性代数问题", "equation": problem_statement}],
+            "steps": [
+                {
+                    "step": 1,
+                    "description": "解析线性代数问题",
+                    "equation": problem_statement,
+                }
+            ],
             "answer": "需要更多信息求解",
             "difficulty": 0.8,
             "verification": False,
-            "methods": ["generic_linear_algebra"]
+            "methods": ["generic_linear_algebra"],
         }
 
     def _solve_discrete_math_problem(self, problem_statement: str) -> Dict[str, Any]:
         """解决离散数学问题"""
         return {
             "steps": [
-                {"step": 1, "description": "分析离散数学问题", "equation": problem_statement},
-                {"step": 2, "description": "应用离散数学方法（图论、集合论、逻辑等）", "equation": "离散结构分析"}
+                {
+                    "step": 1,
+                    "description": "分析离散数学问题",
+                    "equation": problem_statement,
+                },
+                {
+                    "step": 2,
+                    "description": "应用离散数学方法（图论、集合论、逻辑等）",
+                    "equation": "离散结构分析",
+                },
             ],
             "answer": "离散数学问题需要具体领域知识求解",
             "difficulty": 0.7,
             "verification": False,
-            "methods": ["discrete_math_analysis"]
+            "methods": ["discrete_math_analysis"],
         }
 
     def _solve_number_theory_problem(self, problem_statement: str) -> Dict[str, Any]:
         """解决数论问题"""
         return {
             "steps": [
-                {"step": 1, "description": "分析数论问题", "equation": problem_statement},
-                {"step": 2, "description": "应用数论方法（素数、模运算、Diophantine方程等）", "equation": "数论分析"}
+                {
+                    "step": 1,
+                    "description": "分析数论问题",
+                    "equation": problem_statement,
+                },
+                {
+                    "step": 2,
+                    "description": "应用数论方法（素数、模运算、Diophantine方程等）",
+                    "equation": "数论分析",
+                },
             ],
             "answer": "数论问题需要具体领域知识求解",
             "difficulty": 0.8,
             "verification": False,
-            "methods": ["number_theory_analysis"]
+            "methods": ["number_theory_analysis"],
         }
 
-    def _solve_differential_geometry_problem(self, problem_statement: str) -> Dict[str, Any]:
+    def _solve_differential_geometry_problem(
+        self, problem_statement: str
+    ) -> Dict[str, Any]:
         """解决微分几何问题"""
         return {
             "steps": [
-                {"step": 1, "description": "分析微分几何问题", "equation": problem_statement},
-                {"step": 2, "description": "应用微分几何方法（流形、曲率、联络等）", "equation": "微分几何分析"}
+                {
+                    "step": 1,
+                    "description": "分析微分几何问题",
+                    "equation": problem_statement,
+                },
+                {
+                    "step": 2,
+                    "description": "应用微分几何方法（流形、曲率、联络等）",
+                    "equation": "微分几何分析",
+                },
             ],
             "answer": "微分几何问题需要具体领域知识求解",
             "difficulty": 0.9,
             "verification": False,
-            "methods": ["differential_geometry_analysis"]
+            "methods": ["differential_geometry_analysis"],
         }
 
     def _solve_topology_problem(self, problem_statement: str) -> Dict[str, Any]:
         """解决拓扑问题"""
         return {
             "steps": [
-                {"step": 1, "description": "分析拓扑问题", "equation": problem_statement},
-                {"step": 2, "description": "应用拓扑方法（拓扑空间、同伦、同调等）", "equation": "拓扑分析"}
+                {
+                    "step": 1,
+                    "description": "分析拓扑问题",
+                    "equation": problem_statement,
+                },
+                {
+                    "step": 2,
+                    "description": "应用拓扑方法（拓扑空间、同伦、同调等）",
+                    "equation": "拓扑分析",
+                },
             ],
             "answer": "拓扑问题需要具体领域知识求解",
             "difficulty": 0.9,
             "verification": False,
-            "methods": ["topology_analysis"]
+            "methods": ["topology_analysis"],
         }
 
     def _solve_complex_analysis_problem(self, problem_statement: str) -> Dict[str, Any]:
         """解决复分析问题"""
         return {
             "steps": [
-                {"step": 1, "description": "分析复分析问题", "equation": problem_statement},
-                {"step": 2, "description": "应用复分析方法（复函数、留数定理、共形映射等）", "equation": "复分析"}
+                {
+                    "step": 1,
+                    "description": "分析复分析问题",
+                    "equation": problem_statement,
+                },
+                {
+                    "step": 2,
+                    "description": "应用复分析方法（复函数、留数定理、共形映射等）",
+                    "equation": "复分析",
+                },
             ],
             "answer": "复分析问题需要具体领域知识求解",
             "difficulty": 0.8,
             "verification": False,
-            "methods": ["complex_analysis"]
+            "methods": ["complex_analysis"],
         }
 
-    def _solve_functional_analysis_problem(self, problem_statement: str) -> Dict[str, Any]:
+    def _solve_functional_analysis_problem(
+        self, problem_statement: str
+    ) -> Dict[str, Any]:
         """解决泛函分析问题"""
         return {
             "steps": [
-                {"step": 1, "description": "分析泛函分析问题", "equation": problem_statement},
-                {"step": 2, "description": "应用泛函分析方法（Banach空间、Hilbert空间、算子理论等）", "equation": "泛函分析"}
+                {
+                    "step": 1,
+                    "description": "分析泛函分析问题",
+                    "equation": problem_statement,
+                },
+                {
+                    "step": 2,
+                    "description": "应用泛函分析方法（Banach空间、Hilbert空间、算子理论等）",
+                    "equation": "泛函分析",
+                },
             ],
             "answer": "泛函分析问题需要具体领域知识求解",
             "difficulty": 0.9,
             "verification": False,
-            "methods": ["functional_analysis"]
+            "methods": ["functional_analysis"],
         }
 
-    def _solve_differential_equations_problem(self, problem_statement: str) -> Dict[str, Any]:
+    def _solve_differential_equations_problem(
+        self, problem_statement: str
+    ) -> Dict[str, Any]:
         """解决微分方程问题"""
         return {
             "steps": [
-                {"step": 1, "description": "分析微分方程问题", "equation": problem_statement},
-                {"step": 2, "description": "应用微分方程方法（常微分方程、偏微分方程、边界值问题等）", "equation": "微分方程分析"}
+                {
+                    "step": 1,
+                    "description": "分析微分方程问题",
+                    "equation": problem_statement,
+                },
+                {
+                    "step": 2,
+                    "description": "应用微分方程方法（常微分方程、偏微分方程、边界值问题等）",
+                    "equation": "微分方程分析",
+                },
             ],
             "answer": "微分方程问题需要具体领域知识求解",
             "difficulty": 0.8,
             "verification": False,
-            "methods": ["differential_equations"]
+            "methods": ["differential_equations"],
         }
 
-    def _solve_mathematical_logic_problem(self, problem_statement: str) -> Dict[str, Any]:
+    def _solve_mathematical_logic_problem(
+        self, problem_statement: str
+    ) -> Dict[str, Any]:
         """解决数理逻辑问题"""
         return {
             "steps": [
-                {"step": 1, "description": "分析数理逻辑问题", "equation": problem_statement},
-                {"step": 2, "description": "应用数理逻辑方法（命题逻辑、谓词逻辑、证明论、模型论等）", "equation": "数理逻辑分析"}
+                {
+                    "step": 1,
+                    "description": "分析数理逻辑问题",
+                    "equation": problem_statement,
+                },
+                {
+                    "step": 2,
+                    "description": "应用数理逻辑方法（命题逻辑、谓词逻辑、证明论、模型论等）",
+                    "equation": "数理逻辑分析",
+                },
             ],
             "answer": "数理逻辑问题需要具体领域知识求解",
             "difficulty": 0.7,
             "verification": False,
-            "methods": ["mathematical_logic"]
+            "methods": ["mathematical_logic"],
         }
 
     def _solve_combinatorics_problem(self, problem_statement: str) -> Dict[str, Any]:
         """解决组合数学问题"""
         return {
             "steps": [
-                {"step": 1, "description": "分析组合数学问题", "equation": problem_statement},
-                {"step": 2, "description": "应用组合数学方法（计数、排列、组合、图枚举等）", "equation": "组合分析"}
+                {
+                    "step": 1,
+                    "description": "分析组合数学问题",
+                    "equation": problem_statement,
+                },
+                {
+                    "step": 2,
+                    "description": "应用组合数学方法（计数、排列、组合、图枚举等）",
+                    "equation": "组合分析",
+                },
             ],
             "answer": "组合数学问题需要具体领域知识求解",
             "difficulty": 0.7,
             "verification": False,
-            "methods": ["combinatorics"]
+            "methods": ["combinatorics"],
         }
 
     def _solve_generic_math_problem(self, problem_statement: str) -> Dict[str, Any]:
         """解决通用数学问题"""
         return {
             "steps": [
-                {"step": 1, "description": "分析数学问题", "equation": problem_statement},
-                {"step": 2, "description": "制定解决方案", "equation": "使用适当数学方法"}
+                {
+                    "step": 1,
+                    "description": "分析数学问题",
+                    "equation": problem_statement,
+                },
+                {
+                    "step": 2,
+                    "description": "制定解决方案",
+                    "equation": "使用适当数学方法",
+                },
             ],
             "answer": "需要具体领域知识求解",
             "difficulty": 0.8,
             "verification": False,
-            "methods": ["generic_analysis"]
+            "methods": ["generic_analysis"],
         }
 
     def get_math_report(self) -> Dict[str, Any]:
@@ -5097,7 +5596,8 @@ class MathematicalCapabilityManager:
         avg_time = 0.0
         if self.problem_history:
             avg_time = sum(
-                p.time_taken_seconds for p in self.problem_history[-20:]) / min(20, len(self.problem_history))
+                p.time_taken_seconds for p in self.problem_history[-20:]
+            ) / min(20, len(self.problem_history))
 
         return {
             "timestamp": time.time(),
@@ -5108,7 +5608,7 @@ class MathematicalCapabilityManager:
             "available_domains": [domain.value for domain in MathematicalDomain],
             "solver_capabilities": list(self.math_solvers.keys()),
             "sympy_available": SYMPY_AVAILABLE,
-            "numpy_available": NUMPY_AVAILABLE
+            "numpy_available": NUMPY_AVAILABLE,
         }
 
 
@@ -5128,8 +5628,10 @@ class PhysicsSimulationManager:
 
         # 初始化物理引擎 - 严格禁止模拟回退
         if not self.physics_engine_available:
-            raise RuntimeError("PyBullet物理引擎不可用。请安装pybullet库以使用物理模拟功能")
-        
+            raise RuntimeError(
+                "PyBullet物理引擎不可用。请安装pybullet库以使用物理模拟功能"
+            )
+
         # 初始化真实物理引擎
         self._initialize_physics_engine()
         self.logger.info("物理模拟管理器初始化完成 - 使用真实物理引擎")
@@ -5140,31 +5642,31 @@ class PhysicsSimulationManager:
             # 初始化PyBullet物理引擎
             import pybullet as pb
             import pybullet_data
-            
+
             # 连接物理服务器
             self.physics_client = pb.connect(pb.DIRECT)  # 无GUI模式
             pb.setGravity(0, 0, -self.gravity)
             pb.setPhysicsEngineParameter(
-                fixedTimeStep=self.time_step,
-                numSolverIterations=50,
-                numSubSteps=4
+                fixedTimeStep=self.time_step, numSolverIterations=50, numSubSteps=4
             )
-            
+
             # 添加资源路径
             pb.setAdditionalSearchPath(pybullet_data.getDataPath())
-            
+
             self.physics_engine = pb
             self.logger.info("PyBullet物理引擎初始化成功")
         except Exception as e:
             self.logger.error(f"物理引擎初始化失败: {e}")
             raise RuntimeError(f"物理引擎初始化失败: {e}")
 
-    def simulate_motion(self,
-                        initial_position: List[float],
-                        initial_velocity: List[float],
-                        mass: float,
-                        force: Optional[List[float]] = None,
-                        duration: float = 1.0) -> Dict[str, Any]:
+    def simulate_motion(
+        self,
+        initial_position: List[float],
+        initial_velocity: List[float],
+        mass: float,
+        force: Optional[List[float]] = None,
+        duration: float = 1.0,
+    ) -> Dict[str, Any]:
         """
         模拟物体运动
 
@@ -5195,7 +5697,7 @@ class PhysicsSimulationManager:
             "force": force,
             "duration": duration,
             "result": result,
-            "simulation_mode": "physics_engine"
+            "simulation_mode": "physics_engine",
         }
 
         self.simulation_history.append(simulation_record)
@@ -5206,44 +5708,48 @@ class PhysicsSimulationManager:
 
         return result
 
-    def _simulate_with_simple_physics(self,
-                                      initial_position: List[float],
-                                      initial_velocity: List[float],
-                                      mass: float,
-                                      force: Optional[List[float]],
-                                      duration: float) -> Dict[str, Any]:
+    def _simulate_with_simple_physics(
+        self,
+        initial_position: List[float],
+        initial_velocity: List[float],
+        mass: float,
+        force: Optional[List[float]],
+        duration: float,
+    ) -> Dict[str, Any]:
         """使用简单物理模拟 - 已废弃，严格禁止模拟实现"""
         raise RuntimeError("简单物理模拟已被禁用。请安装pybullet库以使用真实物理引擎")
 
-    def _simulate_with_physics_engine(self,
-                                      initial_position: List[float],
-                                      initial_velocity: List[float],
-                                      mass: float,
-                                      force: Optional[List[float]],
-                                      duration: float) -> Dict[str, Any]:
+    def _simulate_with_physics_engine(
+        self,
+        initial_position: List[float],
+        initial_velocity: List[float],
+        mass: float,
+        force: Optional[List[float]],
+        duration: float,
+    ) -> Dict[str, Any]:
         """使用真实物理引擎模拟 - 严格禁止模拟实现"""
         self.logger.info("使用PyBullet物理引擎进行真实模拟")
 
         try:
             pb = self.physics_engine
-            physics_client = self.physics_client
-            
+            self.physics_client
+
             # 创建球体物体
             col_shape = pb.createCollisionShape(pb.GEOM_SPHERE, radius=0.1)
             visual_shape = pb.createVisualShape(pb.GEOM_SPHERE, radius=0.1)
-            
+
             # 创建多体对象
             body = pb.createMultiBody(
                 baseMass=mass,
                 baseCollisionShapeIndex=col_shape,
                 baseVisualShapeIndex=visual_shape,
                 basePosition=initial_position,
-                baseOrientation=[0, 0, 0, 1]
+                baseOrientation=[0, 0, 0, 1],
             )
-            
+
             # 设置初始速度
             pb.resetBaseVelocity(body, linearVelocity=initial_velocity)
-            
+
             # 如果有力，施加力
             if force:
                 pb.applyExternalForce(
@@ -5251,39 +5757,39 @@ class PhysicsSimulationManager:
                     -1,  # base link
                     forceObj=force,
                     posObj=[0, 0, 0],
-                    flags=pb.LINK_FRAME
+                    flags=pb.LINK_FRAME,
                 )
-            
+
             # 模拟指定时间
             num_steps = int(duration / self.time_step)
             positions = []
             velocities = []
-            
+
             for i in range(num_steps):
                 pb.stepSimulation()
-                
+
                 # 获取当前状态
                 pos, orn = pb.getBasePositionAndOrientation(body)
                 lin_vel, ang_vel = pb.getBaseVelocity(body)
-                
+
                 positions.append(pos)
                 velocities.append(lin_vel)
-            
+
             # 最终状态
             final_position = positions[-1] if positions else initial_position
             final_velocity = velocities[-1] if velocities else initial_velocity
-            
+
             # 计算动能和势能
             kinetic_energy = 0.5 * mass * sum(v**2 for v in final_velocity)
             potential_energy = mass * self.gravity * max(0, final_position[2])
-            
+
             # 获取碰撞信息
             contact_points = pb.getContactPoints(bodyA=body)
             collisions_detected = len(contact_points) > 0
-            
+
             # 移除物体
             pb.removeBody(body)
-            
+
             return {
                 "final_position": list(final_position),
                 "final_velocity": list(final_velocity),
@@ -5294,19 +5800,25 @@ class PhysicsSimulationManager:
                 "simulation_mode": "physics_engine",
                 "time_steps": num_steps,
                 "collisions_detected": collisions_detected,
-                "collision_details": [{"position": cp[5], "normal": cp[7]} for cp in contact_points] if collisions_detected else [],
-                "simulation_engine": "PyBullet"
+                "collision_details": (
+                    [{"position": cp[5], "normal": cp[7]} for cp in contact_points]
+                    if collisions_detected
+                    else []
+                ),
+                "simulation_engine": "PyBullet",
             }
-            
+
         except Exception as e:
             self.logger.error(f"物理引擎模拟失败: {e}")
             raise RuntimeError(f"物理引擎模拟失败: {e}")
 
-    def detect_collision(self,
-                         object1_pos: List[float],
-                         object1_radius: float,
-                         object2_pos: List[float],
-                         object2_radius: float) -> Dict[str, Any]:
+    def detect_collision(
+        self,
+        object1_pos: List[float],
+        object1_radius: float,
+        object2_pos: List[float],
+        object2_radius: float,
+    ) -> Dict[str, Any]:
         """
         检测碰撞
 
@@ -5321,9 +5833,9 @@ class PhysicsSimulationManager:
         """
         # 计算距离
         distance = math.sqrt(
-            (object1_pos[0] - object2_pos[0])**2 +
-            (object1_pos[1] - object2_pos[1])**2 +
-            (object1_pos[2] - object2_pos[2])**2
+            (object1_pos[0] - object2_pos[0]) ** 2
+            + (object1_pos[1] - object2_pos[1]) ** 2
+            + (object1_pos[2] - object2_pos[2]) ** 2
         )
 
         # 检测碰撞
@@ -5333,9 +5845,13 @@ class PhysicsSimulationManager:
             "collision_detected": collision,
             "distance": distance,
             "separation_distance": distance - (object1_radius + object2_radius),
-            "collision_severity": "severe" if collision and distance < (object1_radius + object2_radius) * 0.5 else "minor" if collision else "none",
+            "collision_severity": (
+                "severe"
+                if collision and distance < (object1_radius + object2_radius) * 0.5
+                else "minor" if collision else "none"
+            ),
             "object1_position": object1_pos,
-            "object2_position": object2_pos
+            "object2_position": object2_pos,
         }
 
         return result
@@ -5350,14 +5866,16 @@ class PhysicsSimulationManager:
             "gravity": self.gravity,
             "time_step": self.time_step,
             "total_simulations": len(self.simulation_history),
-            "recent_simulations": self.simulation_history[-10:] if self.simulation_history else [],
+            "recent_simulations": (
+                self.simulation_history[-10:] if self.simulation_history else []
+            ),
             "capabilities": {
                 "motion_simulation": True,
                 "collision_detection": True,
                 "energy_calculation": True,
                 "physics_constants": True,
-                "simulation_engine": "PyBullet"
-            }
+                "simulation_engine": "PyBullet",
+            },
         }
 
 
@@ -5380,37 +5898,75 @@ class MedicalReasoningManager:
         self.medical_knowledge_base = {
             "symptoms": {
                 "fever": ["influenza", "common_cold", "pneumonia", "covid_19"],
-                "cough": ["common_cold", "influenza", "bronchitis", "pneumonia", "asthma"],
-                "headache": ["migraine", "tension_headache", "sinusitis", "hypertension"],
-                "fatigue": ["anemia", "hypothyroidism", "depression", "chronic_fatigue_syndrome"],
-                "nausea": ["gastroenteritis", "food_poisoning", "migraine", "pregnancy"]
+                "cough": [
+                    "common_cold",
+                    "influenza",
+                    "bronchitis",
+                    "pneumonia",
+                    "asthma",
+                ],
+                "headache": [
+                    "migraine",
+                    "tension_headache",
+                    "sinusitis",
+                    "hypertension",
+                ],
+                "fatigue": [
+                    "anemia",
+                    "hypothyroidism",
+                    "depression",
+                    "chronic_fatigue_syndrome",
+                ],
+                "nausea": [
+                    "gastroenteritis",
+                    "food_poisoning",
+                    "migraine",
+                    "pregnancy",
+                ],
             },
             "diseases": {
                 "common_cold": {
                     "symptoms": ["cough", "runny_nose", "sore_throat", "sneezing"],
                     "severity": "mild",
-                    "treatment": ["rest", "hydration", "over_the_counter_medication"]
+                    "treatment": ["rest", "hydration", "over_the_counter_medication"],
                 },
                 "influenza": {
-                    "symptoms": ["fever", "cough", "headache", "fatigue", "muscle_aches"],
+                    "symptoms": [
+                        "fever",
+                        "cough",
+                        "headache",
+                        "fatigue",
+                        "muscle_aches",
+                    ],
                     "severity": "moderate",
-                    "treatment": ["antiviral_medication", "rest", "hydration", "fever_reducers"]
+                    "treatment": [
+                        "antiviral_medication",
+                        "rest",
+                        "hydration",
+                        "fever_reducers",
+                    ],
                 },
                 "pneumonia": {
                     "symptoms": ["fever", "cough", "shortness_of_breath", "chest_pain"],
                     "severity": "severe",
-                    "treatment": ["antibiotics", "hospitalization", "oxygen_therapy"]
-                }
+                    "treatment": ["antibiotics", "hospitalization", "oxygen_therapy"],
+                },
             },
             "treatments": {
                 "antibiotics": ["bacterial_infections", "pneumonia", "bronchitis"],
                 "antivirals": ["influenza", "covid_19", "herpes"],
                 "pain_relievers": ["headache", "muscle_pain", "fever"],
-                "anti_inflammatories": ["arthritis", "tendonitis", "inflammatory_conditions"]
-            }
+                "anti_inflammatories": [
+                    "arthritis",
+                    "tendonitis",
+                    "inflammatory_conditions",
+                ],
+            },
         }
 
-    def diagnose_symptoms(self, symptoms: List[str], patient_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def diagnose_symptoms(
+        self, symptoms: List[str], patient_info: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         根据症状进行诊断
 
@@ -5429,15 +5985,18 @@ class MedicalReasoningManager:
         # 根据患者信息调整
         if patient_info:
             possible_diseases = self._adjust_for_patient_info(
-                possible_diseases, patient_info)
+                possible_diseases, patient_info
+            )
 
         # 评估疾病可能性
         ranked_diseases = self._rank_diseases_by_probability(
-            possible_diseases, symptoms)
+            possible_diseases, symptoms
+        )
 
         # 生成治疗建议
         treatment_recommendations = self._generate_treatment_recommendations(
-            ranked_diseases)
+            ranked_diseases
+        )
 
         # 记录诊断
         diagnosis_record = {
@@ -5447,8 +6006,10 @@ class MedicalReasoningManager:
             "patient_info": patient_info,
             "possible_diseases": ranked_diseases,
             "treatment_recommendations": treatment_recommendations,
-            "primary_diagnosis": ranked_diseases[0]["disease"] if ranked_diseases else None,
-            "confidence": ranked_diseases[0]["confidence"] if ranked_diseases else 0.0
+            "primary_diagnosis": (
+                ranked_diseases[0]["disease"] if ranked_diseases else None
+            ),
+            "confidence": ranked_diseases[0]["confidence"] if ranked_diseases else 0.0,
         }
 
         self.diagnosis_history.append(diagnosis_record)
@@ -5463,7 +6024,9 @@ class MedicalReasoningManager:
         """匹配症状到疾病"""
         matched_diseases = []
 
-        for disease_name, disease_info in self.medical_knowledge_base["diseases"].items():
+        for disease_name, disease_info in self.medical_knowledge_base[
+            "diseases"
+        ].items():
             disease_symptoms = disease_info.get("symptoms", [])
 
             # 计算症状匹配度
@@ -5471,26 +6034,30 @@ class MedicalReasoningManager:
             match_ratio = len(matched_symptoms) / max(1, len(disease_symptoms))
 
             if match_ratio > 0:  # 至少匹配一个症状
-                matched_diseases.append({
-                    "disease": disease_name,
-                    "matched_symptoms": matched_symptoms,
-                    "match_ratio": match_ratio,
-                    "disease_info": disease_info
-                })
+                matched_diseases.append(
+                    {
+                        "disease": disease_name,
+                        "matched_symptoms": matched_symptoms,
+                        "match_ratio": match_ratio,
+                        "disease_info": disease_info,
+                    }
+                )
 
         return matched_diseases
 
-    def _adjust_for_patient_info(self, diseases: List[Dict[str, Any]], patient_info: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _adjust_for_patient_info(
+        self, diseases: List[Dict[str, Any]], patient_info: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """根据患者信息调整疾病可能性"""
         age = patient_info.get("age")
-        gender = patient_info.get("gender")
+        patient_info.get("gender")
         medical_history = patient_info.get("medical_history", [])
 
         adjusted_diseases = []
 
         for disease in diseases:
             disease_name = disease["disease"]
-            disease_info = disease["disease_info"]
+            disease["disease_info"]
 
             # 简单的调整逻辑
             adjustment_factor = 1.0
@@ -5509,14 +6076,17 @@ class MedicalReasoningManager:
 
             # 应用调整
             disease["match_ratio"] = min(
-                1.0, disease["match_ratio"] * adjustment_factor)
+                1.0, disease["match_ratio"] * adjustment_factor
+            )
             disease["adjustment_factor"] = adjustment_factor
 
             adjusted_diseases.append(disease)
 
         return adjusted_diseases
 
-    def _rank_diseases_by_probability(self, diseases: List[Dict[str, Any]], symptoms: List[str]) -> List[Dict[str, Any]]:
+    def _rank_diseases_by_probability(
+        self, diseases: List[Dict[str, Any]], symptoms: List[str]
+    ) -> List[Dict[str, Any]]:
         """根据概率对疾病进行排序"""
         if not diseases:
             return []  # 返回空列表
@@ -5528,12 +6098,14 @@ class MedicalReasoningManager:
 
             # 症状数量调整
             symptom_count_factor = min(
-                1.0, len(disease["matched_symptoms"]) / max(1, len(symptoms)))
+                1.0, len(disease["matched_symptoms"]) / max(1, len(symptoms))
+            )
 
             # 疾病严重性调整
             severity = disease["disease_info"].get("severity", "mild")
-            severity_factor = {"mild": 0.8, "moderate": 1.0,
-                               "severe": 1.2}.get(severity, 1.0)
+            severity_factor = {"mild": 0.8, "moderate": 1.0, "severe": 1.2}.get(
+                severity, 1.0
+            )
 
             # 最终置信度
             confidence = base_score * symptom_count_factor * severity_factor
@@ -5544,7 +6116,9 @@ class MedicalReasoningManager:
 
         return ranked_diseases
 
-    def _generate_treatment_recommendations(self, diseases: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _generate_treatment_recommendations(
+        self, diseases: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """生成治疗建议"""
         if not diseases:
             return {"recommendations": [], "urgency": "low"}
@@ -5570,16 +6144,17 @@ class MedicalReasoningManager:
             "additional_recommendations": [
                 "咨询专业医疗人员确认诊断",
                 "监测症状变化",
-                "如果症状加重立即就医"
-            ]
+                "如果症状加重立即就医",
+            ],
         }
 
         return recommendations
 
     def get_medical_report(self) -> Dict[str, Any]:
         """获取医学推理报告"""
-        recent_diagnoses = self.diagnosis_history[-10:
-                                                  ] if self.diagnosis_history else []
+        recent_diagnoses = (
+            self.diagnosis_history[-10:] if self.diagnosis_history else []
+        )
 
         return {
             "timestamp": time.time(),
@@ -5587,7 +6162,7 @@ class MedicalReasoningManager:
             "knowledge_base_size": {
                 "diseases": len(self.medical_knowledge_base.get("diseases", {})),
                 "symptoms": len(self.medical_knowledge_base.get("symptoms", {})),
-                "treatments": len(self.medical_knowledge_base.get("treatments", {}))
+                "treatments": len(self.medical_knowledge_base.get("treatments", {})),
             },
             "total_diagnoses": len(self.diagnosis_history),
             "recent_diagnoses": recent_diagnoses,
@@ -5595,8 +6170,8 @@ class MedicalReasoningManager:
                 "symptom_analysis": True,
                 "disease_diagnosis": True,
                 "treatment_recommendation": True,
-                "patient_awareness": True
-            }
+                "patient_awareness": True,
+            },
         }
 
 
@@ -5627,26 +6202,59 @@ class FinancialAnalysisManager:
                 "profitability": ["roa", "roe", "ros", "gross_margin", "net_margin"],
                 "liquidity": ["current_ratio", "quick_ratio", "cash_ratio"],
                 "solvency": ["debt_to_equity", "interest_coverage", "debt_ratio"],
-                "efficiency": ["asset_turnover", "inventory_turnover", "receivables_turnover"],
-                "market": ["pe_ratio", "pb_ratio", "dividend_yield", "eps"]
+                "efficiency": [
+                    "asset_turnover",
+                    "inventory_turnover",
+                    "receivables_turnover",
+                ],
+                "market": ["pe_ratio", "pb_ratio", "dividend_yield", "eps"],
             },
             "risk_metrics": {
                 "market_risk": ["beta", "standard_deviation", "value_at_risk"],
-                "credit_risk": ["default_probability", "credit_spread", "recovery_rate"],
-                "liquidity_risk": ["bid_ask_spread", "market_depth", "liquidity_coverage_ratio"],
-                "operational_risk": ["loss_distribution", "key_risk_indicators", "control_effectiveness"]
+                "credit_risk": [
+                    "default_probability",
+                    "credit_spread",
+                    "recovery_rate",
+                ],
+                "liquidity_risk": [
+                    "bid_ask_spread",
+                    "market_depth",
+                    "liquidity_coverage_ratio",
+                ],
+                "operational_risk": [
+                    "loss_distribution",
+                    "key_risk_indicators",
+                    "control_effectiveness",
+                ],
             },
             "investment_strategies": {
-                "value_investing": ["low_pe", "low_pb", "high_dividend", "strong_fundamentals"],
-                "growth_investing": ["high_earnings_growth", "high_revenue_growth", "innovation_leadership"],
-                "momentum_investing": ["price_momentum", "earnings_momentum", "relative_strength"],
-                "income_investing": ["high_dividend_yield", "stable_cash_flows", "low_volatility"]
-            }
+                "value_investing": [
+                    "low_pe",
+                    "low_pb",
+                    "high_dividend",
+                    "strong_fundamentals",
+                ],
+                "growth_investing": [
+                    "high_earnings_growth",
+                    "high_revenue_growth",
+                    "innovation_leadership",
+                ],
+                "momentum_investing": [
+                    "price_momentum",
+                    "earnings_momentum",
+                    "relative_strength",
+                ],
+                "income_investing": [
+                    "high_dividend_yield",
+                    "stable_cash_flows",
+                    "low_volatility",
+                ],
+            },
         }
 
-    def analyze_financial_data(self,
-                               data: Optional[Dict[str, Any]] = None,
-                               data_type: str = "time_series") -> Dict[str, Any]:
+    def analyze_financial_data(
+        self, data: Optional[Dict[str, Any]] = None, data_type: str = "time_series"
+    ) -> Dict[str, Any]:
         """
         分析金融数据
 
@@ -5673,7 +6281,9 @@ class FinancialAnalysisManager:
             "data_type": data_type,
             "data_size": len(data) if isinstance(data, (list, dict)) else 1,
             "result": analysis_result,
-            "analysis_mode": "real" if self.financial_library_available else "simulated"
+            "analysis_mode": (
+                "real" if self.financial_library_available else "simulated"
+            ),
         }
 
         self.analysis_history.append(analysis_record)
@@ -5690,8 +6300,10 @@ class FinancialAnalysisManager:
 
         if data_type == "time_series":
             # 生成时间序列数据
-            dates = [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
-                     for i in range(30, -1, -1)]
+            dates = [
+                (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+                for i in range(30, -1, -1)
+            ]
 
             data = {
                 "dates": dates,
@@ -5699,13 +6311,25 @@ class FinancialAnalysisManager:
                 "high": [101 + random.uniform(-5, 5) for _ in range(31)],
                 "low": [99 + random.uniform(-5, 5) for _ in range(31)],
                 "close": [100.5 + random.uniform(-5, 5) for _ in range(31)],
-                "volume": [1000000 + random.randint(-100000, 100000) for _ in range(31)]
+                "volume": [
+                    1000000 + random.randint(-100000, 100000) for _ in range(31)
+                ],
             }
 
         elif data_type == "cross_sectional":
             # 生成横截面数据
-            companies = ["AAPL", "GOOGL", "MSFT", "AMZN",
-                         "TSLA", "META", "NVDA", "JPM", "V", "WMT"]
+            companies = [
+                "AAPL",
+                "GOOGL",
+                "MSFT",
+                "AMZN",
+                "TSLA",
+                "META",
+                "NVDA",
+                "JPM",
+                "V",
+                "WMT",
+            ]
 
             data = {
                 "companies": companies,
@@ -5713,13 +6337,15 @@ class FinancialAnalysisManager:
                 "pe_ratio": [random.uniform(10, 50) for _ in range(10)],
                 "dividend_yield": [random.uniform(0, 5) for _ in range(10)],
                 "debt_to_equity": [random.uniform(0, 2) for _ in range(10)],
-                "roe": [random.uniform(5, 30) for _ in range(10)]
+                "roe": [random.uniform(5, 30) for _ in range(10)],
             }
 
         else:
             # 面板数据
-            dates = [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
-                     for i in range(5, -1, -1)]
+            dates = [
+                (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+                for i in range(5, -1, -1)
+            ]
             companies = ["AAPL", "GOOGL", "MSFT"]
 
             data = {
@@ -5730,19 +6356,22 @@ class FinancialAnalysisManager:
                     for company in companies
                 },
                 "volumes": {
-                    company: [1000000 + random.randint(-200000, 200000)
-                              for _ in range(6)]
+                    company: [
+                        1000000 + random.randint(-200000, 200000) for _ in range(6)
+                    ]
                     for company in companies
-                }
+                },
             }
 
         return data
 
-    def _perform_financial_analysis(self, data: Dict[str, Any], data_type: str) -> Dict[str, Any]:
+    def _perform_financial_analysis(
+        self, data: Dict[str, Any], data_type: str
+    ) -> Dict[str, Any]:
         """执行金融分析 - 只允许真实分析，禁止模拟数据"""
         if not self.financial_library_available:
             raise RuntimeError("金融分析库不可用，请安装pandas和numpy库")
-        
+
         # 使用真实pandas进行分析
         try:
             return self._perform_real_financial_analysis(data, data_type)
@@ -5751,7 +6380,9 @@ class FinancialAnalysisManager:
             # 禁止回退到模拟分析，直接抛出异常
             raise RuntimeError(f"金融分析失败: {e}")
 
-    def _perform_real_financial_analysis(self, data: Dict[str, Any], data_type: str) -> Dict[str, Any]:
+    def _perform_real_financial_analysis(
+        self, data: Dict[str, Any], data_type: str
+    ) -> Dict[str, Any]:
         """执行真实金融分析（使用pandas）"""
         import pandas as pd
         import numpy as np
@@ -5763,52 +6394,80 @@ class FinancialAnalysisManager:
             df = pd.DataFrame(data)
 
             # 计算技术指标
-            df['sma_20'] = df['close'].rolling(window=20).mean()
-            df['ema_12'] = df['close'].ewm(span=12, adjust=False).mean()
-            df['ema_26'] = df['close'].ewm(span=26, adjust=False).mean()
-            df['macd'] = df['ema_12'] - df['ema_26']
-            df['signal'] = df['macd'].ewm(span=9, adjust=False).mean()
-            df['rsi'] = self._calculate_rsi(df['close'])
+            df["sma_20"] = df["close"].rolling(window=20).mean()
+            df["ema_12"] = df["close"].ewm(span=12, adjust=False).mean()
+            df["ema_26"] = df["close"].ewm(span=26, adjust=False).mean()
+            df["macd"] = df["ema_12"] - df["ema_26"]
+            df["signal"] = df["macd"].ewm(span=9, adjust=False).mean()
+            df["rsi"] = self._calculate_rsi(df["close"])
 
             # 计算收益率
-            df['returns'] = df['close'].pct_change()
+            df["returns"] = df["close"].pct_change()
 
             # 计算波动率
-            volatility = df['returns'].std() * np.sqrt(252)  # 年化波动率
+            volatility = df["returns"].std() * np.sqrt(252)  # 年化波动率
 
             # 计算夏普比率（假设无风险利率为2%）
             risk_free_rate = 0.02
-            annual_return = df['returns'].mean() * 252
-            sharpe_ratio = (annual_return - risk_free_rate) / \
-                volatility if volatility > 0 else 0
+            annual_return = df["returns"].mean() * 252
+            sharpe_ratio = (
+                (annual_return - risk_free_rate) / volatility if volatility > 0 else 0
+            )
 
             analysis_result = {
                 "technical_indicators": {
-                    "sma_20": df['sma_20'].iloc[-1] if not pd.isna(df['sma_20'].iloc[-1]) else None,
-                    "ema_12": df['ema_12'].iloc[-1] if not pd.isna(df['ema_12'].iloc[-1]) else None,
-                    "ema_26": df['ema_26'].iloc[-1] if not pd.isna(df['ema_26'].iloc[-1]) else None,
-                    "macd": df['macd'].iloc[-1] if not pd.isna(df['macd'].iloc[-1]) else None,
-                    "signal": df['signal'].iloc[-1] if not pd.isna(df['signal'].iloc[-1]) else None,
-                    "rsi": df['rsi'].iloc[-1] if not pd.isna(df['rsi'].iloc[-1]) else None
+                    "sma_20": (
+                        df["sma_20"].iloc[-1]
+                        if not pd.isna(df["sma_20"].iloc[-1])
+                        else None
+                    ),
+                    "ema_12": (
+                        df["ema_12"].iloc[-1]
+                        if not pd.isna(df["ema_12"].iloc[-1])
+                        else None
+                    ),
+                    "ema_26": (
+                        df["ema_26"].iloc[-1]
+                        if not pd.isna(df["ema_26"].iloc[-1])
+                        else None
+                    ),
+                    "macd": (
+                        df["macd"].iloc[-1]
+                        if not pd.isna(df["macd"].iloc[-1])
+                        else None
+                    ),
+                    "signal": (
+                        df["signal"].iloc[-1]
+                        if not pd.isna(df["signal"].iloc[-1])
+                        else None
+                    ),
+                    "rsi": (
+                        df["rsi"].iloc[-1] if not pd.isna(df["rsi"].iloc[-1]) else None
+                    ),
                 },
                 "risk_metrics": {
                     "volatility": volatility,
                     "sharpe_ratio": sharpe_ratio,
-                    "max_drawdown": self._calculate_max_drawdown(df['close']),
-                    "value_at_risk_95": self._calculate_var(df['returns'], confidence_level=0.95)
+                    "max_drawdown": self._calculate_max_drawdown(df["close"]),
+                    "value_at_risk_95": self._calculate_var(
+                        df["returns"], confidence_level=0.95
+                    ),
                 },
                 "performance_metrics": {
-                    "total_return": (df['close'].iloc[-1] - df['close'].iloc[0]) / df['close'].iloc[0],
+                    "total_return": (df["close"].iloc[-1] - df["close"].iloc[0])
+                    / df["close"].iloc[0],
                     "annualized_return": annual_return,
-                    "positive_days": (df['returns'] > 0).sum(),
-                    "negative_days": (df['returns'] < 0).sum()
+                    "positive_days": (df["returns"] > 0).sum(),
+                    "negative_days": (df["returns"] < 0).sum(),
                 },
                 "data_summary": {
                     "periods": len(df),
-                    "start_date": df.index[0] if hasattr(df, 'index') else "unknown",
-                    "end_date": df.index[-1] if hasattr(df, 'index') else "unknown",
-                    "avg_volume": df['volume'].mean() if 'volume' in df.columns else None
-                }
+                    "start_date": df.index[0] if hasattr(df, "index") else "unknown",
+                    "end_date": df.index[-1] if hasattr(df, "index") else "unknown",
+                    "avg_volume": (
+                        df["volume"].mean() if "volume" in df.columns else None
+                    ),
+                },
             }
 
         elif data_type == "cross_sectional":
@@ -5823,22 +6482,39 @@ class FinancialAnalysisManager:
                     "std": df[column].std(),
                     "min": df[column].min(),
                     "max": df[column].max(),
-                    "median": df[column].median()
+                    "median": df[column].median(),
                 }
 
             # 计算相关性矩阵
             numeric_columns = df.select_dtypes(include=[np.number]).columns
-            correlation_matrix = df[numeric_columns].corr(
-            ).to_dict() if len(numeric_columns) > 1 else {}
+            correlation_matrix = (
+                df[numeric_columns].corr().to_dict() if len(numeric_columns) > 1 else {}
+            )
 
             analysis_result = {
                 "descriptive_statistics": descriptive_stats,
                 "correlation_matrix": correlation_matrix,
                 "ranking_analysis": {
-                    "by_market_cap": df.sort_values("market_cap", ascending=False)[['market_cap']].to_dict('records') if 'market_cap' in df.columns else [],
-                    "by_pe_ratio": df.sort_values("pe_ratio")[['pe_ratio']].to_dict('records') if 'pe_ratio' in df.columns else [],
-                    "by_roe": df.sort_values("roe", ascending=False)[['roe']].to_dict('records') if 'roe' in df.columns else []
-                }
+                    "by_market_cap": (
+                        df.sort_values("market_cap", ascending=False)[
+                            ["market_cap"]
+                        ].to_dict("records")
+                        if "market_cap" in df.columns
+                        else []
+                    ),
+                    "by_pe_ratio": (
+                        df.sort_values("pe_ratio")[["pe_ratio"]].to_dict("records")
+                        if "pe_ratio" in df.columns
+                        else []
+                    ),
+                    "by_roe": (
+                        df.sort_values("roe", ascending=False)[["roe"]].to_dict(
+                            "records"
+                        )
+                        if "roe" in df.columns
+                        else []
+                    ),
+                },
             }
 
         else:
@@ -5848,12 +6524,14 @@ class FinancialAnalysisManager:
                 "companies": data.get("companies", []),
                 "periods": len(data.get("dates", [])),
                 "analysis_performed": True,
-                "note": "面板数据分析需要更复杂的处理"
+                "note": "面板数据分析需要更复杂的处理",
             }
 
         return analysis_result
 
-    def _perform_simulated_analysis(self, data: Dict[str, Any], data_type: str) -> Dict[str, Any]:
+    def _perform_simulated_analysis(
+        self, data: Dict[str, Any], data_type: str
+    ) -> Dict[str, Any]:
         """执行模拟金融分析"""
         self.logger.info("使用模拟金融分析")
 
@@ -5868,34 +6546,46 @@ class FinancialAnalysisManager:
                     "ema_26": 99 + random.uniform(-5, 5),
                     "macd": random.uniform(-2, 2),
                     "signal": random.uniform(-2, 2),
-                    "rsi": random.uniform(30, 70)
+                    "rsi": random.uniform(30, 70),
                 },
                 "risk_metrics": {
                     "volatility": random.uniform(0.1, 0.3),
                     "sharpe_ratio": random.uniform(0.5, 2.0),
                     "max_drawdown": random.uniform(0.05, 0.2),
-                    "value_at_risk_95": random.uniform(0.02, 0.1)
+                    "value_at_risk_95": random.uniform(0.02, 0.1),
                 },
                 "performance_metrics": {
                     "total_return": random.uniform(-0.1, 0.2),
                     "annualized_return": random.uniform(-0.05, 0.15),
                     "positive_days": random.randint(15, 25),
-                    "negative_days": random.randint(5, 15)
-                }
+                    "negative_days": random.randint(5, 15),
+                },
             }
 
         elif data_type == "cross_sectional":
             result = {
                 "descriptive_statistics": {
-                    "market_cap": {"mean": 500, "std": 300, "min": 100, "max": 1000, "median": 450},
-                    "pe_ratio": {"mean": 25, "std": 10, "min": 10, "max": 50, "median": 24},
-                    "roe": {"mean": 15, "std": 5, "min": 5, "max": 30, "median": 16}
+                    "market_cap": {
+                        "mean": 500,
+                        "std": 300,
+                        "min": 100,
+                        "max": 1000,
+                        "median": 450,
+                    },
+                    "pe_ratio": {
+                        "mean": 25,
+                        "std": 10,
+                        "min": 10,
+                        "max": 50,
+                        "median": 24,
+                    },
+                    "roe": {"mean": 15, "std": 5, "min": 5, "max": 30, "median": 16},
                 },
                 "correlation_matrix": {
                     "market_cap": {"pe_ratio": -0.2, "roe": 0.3},
                     "pe_ratio": {"market_cap": -0.2, "roe": 0.1},
-                    "roe": {"market_cap": 0.3, "pe_ratio": 0.1}
-                }
+                    "roe": {"market_cap": 0.3, "pe_ratio": 0.1},
+                },
             }
 
         else:
@@ -5903,12 +6593,12 @@ class FinancialAnalysisManager:
                 "data_type": "panel",
                 "analysis_performed": True,
                 "simulated": True,
-                "note": "模拟面板数据分析"
+                "note": "模拟面板数据分析",
             }
 
         return result
 
-    def _calculate_rsi(self, prices: 'pd.Series', period: int = 14) -> 'pd.Series':
+    def _calculate_rsi(self, prices: "pd.Series", period: int = 14) -> "pd.Series":
         """计算相对强弱指数(RSI)"""
         delta = prices.diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
@@ -5917,20 +6607,22 @@ class FinancialAnalysisManager:
         rsi = 100 - (100 / (1 + rs))
         return rsi
 
-    def _calculate_max_drawdown(self, prices: 'pd.Series') -> float:
+    def _calculate_max_drawdown(self, prices: "pd.Series") -> float:
         """计算最大回撤"""
         cumulative_returns = (1 + prices.pct_change()).cumprod()
         running_max = cumulative_returns.expanding().max()
         drawdown = (cumulative_returns - running_max) / running_max
         return drawdown.min()
 
-    def _calculate_var(self, returns: 'pd.Series', confidence_level: float = 0.95) -> float:
+    def _calculate_var(
+        self, returns: "pd.Series", confidence_level: float = 0.95
+    ) -> float:
         """计算风险价值(VaR)"""
         return returns.quantile(1 - confidence_level)
 
-    def assess_risk(self,
-                    portfolio: Dict[str, float],
-                    market_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def assess_risk(
+        self, portfolio: Dict[str, float], market_data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         评估投资组合风险
 
@@ -5952,7 +6644,9 @@ class FinancialAnalysisManager:
 
         return risk_assessment
 
-    def _generate_market_data_for_portfolio(self, portfolio: Dict[str, float]) -> Dict[str, Any]:
+    def _generate_market_data_for_portfolio(
+        self, portfolio: Dict[str, float]
+    ) -> Dict[str, Any]:
         """为投资组合生成市场数据"""
         import random
 
@@ -5962,20 +6656,20 @@ class FinancialAnalysisManager:
                 "returns": [random.uniform(-0.05, 0.05) for _ in range(100)],
                 "volatility": random.uniform(0.1, 0.4),
                 "beta": random.uniform(0.5, 1.5),
-                "correlation_with_market": random.uniform(0.3, 0.9)
+                "correlation_with_market": random.uniform(0.3, 0.9),
             }
 
         # 添加市场基准
         market_data["market"] = {
             "returns": [random.uniform(-0.03, 0.04) for _ in range(100)],
-            "volatility": random.uniform(0.15, 0.25)
+            "volatility": random.uniform(0.15, 0.25),
         }
 
         return market_data
 
-    def _perform_risk_assessment(self,
-                                 portfolio: Dict[str, float],
-                                 market_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _perform_risk_assessment(
+        self, portfolio: Dict[str, float], market_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """执行风险评估"""
         import numpy as np
 
@@ -5997,8 +6691,15 @@ class FinancialAnalysisManager:
             portfolio_beta += weight * beta
 
         # 计算多样化收益
-        diversification_benefit = max(0, 1 - portfolio_volatility / sum(abs(w) * market_data.get(asset, {}).get("volatility", 0.2)
-                                                                        for asset, w in portfolio.items()))
+        diversification_benefit = max(
+            0,
+            1
+            - portfolio_volatility
+            / sum(
+                abs(w) * market_data.get(asset, {}).get("volatility", 0.2)
+                for asset, w in portfolio.items()
+            ),
+        )
 
         # 计算风险价值(VaR)
         portfolio_returns = []
@@ -6013,14 +6714,15 @@ class FinancialAnalysisManager:
 
         var_95 = np.percentile(portfolio_returns, 5)  # 95%置信度的VaR
         expected_shortfall = np.mean(
-            [r for r in portfolio_returns if r <= var_95])  # 条件风险价值(CVaR)
+            [r for r in portfolio_returns if r <= var_95]
+        )  # 条件风险价值(CVaR)
 
         risk_assessment = {
             "portfolio_metrics": {
                 "total_assets": len(portfolio),
                 "total_weight": total_weight,
                 "concentration_index": self._calculate_concentration_index(portfolio),
-                "herfindahl_index": self._calculate_herfindahl_index(portfolio)
+                "herfindahl_index": self._calculate_herfindahl_index(portfolio),
             },
             "risk_metrics": {
                 "portfolio_volatility": portfolio_volatility,
@@ -6028,14 +6730,14 @@ class FinancialAnalysisManager:
                 "diversification_benefit": diversification_benefit,
                 "value_at_risk_95": var_95,
                 "conditional_var_95": expected_shortfall,
-                "maximum_drawdown_estimate": portfolio_volatility * 2.5  # 粗略估计
+                "maximum_drawdown_estimate": portfolio_volatility * 2.5,  # 粗略估计
             },
             "stress_test_results": {
                 "market_crash_scenario": portfolio_volatility * 3,
                 "interest_rate_shock": portfolio_volatility * 1.5,
-                "liquidity_crisis": portfolio_volatility * 2
+                "liquidity_crisis": portfolio_volatility * 2,
             },
-            "risk_assessment": self._assess_risk_level(portfolio_volatility, var_95)
+            "risk_assessment": self._assess_risk_level(portfolio_volatility, var_95),
         }
 
         return risk_assessment
@@ -6049,7 +6751,7 @@ class FinancialAnalysisManager:
         sorted_weights = sorted(weights, reverse=True)
 
         # 计算前5大资产权重和
-        top_5_sum = sum(sorted_weights[:min(5, len(sorted_weights))])
+        top_5_sum = sum(sorted_weights[: min(5, len(sorted_weights))])
         total_sum = sum(weights)
 
         return top_5_sum / total_sum if total_sum > 0 else 0.0
@@ -6069,7 +6771,7 @@ class FinancialAnalysisManager:
         normalized_weights = [w / total_weight for w in weights]
 
         # 计算赫芬达尔指数
-        hhi = sum(w ** 2 for w in normalized_weights)
+        hhi = sum(w**2 for w in normalized_weights)
         return hhi
 
     def _assess_risk_level(self, volatility: float, var_95: float) -> Dict[str, Any]:
@@ -6092,12 +6794,12 @@ class FinancialAnalysisManager:
             "risk_color": color,
             "recommendation": recommendation,
             "volatility_rating": volatility,
-            "var_rating": abs(var_95)
+            "var_rating": abs(var_95),
         }
 
-    def optimize_portfolio(self,
-                           assets: List[str],
-                           constraints: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def optimize_portfolio(
+        self, assets: List[str], constraints: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         优化投资组合
 
@@ -6112,18 +6814,22 @@ class FinancialAnalysisManager:
 
         # 生成模拟市场数据
         market_data = self._generate_market_data_for_portfolio(
-            {asset: 1.0 for asset in assets})
+            {asset: 1.0 for asset in assets}
+        )
 
         # 执行优化
         optimization_result = self._perform_portfolio_optimization(
-            assets, market_data, constraints)
+            assets, market_data, constraints
+        )
 
         return optimization_result
 
-    def _perform_portfolio_optimization(self,
-                                        assets: List[str],
-                                        market_data: Dict[str, Any],
-                                        constraints: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    def _perform_portfolio_optimization(
+        self,
+        assets: List[str],
+        market_data: Dict[str, Any],
+        constraints: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
         """执行投资组合优化"""
         import random
 
@@ -6160,12 +6866,18 @@ class FinancialAnalysisManager:
         optimization_result = {
             "optimized_portfolio": portfolio,
             "expected_return": expected_return,
-            "expected_volatility": risk_assessment["risk_metrics"]["portfolio_volatility"],
-            "sharpe_ratio": expected_return / risk_assessment["risk_metrics"]["portfolio_volatility"]
-            if risk_assessment["risk_metrics"]["portfolio_volatility"] > 0 else 0,
+            "expected_volatility": risk_assessment["risk_metrics"][
+                "portfolio_volatility"
+            ],
+            "sharpe_ratio": (
+                expected_return
+                / risk_assessment["risk_metrics"]["portfolio_volatility"]
+                if risk_assessment["risk_metrics"]["portfolio_volatility"] > 0
+                else 0
+            ),
             "risk_assessment": risk_assessment["risk_assessment"],
             "constraints_applied": constraints is not None,
-            "optimization_method": "模拟优化（随机搜索）"
+            "optimization_method": "模拟优化（随机搜索）",
         }
 
         return optimization_result
@@ -6178,9 +6890,15 @@ class FinancialAnalysisManager:
             "timestamp": time.time(),
             "timestamp_human": datetime.now().isoformat(),
             "knowledge_base_size": {
-                "financial_indicators": len(self.financial_knowledge_base.get("financial_indicators", {})),
-                "risk_metrics": len(self.financial_knowledge_base.get("risk_metrics", {})),
-                "investment_strategies": len(self.financial_knowledge_base.get("investment_strategies", {}))
+                "financial_indicators": len(
+                    self.financial_knowledge_base.get("financial_indicators", {})
+                ),
+                "risk_metrics": len(
+                    self.financial_knowledge_base.get("risk_metrics", {})
+                ),
+                "investment_strategies": len(
+                    self.financial_knowledge_base.get("investment_strategies", {})
+                ),
             },
             "total_analyses": len(self.analysis_history),
             "recent_analyses": recent_analyses,
@@ -6188,9 +6906,9 @@ class FinancialAnalysisManager:
                 "financial_data_analysis": True,
                 "risk_assessment": True,
                 "portfolio_optimization": True,
-                "market_simulation": True
+                "market_simulation": True,
             },
-            "library_available": self.financial_library_available
+            "library_available": self.financial_library_available,
         }
 
 
@@ -6228,8 +6946,8 @@ class ProfessionalDomainCapabilityManager:
                 "mathematics_enabled": True,
                 "physics_simulation_enabled": PYBULLET_AVAILABLE,
                 "medical_reasoning_enabled": MEDICAL_KB_AVAILABLE,
-                "financial_analysis_enabled": PANDAS_AVAILABLE
-            }
+                "financial_analysis_enabled": PANDAS_AVAILABLE,
+            },
         }
 
 
@@ -6250,8 +6968,11 @@ def get_global_professional_domain_manager() -> ProfessionalDomainCapabilityMana
 def test_professional_capabilities():
     """测试专业领域能力"""
     import logging
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
 
     print("=== 测试专业领域能力 ===")
 
@@ -6261,7 +6982,7 @@ def test_professional_capabilities():
     print("1. 测试编程能力...")
 
     # 测试代码分析
-    test_code = '''
+    test_code = """
 def calculate_sum(numbers):
     total = 0
     for num in numbers:
@@ -6274,49 +6995,52 @@ def find_max(numbers):
         if num > max_num:
             max_num = num
     return max_num
-'''
+"""
 
     analysis_result = manager.programming_manager.analyze_code(
-        test_code, ProgrammingLanguage.PYTHON)
+        test_code, ProgrammingLanguage.PYTHON
+    )
     print(
-        f"   代码分析完成: 复杂度={analysis_result.complexity.value}, 函数数={analysis_result.functions_count}")
+        f"   代码分析完成: 复杂度={             analysis_result.complexity.value}, 函数数={             analysis_result.functions_count}"
+    )
 
     print("\n2. 测试代码生成...")
     generated_code = manager.programming_manager.generate_code(
-        "计算两个数的乘积",
-        ProgrammingLanguage.PYTHON,
-        "function"
+        "计算两个数的乘积", ProgrammingLanguage.PYTHON, "function"
     )
     print(f"   代码生成完成: 质量分数={generated_code['quality_score']:.2f}")
 
     print("\n3. 测试数学能力...")
     math_problem = manager.math_manager.solve_math_problem(
-        "Solve the equation: 2x + 5 = 15",
-        MathematicalDomain.ALGEBRA
+        "Solve the equation: 2x + 5 = 15", MathematicalDomain.ALGEBRA
     )
-    print(f"   数学问题解决: 领域={math_problem.domain.value}, 答案={math_problem.final_answer}")
+    print(
+        f"   数学问题解决: 领域={math_problem.domain.value}, 答案={math_problem.final_answer}"
+    )
 
     print("\n4. 测试物理模拟...")
     physics_result = manager.physics_manager.simulate_motion(
         initial_position=[0, 0, 10],  # 从10米高度开始
-        initial_velocity=[5, 0, 0],   # 水平速度5m/s
-        mass=1.0,                     # 质量1kg
-        force=None,                   # 无额外力
-        duration=2.0                  # 模拟2秒
+        initial_velocity=[5, 0, 0],  # 水平速度5m/s
+        mass=1.0,  # 质量1kg
+        force=None,  # 无额外力
+        duration=2.0,  # 模拟2秒
     )
     final_pos = physics_result["final_position"]
     print(
-        f"   物理模拟完成: 最终位置=[{final_pos[0]:.2f}, {final_pos[1]:.2f}, {final_pos[2]:.2f}], 模式={physics_result['simulation_mode']}")
+        f"   物理模拟完成: 最终位置=[{             final_pos[0]:.2f}, {             final_pos[1]:.2f}, {             final_pos[2]:.2f}], 模式={                 physics_result['simulation_mode']}"
+    )
 
     # 测试碰撞检测
     collision_result = manager.physics_manager.detect_collision(
         object1_pos=[0, 0, 0],
         object1_radius=1.0,
         object2_pos=[2, 0, 0],
-        object2_radius=1.0
+        object2_radius=1.0,
     )
     print(
-        f"   碰撞检测: 碰撞={collision_result['collision_detected']}, 距离={collision_result['distance']:.2f}")
+        f"   碰撞检测: 碰撞={             collision_result['collision_detected']}, 距离={             collision_result['distance']:.2f}"
+    )
 
     print("\n5. 测试医学推理...")
     symptoms = ["fever", "cough", "headache"]

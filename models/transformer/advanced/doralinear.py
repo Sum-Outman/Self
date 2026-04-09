@@ -4,7 +4,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import logging
+
 
 class DoRALinear(nn.Module):
     """DoRA线性层 - 权重分解的低秩适应
@@ -129,6 +129,3 @@ class DoRALinear(nn.Module):
             del self.magnitude
 
             logger.info("DoRA权重已合并到基础层中")
-
-
-

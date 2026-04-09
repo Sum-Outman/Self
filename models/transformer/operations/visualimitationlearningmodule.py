@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, List, Optional
+
 
 class VisualImitationLearningModule(nn.Module):
     """视觉模仿学习模块 - 通过视觉观察模仿人类动作
@@ -470,4 +470,3 @@ class VisualImitationLearningModule(nn.Module):
             return position + orientation
         else:
             return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-

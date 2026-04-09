@@ -30,11 +30,11 @@ class SerialProtocol(Enum):
 class SerialState(Enum):
     """串口状态枚举"""
 
-    CLOSED = "closed"        # 完全关闭，未连接设备
+    CLOSED = "closed"  # 完全关闭，未连接设备
     CONNECTING = "connecting"  # 正在连接中
-    CONNECTED = "connected"   # 已连接但未开始工作
-    WORKING = "working"      # 连接成功并开始工作（接收/发送数据）
-    ERROR = "error"          # 错误状态
+    CONNECTED = "connected"  # 已连接但未开始工作
+    WORKING = "working"  # 连接成功并开始工作（接收/发送数据）
+    ERROR = "error"  # 错误状态
     DISCONNECTING = "disconnecting"  # 正在断开连接
 
 
@@ -73,7 +73,7 @@ class SerialController:
         self.serial_connection = None
         self.is_connected = False
         self.state = SerialState.CLOSED  # 初始状态为关闭
-        
+
         # 接收线程
         self.receive_thread = None
         self.receive_running = False
@@ -134,7 +134,11 @@ class SerialController:
         返回:
             连接是否成功
         """
-        if self.state in [SerialState.CONNECTING, SerialState.CONNECTED, SerialState.WORKING]:
+        if self.state in [
+            SerialState.CONNECTING,
+            SerialState.CONNECTED,
+            SerialState.WORKING,
+        ]:
             self.logger.warning(f"串口已在 {self.state.value} 状态，无需重复连接")
             return self.state in [SerialState.CONNECTED, SerialState.WORKING]
 
@@ -174,7 +178,7 @@ class SerialController:
 
             # 更新状态为工作状态（连接成功并开始工作）
             self.state = SerialState.WORKING
-            
+
             self.logger.info(
                 f"串口连接成功并开始工作: {port}, 波特率: {serial_config['baudrate']}"
             )
@@ -195,7 +199,7 @@ class SerialController:
         if self.state == SerialState.CLOSED:
             self.logger.warning("串口已处于关闭状态")
             return True
-            
+
         if self.state == SerialState.DISCONNECTING:
             self.logger.warning("串口正在断开连接中")
             return False
@@ -247,7 +251,9 @@ class SerialController:
             发送是否成功
         """
         if self.state != SerialState.WORKING:
-            self.logger.error(f"串口状态为 {self.state.value}，无法发送数据（需要WORKING状态）")
+            self.logger.error(
+                f"串口状态为 {self.state.value}，无法发送数据（需要WORKING状态）"
+            )
             return False
 
         try:
@@ -287,7 +293,9 @@ class SerialController:
             发送是否成功
         """
         if self.state != SerialState.WORKING:
-            self.logger.error(f"串口状态为 {self.state.value}，无法发送数据（需要WORKING状态）")
+            self.logger.error(
+                f"串口状态为 {self.state.value}，无法发送数据（需要WORKING状态）"
+            )
             return False
 
         try:
@@ -561,34 +569,34 @@ class SerialController:
             return True
         except Exception:
             return False
-    
+
     def get_state(self) -> SerialState:
         """获取当前串口状态
-        
+
         返回:
             当前状态
         """
         return self.state
-    
+
     def is_closed(self) -> bool:
         """检查串口是否关闭
-        
+
         返回:
             是否关闭
         """
         return self.state == SerialState.CLOSED
-    
+
     def is_working(self) -> bool:
         """检查串口是否在工作状态
-        
+
         返回:
             是否在工作状态
         """
         return self.state == SerialState.WORKING
-    
+
     def check_connection(self) -> bool:
         """检查连接状态（真实硬件检测）
-        
+
         返回:
             真实连接状态
         """

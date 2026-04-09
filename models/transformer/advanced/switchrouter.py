@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class SwitchRouter(nn.Module):
     """Switch Transformers路由器 - 每个token只路由到一个专家"""
 
@@ -64,6 +65,3 @@ class SwitchRouter(nn.Module):
         )
 
         return load_balance_loss * self.load_balancing_lambda
-
-
-

@@ -13,7 +13,7 @@ from sqlalchemy import (
     Text,
     ForeignKey,
     JSON,
-    Enum as SQLEnum
+    Enum as SQLEnum,
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -24,6 +24,7 @@ from ..core.database import Base
 
 class RobotType(PyEnum):
     """机器人类型枚举"""
+
     HUMANOID = "humanoid"  # 人形机器人
     MOBILE_ROBOT = "mobile_robot"  # 移动机器人
     MANIPULATOR = "manipulator"  # 机械臂
@@ -36,6 +37,7 @@ class RobotType(PyEnum):
 
 class RobotStatus(PyEnum):
     """机器人状态枚举"""
+
     ONLINE = "online"  # 在线
     OFFLINE = "offline"  # 离线
     ERROR = "error"  # 错误
@@ -47,6 +49,7 @@ class RobotStatus(PyEnum):
 
 class ControlMode(PyEnum):
     """控制模式枚举"""
+
     POSITION = "position"  # 位置控制
     VELOCITY = "velocity"  # 速度控制
     TORQUE = "torque"  # 力矩控制
@@ -57,52 +60,75 @@ class ControlMode(PyEnum):
 
 class Robot(Base):
     """机器人主表"""
+
     __tablename__ = "robots"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False, unique=True, comment="机器人名称")
     description = Column(Text, comment="机器人描述")
-    
+
     # 类型信息
-    robot_type = Column(SQLEnum(RobotType), nullable=False, default=RobotType.HUMANOID, comment="机器人类型")
+    robot_type = Column(
+        SQLEnum(RobotType),
+        nullable=False,
+        default=RobotType.HUMANOID,
+        comment="机器人类型",
+    )
     model = Column(String(255), comment="机器人型号")
     manufacturer = Column(String(255), comment="制造商")
-    
+
     # 状态信息
-    status = Column(SQLEnum(RobotStatus), nullable=False, default=RobotStatus.OFFLINE, comment="机器人状态")
+    status = Column(
+        SQLEnum(RobotStatus),
+        nullable=False,
+        default=RobotStatus.OFFLINE,
+        comment="机器人状态",
+    )
     last_seen = Column(DateTime, comment="最后在线时间")
     battery_level = Column(Float, default=100.0, comment="电池电量 (%)")
     cpu_temperature = Column(Float, comment="CPU温度 (°C)")
-    
+
     # 连接信息
-    connection_type = Column(String(50), default="simulation", comment="连接类型: simulation, serial, ethernet, wifi, bluetooth")
+    connection_type = Column(
+        String(50),
+        default="simulation",
+        comment="连接类型: simulation, serial, ethernet, wifi, bluetooth",
+    )
     connection_params = Column(JSON, default=dict, comment="连接参数")
     ip_address = Column(String(45), comment="IP地址")
     port = Column(Integer, comment="端口号")
-    
+
     # 配置信息
     configuration = Column(JSON, default=dict, comment="机器人配置")
     urdf_path = Column(String(500), comment="URDF模型路径")
-    simulation_engine = Column(String(50), default="gazebo", comment="仿真引擎: gazebo, pybullet, vrep")
-    control_mode = Column(SQLEnum(ControlMode), default=ControlMode.POSITION, comment="控制模式")
-    
+    simulation_engine = Column(
+        String(50), default="gazebo", comment="仿真引擎: gazebo, pybullet, vrep"
+    )
+    control_mode = Column(
+        SQLEnum(ControlMode), default=ControlMode.POSITION, comment="控制模式"
+    )
+
     # 硬件能力
     capabilities = Column(JSON, default=dict, comment="机器人能力配置")
     joint_count = Column(Integer, default=0, comment="关节数量")
     sensor_count = Column(Integer, default=0, comment="传感器数量")
-    
+
     # 权限和归属
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="所属用户ID")
+    user_id = Column(
+        Integer, ForeignKey("users.id"), nullable=False, comment="所属用户ID"
+    )
     is_public = Column(Boolean, default=False, comment="是否公开")
     is_default = Column(Boolean, default=False, comment="是否默认机器人")
-    
+
     # 时间戳
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
     # 关系
     user = relationship("User", back_populates="robots")
-    
+
     def to_dict(self):
         """转换为字典"""
         return {
@@ -137,42 +163,49 @@ class Robot(Base):
 
 class RobotJoint(Base):
     """机器人关节表"""
+
     __tablename__ = "robot_joints"
 
     id = Column(Integer, primary_key=True, index=True)
-    robot_id = Column(Integer, ForeignKey("robots.id"), nullable=False, comment="所属机器人ID")
+    robot_id = Column(
+        Integer, ForeignKey("robots.id"), nullable=False, comment="所属机器人ID"
+    )
     name = Column(String(100), nullable=False, comment="关节名称")
-    joint_type = Column(String(50), default="revolute", comment="关节类型: revolute, prismatic, fixed")
-    
+    joint_type = Column(
+        String(50), default="revolute", comment="关节类型: revolute, prismatic, fixed"
+    )
+
     # 物理参数
     min_position = Column(Float, default=-3.14159, comment="最小位置 (rad)")
     max_position = Column(Float, default=3.14159, comment="最大位置 (rad)")
     max_velocity = Column(Float, default=1.0, comment="最大速度 (rad/s)")
     max_torque = Column(Float, default=10.0, comment="最大扭矩 (N·m)")
-    
+
     # 校准参数
     offset = Column(Float, default=0.0, comment="零点偏移 (rad)")
     direction = Column(Float, default=1.0, comment="方向 (+1或-1)")
-    
+
     # 状态信息
     current_position = Column(Float, default=0.0, comment="当前位置 (rad)")
     current_velocity = Column(Float, default=0.0, comment="当前速度 (rad/s)")
     current_torque = Column(Float, default=0.0, comment="当前扭矩 (N·m)")
     temperature = Column(Float, default=25.0, comment="温度 (°C)")
-    
+
     # 元数据
     description = Column(Text, comment="关节描述")
     parent_link = Column(String(100), comment="父连杆")
     child_link = Column(String(100), comment="子连杆")
     axis = Column(String(50), default="z", comment="关节轴: x, y, z")
-    
+
     # 时间戳
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
     # 关系
     robot = relationship("Robot", back_populates="joints")
-    
+
     def to_dict(self):
         """转换为字典"""
         return {
@@ -201,13 +234,20 @@ class RobotJoint(Base):
 
 class RobotSensor(Base):
     """机器人传感器表"""
+
     __tablename__ = "robot_sensors"
 
     id = Column(Integer, primary_key=True, index=True)
-    robot_id = Column(Integer, ForeignKey("robots.id"), nullable=False, comment="所属机器人ID")
+    robot_id = Column(
+        Integer, ForeignKey("robots.id"), nullable=False, comment="所属机器人ID"
+    )
     name = Column(String(100), nullable=False, comment="传感器名称")
-    sensor_type = Column(String(50), nullable=False, comment="传感器类型: imu, camera, lidar, force, touch")
-    
+    sensor_type = Column(
+        String(50),
+        nullable=False,
+        comment="传感器类型: imu, camera, lidar, force, touch",
+    )
+
     # 配置信息
     model = Column(String(100), comment="传感器型号")
     manufacturer = Column(String(100), comment="制造商")
@@ -215,7 +255,7 @@ class RobotSensor(Base):
     accuracy = Column(Float, comment="精度")
     range_min = Column(Float, comment="最小量程")
     range_max = Column(Float, comment="最大量程")
-    
+
     # 位置和方向
     position_x = Column(Float, default=0.0, comment="X位置 (m)")
     position_y = Column(Float, default=0.0, comment="Y位置 (m)")
@@ -224,23 +264,27 @@ class RobotSensor(Base):
     orientation_y = Column(Float, default=0.0, comment="Y方向 (quaternion)")
     orientation_z = Column(Float, default=0.0, comment="Z方向 (quaternion)")
     orientation_w = Column(Float, default=1.0, comment="W方向 (quaternion)")
-    
+
     # 状态信息
-    status = Column(String(50), default="online", comment="状态: online, offline, error")
+    status = Column(
+        String(50), default="online", comment="状态: online, offline, error"
+    )
     last_data = Column(JSON, comment="最后数据")
     last_update = Column(DateTime, comment="最后更新时间")
-    
+
     # 元数据
     description = Column(Text, comment="传感器描述")
     calibration_data = Column(JSON, comment="校准数据")
-    
+
     # 时间戳
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
     # 关系
     robot = relationship("Robot", back_populates="sensors")
-    
+
     def to_dict(self):
         """转换为字典"""
         return {
@@ -272,11 +316,21 @@ class RobotSensor(Base):
 
 
 # 在Robot模型中添加关系
-Robot.joints = relationship("RobotJoint", back_populates="robot", cascade="all, delete-orphan")
-Robot.sensors = relationship("RobotSensor", back_populates="robot", cascade="all, delete-orphan")
-Robot.demonstrations = relationship("Demonstration", back_populates="robot", cascade="all, delete-orphan")
-Robot.demonstration_tasks = relationship("DemonstrationTask", back_populates="robot", cascade="all, delete-orphan")
-Robot.market_listings = relationship("RobotMarketListing", back_populates="robot", cascade="all, delete-orphan")
+Robot.joints = relationship(
+    "RobotJoint", back_populates="robot", cascade="all, delete-orphan"
+)
+Robot.sensors = relationship(
+    "RobotSensor", back_populates="robot", cascade="all, delete-orphan"
+)
+Robot.demonstrations = relationship(
+    "Demonstration", back_populates="robot", cascade="all, delete-orphan"
+)
+Robot.demonstration_tasks = relationship(
+    "DemonstrationTask", back_populates="robot", cascade="all, delete-orphan"
+)
+Robot.market_listings = relationship(
+    "RobotMarketListing", back_populates="robot", cascade="all, delete-orphan"
+)
 
 # 在User模型中需要添加robots关系（需要更新user.py）
 # 我们将在初始化数据库时处理

@@ -3,8 +3,7 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import logging
+
 
 class SwitchExperts(nn.Module):
     """Switch Transformers专家网络"""
@@ -94,6 +93,3 @@ class SwitchExperts(nn.Module):
 # ============================================================================
 # DoRA (权重分解的低秩适应) 实现
 # ============================================================================
-
-
-

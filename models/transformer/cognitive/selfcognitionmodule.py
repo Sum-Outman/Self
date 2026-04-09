@@ -4,8 +4,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Dict, List, Optional, Tuple
+
 
 class SelfCognitionModule(nn.Module):
     """自我认知模块 - 真实自我认知系统
@@ -486,7 +486,7 @@ class SelfCognitionModule(nn.Module):
 
             # 2. 自我调节学习循环算法
             # 展平当前状态和目标状态，以便认知科学算法处理
-            def flatten_dict(d, parent_key='', sep='.'):
+            def flatten_dict(d, parent_key="", sep="."):
                 items = {}
                 for k, v in d.items():
                     new_key = f"{parent_key}{sep}{k}" if parent_key else k
@@ -495,10 +495,10 @@ class SelfCognitionModule(nn.Module):
                     else:
                         items[new_key] = v
                 return items
-            
+
             flat_current_state = flatten_dict(current_state)
             flat_goal_state = flatten_dict(goal_state)
-            
+
             self_regulated_learning = (
                 self.cognitive_science_algorithms.self_regulated_learning_cycle(
                     flat_current_state, flat_goal_state, feedback
@@ -958,8 +958,8 @@ class SelfCognitionModule(nn.Module):
         self_evaluation = self_cognition_outputs["self_evaluation"]
 
         # 维度对齐：确保可以计算相似度
-        batch_size = self_representation.shape[0]
-        seq_len = self_representation.shape[1]
+        self_representation.shape[0]
+        self_representation.shape[1]
 
         # 平均池化自我表示以获得与self_evaluation相同的维度
         self_rep_pooled = self_representation.mean(dim=1)  # [batch_size, hidden_size]
@@ -1125,7 +1125,7 @@ class SelfCognitionModule(nn.Module):
         """
         batch_size = new_experience.shape[0]
         memory_size = self.experience_memory.shape[0]
-        hidden_dim = self.experience_memory.shape[1]
+        self.experience_memory.shape[1]
 
         # 如果没有提供重要性分数，默认为1.0
         if experience_importance is None:
@@ -1288,8 +1288,8 @@ class SelfCognitionModule(nn.Module):
         返回:
             learning_loss: 经验学习损失值
         """
-        batch_size = current_experience.shape[0]
-        top_k = retrieved_experience.shape[1]
+        current_experience.shape[0]
+        retrieved_experience.shape[1]
 
         # 加权平均检索到的经验
         weighted_retrieved = torch.sum(
@@ -1303,6 +1303,3 @@ class SelfCognitionModule(nn.Module):
         learning_loss = 1.0 - similarity.mean()
 
         return learning_loss
-
-
-

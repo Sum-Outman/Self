@@ -14,8 +14,8 @@ from .framework import (
 )
 
 __all__ = [
-    'LaplacianIntegrationConfig',
-    'LaplacianIntegrationFramework',
-    'LAPLACIAN_MODULES_AVAILABLE',
-    'integrate_laplacian_with_training',
+    "LaplacianIntegrationConfig",
+    "LaplacianIntegrationFramework",
+    "LAPLACIAN_MODULES_AVAILABLE",
+    "integrate_laplacian_with_training",
 ]

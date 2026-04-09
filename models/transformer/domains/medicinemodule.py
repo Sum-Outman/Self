@@ -3,9 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Dict, Optional
+
 
 class MedicineModule(nn.Module):
     """医学专业领域能力模块 - 真实医学算法实现
@@ -129,6 +128,3 @@ class MedicineModule(nn.Module):
             output_dict["professional_medical_result"] = medical_result
 
         return output_dict
-
-
-

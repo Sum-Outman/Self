@@ -546,7 +546,6 @@ const MemoryPage: React.FC = () => {
                     { label: '认知推理集成', enabled: true, description: '记忆与推理深度融合' },
                     { label: '多模态记忆', enabled: true, description: '支持文本、图像、音频' },
                     { label: '知识库集成', enabled: true, description: '与知识库协同工作' },
-                    { label: '情感记忆', enabled: false, description: '根据用户要求已禁用' },
                   ].map((feature, idx) => (
                     <div key={idx} className="flex items-center justify-between">
                       <div>
@@ -967,7 +966,6 @@ const MemoryPage: React.FC = () => {
                     { label: '启用自主记忆管理', description: '允许系统自动优化记忆策略', enabled: true },
                     { label: '启用情境感知', description: '根据场景自动调整记忆检索', enabled: true },
                     { label: '启用知识库集成', description: '与知识库系统协同工作', enabled: true },
-                    { label: '启用情感记忆', description: '记录和利用情感信息', enabled: false },
                     { label: '启用多模态记忆', description: '支持图像、音频等非文本记忆', enabled: true },
                   ].map((setting, idx) => (
                     <div key={idx} className="flex items-center justify-between">

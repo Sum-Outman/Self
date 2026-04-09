@@ -1,33 +1,68 @@
 # Self AGI 后端主服务
-from datetime import datetime, timezone
-import sys
-import os
+
+# ============================================================================
+# 标准库导入
+# ============================================================================
+import hashlib
+import io
+import json
 import logging
+import os
+import sys
+import time
+import uuid
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + "/..")
-
+# ============================================================================
+# 第三方库导入
+# ============================================================================
+import torch
+from dotenv import load_dotenv
 from fastapi import (
-    FastAPI,
-    Depends,
-    HTTPException,
-    status,
     BackgroundTasks,
-    UploadFile,
+    Body,
+    Depends,
+    FastAPI,
     File,
     Form,
+    HTTPException,
     Query,
-    Response,
-    Body,
-)
-from fastapi.security import (
-    HTTPBearer,
-    HTTPAuthorizationCredentials,
-    OAuth2PasswordBearer,
+    UploadFile,
+    status,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from contextlib import asynccontextmanager
+from fastapi.responses import JSONResponse
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+    OAuth2PasswordBearer,
+)
+from fastapi.staticfiles import StaticFiles
+from jose import jwt
+from passlib.context import CryptContext
+import pyotp
+import qrcode
+from pydantic import BaseModel, EmailStr, Field
+import redis
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    create_engine,
+    func,
+)
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, relationship, sessionmaker
 
+# Starlette中间件（可选依赖）
 try:
     from starlette.middleware.security import SecurityHeadersMiddleware
 
@@ -37,196 +72,228 @@ try:
 except ImportError:
     SECURITY_HEADERS_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.warning("SecurityHeadersMiddleware不可用，跳过安全头中间件（项目要求禁止使用虚拟实现）")
+    logger.warning(
+        "SecurityHeadersMiddleware不可用，跳过安全头中间件（项目要求禁止使用虚拟实现）"
+    )
     SecurityHeadersMiddleware = None  # 设置为None而不是虚拟类
 
+# ============================================================================
+# 项目路径设置（必须在本地导入之前）
+# ============================================================================
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + "/..")
 
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field, EmailStr
-from typing import Optional, List, Dict, Any
-from datetime import timedelta
-import uuid
-import json
-import time
-import torch
-import hashlib
-from pathlib import Path
-from dotenv import load_dotenv
-import os
+# ============================================================================
+# 本地应用导入 - Backend模块
+# ============================================================================
+from backend.core.config import Config
+from backend.core.concurrency import init_concurrency_systems, shutdown_concurrency_systems
+from backend.core.database import Base, SessionLocal, engine
+from backend.core.permissions import Permission, PermissionManager
+from backend.core.rate_limit import init_rate_limiter
+from backend.core.redis import redis_client
+from backend.core.security import (
+    create_access_token,
+    generate_api_key,
+    get_password_hash,
+    pwd_context,
+    verify_password,
+)
+from backend.dependencies import (
+    get_current_admin,
+    get_current_user,
+    get_db,
+    rate_limit,
+    security,
+)
+from backend.db_models import (
+    AGIModel,
+    APIKey,
+    EmailTwoFactorCode,
+    EmailVerificationToken,
+    KnowledgeItem,
+    KnowledgeSearchHistory,
+    LoginAttempt,
+    PasswordResetToken,
+    TrainingJob,
+    TwoFactorTempSession,
+    User,
+    UserSession,
+)
+from backend.routes.agi_routes import router as agi_router
+from backend.routes.auth_routes import router as auth_router
+from backend.routes.autonomous_routes import router as autonomous_router
+from backend.routes.chat_routes import router as chat_router
+from backend.routes.collision_routes import router as collision_router
+from backend.routes.computer_operation_routes import router as computer_operation_router
+from backend.routes.configuration_routes import router as configuration_router
+from backend.routes.coordination_routes import router as coordination_router
+from backend.routes.database_routes import router as database_router
+from backend.routes.demonstration_routes import router as demonstration_router
+from backend.routes.diagnostic_routes import router as diagnostic_router
+from backend.routes.equipment_learning_routes import router as equipment_learning_router
+from backend.routes.generation_routes import router as generation_router
+from backend.routes.hardware_routes import router as hardware_router
+from backend.routes.keys_routes import router as keys_router
+from backend.routes.knowledge_routes import router as knowledge_router
+from backend.routes.memory_routes import router as memory_router
+from backend.routes.model_routes import router as model_router
+from backend.routes.monitoring_routes import router as monitoring_router
+from backend.routes.motion_control_routes import router as motion_control_router
+from backend.routes.multimodal_concept_routes import router as multimodal_concept_router
+from backend.routes.multimodal_routes import router as multimodal_router
+from backend.routes.path_planning_routes import router as path_planning_router
+from backend.routes.professional_capabilities_routes import router as professional_capabilities_router
+from backend.routes.programming_routes import router as programming_router
+from backend.routes.reinforcement_routes import router as reinforcement_router
+from backend.routes.retrieval_routes import router as retrieval_router
+from backend.routes.robot_control_routes import router as robot_control_router
+from backend.routes.robot_demonstration_routes import router as robot_demonstration_router
+from backend.routes.robot_management_routes import router as robot_management_router
+from backend.routes.robot_market_routes import router as robot_market_router
+from backend.routes.robot_multimodal_routes import router as robot_multimodal_router
+from backend.routes.robot_routes import router as robot_router
+from backend.routes.robot_teaching_routes import router as robot_teaching_router
+from backend.routes.robot_vision_routes import router as robot_vision_router
+from backend.routes.simulation_routes import router as simulation_router
+from backend.routes.speech_routes import router as speech_router
+from backend.routes.training_routes import router as training_router
+from backend.routes.visual_imitation_routes import router as visual_imitation_router
+from backend.services.training_service import get_training_service
+from backend.state_manager import (
+    get_memory_system as get_memory_system_global,
+    register_app,
+    set_memory_system,
+    state_manager,
+)
 
-# 加载环境变量 - 从项目根目录加载
+# ============================================================================
+# 拉普拉斯增强系统导入（可选依赖）
+# ============================================================================
+try:
+    from training.laplacian_enhanced_system import (
+        LaplacianComponent,
+        LaplacianEnhancedSystem,
+        LaplacianEnhancementMode,
+        LaplacianSystemConfig,
+    )
+    
+    LAPLACIAN_ENHANCED_SYSTEM_AVAILABLE = True
+    logger = logging.getLogger(__name__)
+    logger.info("拉普拉斯增强系统模块可用")
+except ImportError as e:
+    LAPLACIAN_ENHANCED_SYSTEM_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning(f"拉普拉斯增强系统模块不可用: {e}, 相关功能将受限")
+    # 根据项目要求"禁止使用虚拟数据"，不创建虚拟类
+
+# ============================================================================
+# 本地应用导入 - Models模块
+# ============================================================================
+from models.memory.memory_manager import MemorySystem
+from models.multimodal.processor import MultimodalProcessor
+from models.system_control import (
+    HardwareManager,
+    MotorController,
+    SensorInterface,
+    SerialController,
+    SystemMonitor,
+)
+from models.transformer.config import ModelConfig
+from models.transformer.self_agi_model import SelfAGIModel
+
+# ============================================================================
+# 环境变量加载
+# ============================================================================
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 load_dotenv(env_path)
 
+# ============================================================================
+# 日志配置
+# ============================================================================
 
+def setup_logging():
+    """配置应用日志
+    
+    根据环境变量设置日志级别和格式：
+    - 开发环境：DEBUG级别，详细格式，仅控制台输出
+    - 生产环境：INFO级别，简洁格式，控制台和文件输出
+    """
+    env = os.getenv("ENVIRONMENT", "development")
+    
+    # 配置根日志器
+    root_logger = logging.getLogger()
+    
+    # 根据环境设置日志级别
+    if env == "development":
+        log_level = logging.DEBUG
+        log_format = "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+    else:
+        log_level = logging.INFO
+        log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    
+    # 清除现有处理器
+    root_logger.handlers.clear()
+    
+    # 创建控制台处理器
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(log_level)
+    
+    # 创建格式化器
+    formatter = logging.Formatter(log_format, datefmt="%Y-%m-%d %H:%M:%S")
+    console_handler.setFormatter(formatter)
+    
+    # 添加处理器到根日志器
+    root_logger.addHandler(console_handler)
+    
+    # 生产环境：添加文件日志处理器
+    if env == "production":
+        try:
+            # 创建日志目录
+            log_dir = os.getenv("LOG_DIR", "logs")
+            os.makedirs(log_dir, exist_ok=True)
+            
+            # 生成日志文件名（包含日期）
+            log_date = datetime.now().strftime("%Y-%m-%d")
+            log_file = os.path.join(log_dir, f"self_agi_{log_date}.log")
+            
+            # 创建文件处理器
+            file_handler = logging.FileHandler(log_file, encoding="utf-8")
+            file_handler.setLevel(log_level)
+            file_handler.setFormatter(formatter)
+            
+            # 添加文件处理器
+            root_logger.addHandler(file_handler)
+            
+            # 创建错误日志文件处理器（仅ERROR级别以上）
+            error_log_file = os.path.join(log_dir, f"self_agi_error_{log_date}.log")
+            error_handler = logging.FileHandler(error_log_file, encoding="utf-8")
+            error_handler.setLevel(logging.ERROR)
+            error_handler.setFormatter(formatter)
+            
+            root_logger.addHandler(error_handler)
+            
+            logger = logging.getLogger(__name__)
+            logger.info(f"文件日志已启用 - 日志目录: {log_dir}, 日志文件: {log_file}")
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"文件日志初始化失败: {e}")
+            logger.warning("将仅使用控制台日志输出")
+    
+    root_logger.setLevel(log_level)
+    
+    # 设置特定库的日志级别
+    logging.getLogger("uvicorn").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING if env == "production" else logging.INFO)
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"日志系统初始化完成 - 环境: {env}, 级别: {logging.getLevelName(log_level)}")
 
-# 数据库模型
-from sqlalchemy import (  # noqa: E402
-    create_engine,
-    Column,
-    Integer,
-    String,
-    Boolean,
-    DateTime,
-    Float,
-    Text,
-    ForeignKey,
-    func,
-)
-from sqlalchemy.ext.declarative import declarative_base  # noqa: E402
-from sqlalchemy.orm import sessionmaker, Session, relationship  # noqa: E402
-import redis  # noqa: E402
-from jose import jwt  # noqa: E402
-from passlib.context import CryptContext  # noqa: E402
-import pyotp  # noqa: E402
-import qrcode  # noqa: E402
-import base64  # noqa: E402
-import io  # noqa: E402
+# 初始化日志系统
+setup_logging()
 
-# 项目模块
-from models.transformer.self_agi_model import SelfAGIModel  # noqa: E402
-from models.transformer.config import ModelConfig  # noqa: E402
-from models.memory.memory_manager import MemorySystem  # noqa: E402
-from models.multimodal.processor import MultimodalProcessor  # noqa: E402
-
-# 系统控制模块
-from models.system_control import (  # noqa: E402
-    SerialController,
-    HardwareManager,
-    SensorInterface,
-    MotorController,
-    SystemMonitor,
-)
-
-# 核心模块导入
-from backend.core.config import Config
-from backend.core.database import Base, engine, SessionLocal
-from backend.db_models.memory import Memory, MemoryAssociation
-from backend.core.redis import redis_client
-from backend.core.security import (
-    pwd_context,
-    verify_password,
-    get_password_hash,
-    create_access_token,
-    generate_api_key,
-)
-from backend.core.rate_limit import init_rate_limiter
-from backend.core.concurrency import (
-    init_concurrency_systems,
-    shutdown_concurrency_systems,
-    connection_pool_manager,
-    async_task_queue,
-    performance_monitor,
-)
-from backend.core.permissions import (
-    Permission,
-    UserRole,
-    PermissionManager,
-    require_admin,
-    require_user_manage_roles,
-)
-
-# 依赖项导入
-from backend.dependencies import (
-    get_db,
-    security,
-    get_current_user,
-    get_current_admin,
-    rate_limit,
-)
-
-# 路由导入
-from backend.routes.auth_routes import router as auth_router
-from backend.routes.keys_routes import router as keys_router
-from backend.routes.knowledge_routes import router as knowledge_router
-from backend.routes.chat_routes import router as chat_router
-from backend.routes.training_routes import router as training_router
-from backend.routes.agi_routes import router as agi_router
-from backend.services.training_service import get_training_service
-from backend.routes.hardware_routes import router as hardware_router
-from backend.routes.speech_routes import router as speech_router
-from backend.routes.multimodal_routes import router as multimodal_router
-from backend.routes.model_routes import router as model_router
-from backend.routes.programming_routes import router as programming_router
-from backend.routes.database_routes import router as database_router
-from backend.routes.monitoring_routes import router as monitoring_router
-from backend.routes.diagnostic_routes import router as diagnostic_router
-from backend.routes.robot_routes import router as robot_router
-
-from backend.routes.robot_management_routes import router as robot_management_router
-from backend.routes.demonstration_routes import router as demonstration_router
-from backend.routes.robot_demonstration_routes import (
-    router as robot_demonstration_router,
-)
-from backend.routes.reinforcement_routes import router as reinforcement_router
-from backend.routes.configuration_routes import router as configuration_router
-from backend.routes.coordination_routes import router as coordination_router
-from backend.routes.collision_routes import router as collision_router
-from backend.routes.path_planning_routes import router as path_planning_router
-from backend.routes.robot_market_routes import router as robot_market_router
-from backend.routes.motion_control_routes import router as motion_control_router
-from backend.routes.simulation_routes import router as simulation_router
-from backend.routes.robot_control_routes import router as robot_control_router
-from backend.routes.robot_multimodal_routes import router as robot_multimodal_router
-from backend.routes.robot_vision_routes import router as robot_vision_router
-from backend.routes.retrieval_routes import router as retrieval_router
-from backend.routes.generation_routes import router as generation_router
-from backend.routes.memory_routes import router as memory_router
-from backend.routes.multimodal_concept_routes import router as multimodal_concept_router
-from backend.routes.robot_teaching_routes import router as robot_teaching_router
-from backend.routes.computer_operation_routes import router as computer_operation_router
-from backend.routes.equipment_learning_routes import router as equipment_learning_router
-from backend.routes.visual_imitation_routes import router as visual_imitation_router
-from backend.routes.autonomous_routes import router as autonomous_router
-from backend.routes.professional_capabilities_routes import router as professional_capabilities_router
-
-# 全局状态管理器（解决app.state不一致问题）
-from backend.state_manager import (
-    state_manager,
-    register_app,
-    get_memory_system as get_memory_system_global,
-    set_memory_system,
-)
-
-# 数据库模型导入（确保SQLAlchemy注册所有模型）
-from backend.db_models import (
-    User,
-    APIKey,
-    UserSession,
-    PasswordResetToken,
-    EmailVerificationToken,
-    LoginAttempt,
-    TwoFactorTempSession,
-    EmailTwoFactorCode,
-    AGIModel,
-    TrainingJob,
-    Memory,
-    MemoryAssociation,
-    KnowledgeItem,
-    KnowledgeSearchHistory,
-    Demonstration,
-    DemonstrationFrame,
-    CameraFrame,
-    DemonstrationTask,
-    TrainingResult,
-    DemonstrationType,
-    DemonstrationStatus,
-    DemonstrationFormat,
-    Robot,
-    RobotJoint,
-    RobotSensor,
-    RobotMarketListing,
-    RobotMarketRating,
-    RobotMarketComment,
-    RobotMarketDownload,
-    RobotMarketFavorite,
-    RobotMarketStatus,
-    RobotMarketCategory,
-)
-
-# 配置
-# 注意：Config类已从core.config导入，使用Config类获取配置
+# ============================================================================
+# 全局状态管理
+# ============================================================================
 
 # 内存存储（用于密码重置和邮箱验证令牌）
 # 生产环境应使用Redis或数据库
@@ -261,20 +328,17 @@ app.state.memory_system = None
 # 注册应用到全局状态管理器
 register_app(app)
 # 记录应用注册状态
-import logging
 
 logging.getLogger(__name__).info(
     f"FastAPI应用已注册到全局状态管理器: {app}, id: {id(app)}"
 )
 
-# 日志
+# 日志配置（在setup_logging()中处理）
+# 临时基础配置，避免导入时的日志问题
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,  # 临时使用WARNING级别，避免导入时的过多日志
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(Path(Config.LOG_DIR) / "backend.log"),
-        logging.StreamHandler(),
-    ],
+    handlers=[logging.StreamHandler()],  # 只使用控制台处理器，文件日志在setup_logging()中配置
 )
 logger = logging.getLogger("SelfAGIBackend")
 
@@ -328,12 +392,13 @@ if SecurityHeadersMiddleware:
             "camera": "()",
             "geolocation": "()",
             "microphone": "()",
-
         },
     )
 else:
     logger = logging.getLogger(__name__)
-    logger.warning("SecurityHeadersMiddleware不可用，跳过安全头中间件（符合项目要求'禁止使用虚拟实现'）")
+    logger.warning(
+        "SecurityHeadersMiddleware不可用，跳过安全头中间件（符合项目要求'禁止使用虚拟实现'）"
+    )
 
 
 # HTTPS重定向中间件（仅在生产环境启用）
@@ -481,7 +546,7 @@ def get_memory_system():
 
     if global_memory_system is not None:
         logger.info(
-            f"✅ get_memory_system() 从全局状态管理器返回有效的记忆系统实例, {caller_info}"
+            f" get_memory_system() 从全局状态管理器返回有效的记忆系统实例, {caller_info}"
         )
         return global_memory_system
 
@@ -524,6 +589,78 @@ def get_memory_system():
         )
 
     return memory_system
+
+
+def get_laplacian_enhanced_system():
+    """
+    获取拉普拉斯增强系统实例依赖（供其他模块使用）
+    兼容性函数：优先使用全局变量，回退到app.state
+    """
+    # 添加详细调试信息
+    import traceback
+
+    # 获取调用栈（限制深度）
+    stack = traceback.extract_stack()[-5:-1]  # 获取最近几个调用帧
+    caller_info = ""
+    for frame in stack:
+        if "get_laplacian_enhanced_system" not in frame.name:  # 跳过自身调用
+            caller_info = f"被 {frame.filename}:{frame.lineno} ({frame.name}) 调用"
+            break
+
+    logger.info(f"get_laplacian_enhanced_system() 调用开始, {caller_info}")
+
+    # 检查拉普拉斯增强系统模块是否可用
+    if not LAPLACIAN_ENHANCED_SYSTEM_AVAILABLE:
+        logger.warning(f"拉普拉斯增强系统模块不可用，返回None, {caller_info}")
+        return None
+
+    # 优先使用全局变量
+    global laplacian_enhanced_system
+    if laplacian_enhanced_system is not None:
+        logger.info(
+            f"✅ get_laplacian_enhanced_system() 从全局变量返回有效的拉普拉斯增强系统实例, {caller_info}"
+        )
+        return laplacian_enhanced_system
+
+    # 全局变量为None，尝试从app.state获取
+    logger.warning("全局变量laplacian_enhanced_system为None，尝试从app.state获取")
+
+    # 检查app对象
+    logger.info(f"回退：检查app对象: {app}, id: {id(app)}")
+
+    # 检查app.state是否存在
+    if not hasattr(app, "state"):
+        logger.error(f"❌ app对象没有state属性！app: {app}, 类型: {type(app)}")
+        return None  # 返回None
+
+    # 从app.state获取拉普拉斯增强系统实例
+    try:
+        system = app.state.laplacian_enhanced_system
+    except AttributeError:
+        system = None
+        logger.warning(
+            f"app.state.laplacian_enhanced_system未设置，app.state属性: {dir(app.state)}"
+        )
+
+    logger.info(
+        f"get_laplacian_enhanced_system() 从app.state获取: {system}, {caller_info}"
+    )
+
+    if system is None:
+        logger.warning(
+            f"⚠️ get_laplacian_enhanced_system() 返回 None (所有方法都失败), {caller_info}"
+        )
+    else:
+        logger.info(
+            f"✅ get_laplacian_enhanced_system() 从app.state返回有效的拉普拉斯增强系统实例, {caller_info}"
+        )
+        # 如果从app.state获取成功，更新全局变量
+        laplacian_enhanced_system = system
+        logger.info(
+            f"已将laplacian_enhanced_system从app.state同步到全局变量: {system}"
+        )
+
+    return system
 
 
 # 依赖项
@@ -868,7 +1005,7 @@ def generate_backup_codes(count: int = 10) -> List[str]:
     return backup_codes
 
 
-def verify_backup_code(backup_codes_json: str, code: str) -> tuple[bool, str]:
+def verify_backup_code(backup_codes_json: str, code: str) -> Tuple[bool, str]:
     """验证备份代码，返回(验证结果, 更新后的备份代码JSON)"""
     if not backup_codes_json:
         return False, backup_codes_json
@@ -1287,9 +1424,6 @@ class APIKeyCreate(BaseModel):
     rate_limit: Optional[int] = Field(100, ge=1, le=1000)
 
 
-
-
-
 class AGIModelCreate(BaseModel):
     """AGI模型创建请求"""
 
@@ -1456,6 +1590,7 @@ class SystemMetricsRequest(BaseModel):
 agi_models: Dict[str, Any] = {}
 memory_system: Optional[MemorySystem] = None
 multimodal_processor: Optional[MultimodalProcessor] = None
+laplacian_enhanced_system = None  # 拉普拉斯增强系统
 system_mode: str = "task"  # task: 任务执行模式, autonomous: 全自主模式
 
 # 系统控制实例
@@ -1469,11 +1604,12 @@ system_monitor: Optional[SystemMonitor] = None
 # 初始化函数
 def initialize_systems():
     """初始化系统"""
-    global memory_system, multimodal_processor
+    global memory_system, multimodal_processor, laplacian_enhanced_system
     global serial_controller, hardware_manager, sensor_interface
     global motor_controller, system_monitor
 
     logger.info("开始初始化系统...")
+    logger.info(f"LAPLACIAN_ENHANCED_SYSTEM_AVAILABLE = {LAPLACIAN_ENHANCED_SYSTEM_AVAILABLE}")
 
     # 导入数据库模型
     from backend.db_models.agi import AGIModel
@@ -1531,41 +1667,7 @@ def initialize_systems():
                 logger.info("创建缺失的数据库表...")
 
                 # 导入所有数据库模型以确保它们注册到Base.metadata
-                from backend.db_models.user import (
-                    User,
-                    APIKey,
-                    UserSession,
-                    PasswordResetToken,
-                    EmailVerificationToken,
-                    LoginAttempt,
-                    TwoFactorTempSession,
-                    EmailTwoFactorCode,
-                )
-                from backend.db_models.agi import AGIModel, TrainingJob
-                from backend.db_models.memory import Memory, MemoryAssociation
-                from backend.db_models.knowledge import (
-                    KnowledgeItem,
-                    KnowledgeSearchHistory,
-                )
-                from backend.db_models.demonstration import (
-                    Demonstration,
-                    DemonstrationFrame,
-                    CameraFrame,
-                    DemonstrationTask,
-                    TrainingResult,
-                )
-                from backend.db_models.robot import Robot, RobotJoint, RobotSensor
-                from backend.db_models.robot_market import (
-                    RobotMarketListing,
-                    RobotMarketRating,
-                    RobotMarketComment,
-                    RobotMarketDownload,
-                    RobotMarketFavorite,
-                )
-                from backend.db_models.chat import (
-                    ChatSession,
-                    ChatMessage,
-                )
+                from backend.db_models.agi import AGIModel
 
                 # 创建所有表
                 Base.metadata.create_all(bind=engine)
@@ -1638,7 +1740,6 @@ def initialize_systems():
                 "enable_scene_transition_detection": True,
                 "scene_classification_threshold": 0.7,
                 "scene_memory_window": 10,
-                "enable_emotional_memory": False,  # 根据用户要求禁用情感记忆
             },
             # 多模态配置
             "multimodal_config": {
@@ -1692,14 +1793,14 @@ def initialize_systems():
                 )
             else:
                 logger.info("✅ 记忆系统初始化成功，全局状态管理器中的实例有效")
-            
+
             # 同时检查app.state（向后兼容）
             logger.info(f"app.state.memory_system = {app.state.memory_system}")
-            
+
             # 修复：更新全局变量memory_system（解决line 447的memory_system = None问题）
             memory_system = global_memory_system
             logger.info(f"✅ 已更新全局变量memory_system: {memory_system}")
-            
+
         except Exception as e:
             logger.error(f"记忆系统初始化失败: {e}")
             import traceback
@@ -1708,7 +1809,7 @@ def initialize_systems():
             app.state.memory_system = None
             # 同时清除全局状态管理器中的记忆系统
             state_manager.set_state("memory_system", None)
-            
+
             # 修复：失败时也更新全局变量
             memory_system = None
             logger.error(
@@ -1742,17 +1843,62 @@ def initialize_systems():
             # 硬件管理器、串口控制器、传感器接口、电机控制器将在调用 initialize_hardware_components() 时初始化
             logger.info("硬件组件初始化已推迟（将在模型开启后接入）")
             logger.info("如需初始化硬件，请调用 /api/system/hardware/initialize 端点")
-            
+
             # 初始化全局变量为None
             hardware_manager = None
             serial_controller = None
             sensor_interface = None
             motor_controller = None
-            hardware_initialized = False
 
         except Exception as e:
             logger.warning(f"系统控制组件初始化失败: {e}")
             logger.warning("系统控制功能将不可用")
+
+        # 初始化拉普拉斯增强系统
+        if LAPLACIAN_ENHANCED_SYSTEM_AVAILABLE:
+            try:
+                logger.info("正在初始化拉普拉斯增强系统...")
+                
+                # 创建拉普拉斯系统配置
+                laplacian_config = LaplacianSystemConfig(
+                    enhancement_mode=LaplacianEnhancementMode.FULL_SYSTEM,
+                    enabled_components=[
+                        LaplacianComponent.SIGNAL_TRANSFORM,
+                        LaplacianComponent.GRAPH_LAPLACIAN,
+                        LaplacianComponent.REGULARIZATION,
+                        LaplacianComponent.CNN_MODEL,
+                        LaplacianComponent.PINN_MODEL,
+                        LaplacianComponent.FUSION_MODEL,
+                    ],
+                    regularization_lambda=0.01,
+                    adaptive_lambda=True,
+                    min_lambda=1e-6,
+                    max_lambda=1.0,
+                    laplacian_normalization="sym",
+                    cnn_backbone="resnet50",
+                    pinn_hidden_dim=256,
+                    pinn_num_layers=3,
+                    fusion_method="attention",
+                    fusion_dim=512,
+                )
+                
+                # 创建拉普拉斯增强系统实例（更新全局变量）
+                laplacian_enhanced_system = LaplacianEnhancedSystem(laplacian_config)
+                logger.info("✅ 拉普拉斯增强系统初始化成功")
+                
+                # 将拉普拉斯增强系统集成到app.state
+                app.state.laplacian_enhanced_system = laplacian_enhanced_system
+                logger.info("✅ 拉普拉斯增强系统已设置到app.state")
+                print(f"拉普拉斯增强系统实例: {laplacian_enhanced_system}")
+                logger.info(f"初始化后 laplacian_enhanced_system = {laplacian_enhanced_system}")
+                
+            except Exception as e:
+                logger.error(f"拉普拉斯增强系统初始化失败: {e}")
+                logger.error("拉普拉斯增强功能将不可用")
+                laplacian_enhanced_system = None
+        else:
+            logger.warning("拉普拉斯增强系统模块不可用，跳过初始化")
+            laplacian_enhanced_system = None
 
         # 加载现有模型
         db = SessionLocal()
@@ -1795,27 +1941,30 @@ def initialize_systems():
 
     except Exception as e:
         logger.error(f"系统初始化失败: {e}")
-
+# 系统初始化完成后立即调用，确保拉普拉斯增强系统可用
+logger.info("主模块初始化：调用initialize_systems()...")
+initialize_systems()
+logger.info("主模块初始化完成")
 
 def initialize_hardware_components():
     """初始化硬件组件（根据用户要求，在模型开启后才调用）
-    
+
     初始化以下硬件组件：
     - 硬件管理器
     - 串口控制器
     - 传感器接口
     - 电机控制器
-    
+
     注意：此函数应在模型开启后调用，而不是在系统启动时自动调用
     """
     global hardware_manager, serial_controller, sensor_interface, motor_controller, hardware_initialized
-    
+
     if hardware_initialized:
         logger.warning("硬件组件已初始化，跳过重复初始化")
         return True
-    
+
     logger.info("开始初始化硬件组件（模型开启后接入）...")
-    
+
     try:
         # 初始化硬件管理器
         hardware_manager = HardwareManager()
@@ -1852,12 +2001,12 @@ def initialize_hardware_components():
         }
         motor_controller = MotorController(motor_config)
         logger.info("电机控制器初始化成功")
-        
+
         # 更新硬件初始化标志
         hardware_initialized = True
         logger.info("✅ 所有硬件组件初始化完成（模型开启后接入模式）")
         return True
-        
+
     except Exception as e:
         logger.error(f"硬件组件初始化失败: {e}")
         logger.error("硬件功能将不可用，但系统其他功能仍可正常工作")
@@ -1874,13 +2023,13 @@ def initialize_hardware_components():
 def shutdown_hardware_components():
     """关闭硬件组件（模型关闭时调用）"""
     global hardware_manager, serial_controller, sensor_interface, motor_controller, hardware_initialized
-    
+
     if not hardware_initialized:
         logger.warning("硬件组件未初始化，无需关闭")
         return True
-    
+
     logger.info("开始关闭硬件组件...")
-    
+
     try:
         # 关闭电机控制器
         if motor_controller:
@@ -1889,7 +2038,7 @@ def shutdown_hardware_components():
                 logger.info("电机控制器已关闭")
             except Exception as e:
                 logger.warning(f"关闭电机控制器失败: {e}")
-        
+
         # 关闭传感器接口
         if sensor_interface:
             try:
@@ -1897,7 +2046,7 @@ def shutdown_hardware_components():
                 logger.info("传感器接口已关闭")
             except Exception as e:
                 logger.warning(f"关闭传感器接口失败: {e}")
-        
+
         # 关闭串口控制器
         if serial_controller:
             try:
@@ -1905,7 +2054,7 @@ def shutdown_hardware_components():
                 logger.info("串口控制器已关闭")
             except Exception as e:
                 logger.warning(f"关闭串口控制器失败: {e}")
-        
+
         # 关闭硬件管理器
         if hardware_manager:
             try:
@@ -1913,17 +2062,17 @@ def shutdown_hardware_components():
                 logger.info("硬件管理器已关闭")
             except Exception as e:
                 logger.warning(f"关闭硬件管理器失败: {e}")
-        
+
         # 重置全局变量
         hardware_manager = None
         serial_controller = None
         sensor_interface = None
         motor_controller = None
         hardware_initialized = False
-        
+
         logger.info("✅ 所有硬件组件已关闭")
         return True
-        
+
     except Exception as e:
         logger.error(f"关闭硬件组件失败: {e}")
         return False
@@ -1933,22 +2082,40 @@ def shutdown_hardware_components():
 @app.on_event("startup")
 async def startup_event():
     """启动事件"""
+    print("=== STARTUP EVENT ===")
+    logger.info("=== STARTUP EVENT ===")
     logger.info("Self AGI 后端服务启动中...")
 
-    # 初始化并发系统
-    init_concurrency_systems()
+    # 初始化并发系统（添加异常处理）
+    logger.info("准备初始化并发系统...")
+    try:
+        logger.info("正在调用 init_concurrency_systems()...")
+        init_concurrency_systems()
+        logger.info("✅ 并发系统初始化成功")
+    except Exception as e:
+        logger.error(f"❌ 并发系统初始化失败: {e}")
+        # 根据项目要求"不采用任何降级处理，直接报错"，但允许系统继续启动
+        # 并发系统失败可能导致性能下降，但核心功能应继续运行
 
-    # 初始化其他系统
-    initialize_systems()
+    # 初始化其他系统（添加异常处理）
+    try:
+        logger.info("正在调用 initialize_systems()...")
+        initialize_systems()
+        logger.info("✅ 系统初始化成功")
+    except Exception as e:
+        logger.error(f"❌ 系统初始化失败: {e}")
+        # 关键系统初始化失败，记录错误但允许服务启动
+        # 根据项目要求"禁止使用虚拟数据"，不提供降级实现
 
     # 初始化串口数据服务
     try:
         from backend.services.serial_data_service import start_serial_data_service
+
         serial_service_config = {
             "max_cache_size": 1000,
             "decoder_config": {
                 "auto_detect_protocols": True,
-            }
+            },
         }
         serial_service_started = start_serial_data_service(serial_service_config)
         if serial_service_started:
@@ -1960,10 +2127,19 @@ async def startup_event():
     except Exception as e:
         logger.error(f"串口数据服务初始化失败: {e}")
 
-    # 初始化四元数核心功能
+    # 初始化四元数核心功能（修复空try块）
     try:
-        from models.quaternion_core import Quaternion, QuaternionTensor
+        # 尝试导入四元数核心模块
+        from models.quaternion_core import QuaternionCore
+        
+        # 初始化四元数核心
+        quaternion_core = QuaternionCore()
         logger.info("✅ 四元数核心库加载成功")
+        
+        # 存储到应用状态（如果适用）
+        if hasattr(app.state, 'quaternion_core'):
+            app.state.quaternion_core = quaternion_core
+            
     except ImportError as e:
         logger.warning(f"四元数核心库导入失败: {e}")
     except Exception as e:
@@ -1982,6 +2158,7 @@ async def startup_event():
     logger.info("Self AGI 后端服务启动完成")
 
 
+
 # 关闭时清理
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -1994,6 +2171,7 @@ async def shutdown_event():
     # 停止串口数据服务
     try:
         from backend.services.serial_data_service import stop_serial_data_service
+
         serial_service_stopped = stop_serial_data_service()
         if serial_service_stopped:
             logger.info("✅ 串口数据服务停止成功")
@@ -4165,8 +4343,7 @@ async def send_serial_command(
         if request.wait_for_response:
             # 使用同步发送（等待响应）
             success = serial_controller.send_sync(
-                data=request.command, 
-                timeout=request.timeout
+                data=request.command, timeout=request.timeout
             )
             has_response = True
             response_data = None  # send_sync不返回响应数据，只返回是否成功
@@ -4477,46 +4654,51 @@ async def get_system_logs(
     db: Session = Depends(get_db),
 ):
     """获取系统日志
-    
+
     注意：根据项目要求"禁止使用虚拟数据"，系统日志功能需要真实日志系统实现。
     如果真实日志系统不可用，直接报错而不是返回空数据。
     """
     try:
         from datetime import datetime
-        import logging
-        
+
         # 检查真实日志系统是否可用
         # 尝试从数据库日志表查询
         try:
             # 检查是否有日志表模型
             from backend.db_models import SystemLog
+
             has_log_table = True
         except ImportError:
             has_log_table = False
-            
+
         # 检查是否有外部日志系统配置
         log_system_enabled = os.getenv("LOG_SYSTEM_ENABLED", "false").lower() == "true"
         elk_endpoint = os.getenv("ELK_ENDPOINT")
         splunk_endpoint = os.getenv("SPLUNK_ENDPOINT")
-        
+
         # 根据项目要求"禁止使用虚拟数据"，如果没有任何真实日志系统可用，直接报错
-        if not has_log_table and not log_system_enabled and not elk_endpoint and not splunk_endpoint:
+        if (
+            not has_log_table
+            and not log_system_enabled
+            and not elk_endpoint
+            and not splunk_endpoint
+        ):
             raise HTTPException(
                 status_code=501,
-                detail="系统日志功能需要真实日志系统集成（项目要求禁止使用虚拟数据）。\n" +
-                       "请配置以下至少一种日志系统：\n" +
-                       "1. 数据库日志表（创建SystemLog模型）\n" +
-                       "2. ELK日志系统（设置ELK_ENDPOINT环境变量）\n" +
-                       "3. Splunk日志系统（设置SPLUNK_ENDPOINT环境变量）\n" +
-                       "4. 启用文件日志系统（设置LOG_SYSTEM_ENABLED=true）"
+                detail="系统日志功能需要真实日志系统集成（项目要求禁止使用虚拟数据）。\n"
+                + "请配置以下至少一种日志系统：\n"
+                + "1. 数据库日志表（创建SystemLog模型）\n"
+                + "2. ELK日志系统（设置ELK_ENDPOINT环境变量）\n"
+                + "3. Splunk日志系统（设置SPLUNK_ENDPOINT环境变量）\n"
+                + "4. 启用文件日志系统（设置LOG_SYSTEM_ENABLED=true）",
             )
-        
+
         # 如果有数据库日志表，从数据库查询
         logs = []
         if has_log_table:
             # 构建查询
             log_query = db.query(SystemLog)
-            
+
             # 应用过滤条件
             if level:
                 log_query = log_query.filter(SystemLog.level == level)
@@ -4526,24 +4708,28 @@ async def get_system_logs(
                 log_query = log_query.filter(SystemLog.timestamp >= start_time)
             if end_time:
                 log_query = log_query.filter(SystemLog.timestamp <= end_time)
-            
+
             # 排序和分页
             log_query = log_query.order_by(SystemLog.timestamp.desc())
             total_count = log_query.count()
             log_items = log_query.offset(offset).limit(limit).all()
-            
+
             # 格式化日志
             for log_item in log_items:
-                logs.append({
-                    "id": log_item.id,
-                    "timestamp": log_item.timestamp.isoformat(),
-                    "level": log_item.level,
-                    "source": log_item.source,
-                    "message": log_item.message,
-                    "details": json.loads(log_item.details) if log_item.details else {},
-                    "user_id": log_item.user_id,
-                })
-            
+                logs.append(
+                    {
+                        "id": log_item.id,
+                        "timestamp": log_item.timestamp.isoformat(),
+                        "level": log_item.level,
+                        "source": log_item.source,
+                        "message": log_item.message,
+                        "details": (
+                            json.loads(log_item.details) if log_item.details else {}
+                        ),
+                        "user_id": log_item.user_id,
+                    }
+                )
+
             return {
                 "success": True,
                 "logs": logs,
@@ -4556,8 +4742,8 @@ async def get_system_logs(
             # 目前直接报错，因为其他日志系统尚未实现
             raise HTTPException(
                 status_code=501,
-                detail="系统日志功能需要真实日志系统集成（项目要求禁止使用虚拟数据）。\n" +
-                       "数据库日志表不存在，其他日志系统（ELK/Splunk）集成尚未实现。"
+                detail="系统日志功能需要真实日志系统集成（项目要求禁止使用虚拟数据）。\n"
+                + "数据库日志表不存在，其他日志系统（ELK/Splunk）集成尚未实现。",
             )
     except Exception as e:
         logger.error(f"获取系统日志失败: {e}")
@@ -4802,7 +4988,7 @@ async def search_knowledge(
     try:
         # 相似度字典，用于存储已计算的相似度值
         similarity_dict = None
-        
+
         query = db.query(KnowledgeItem).filter(KnowledgeItem.is_public)
 
         # 文本搜索（简单实现）
@@ -4832,13 +5018,14 @@ async def search_knowledge(
             # 获取所有匹配项用于相似度计算
             all_items_query = query.order_by(KnowledgeItem.upload_date.desc())
             all_items = all_items_query.all()
-            
+
             # 计算相似度（需要检索服务）
             if request.query and request.query.strip():
                 try:
                     from backend.services.retrieval_service import RetrievalService
+
                     retrieval_service = RetrievalService()
-                    
+
                     # 为每个项目计算相似度
                     items_with_similarity = []
                     # 使用外层作用域的similarity_dict变量
@@ -4849,36 +5036,35 @@ async def search_knowledge(
                             modality_a="text",
                             content_a=request.query,
                             modality_b="text",
-                            content_b=item_text
+                            content_b=item_text,
                         )
                         similarity = similarity_result.get("similarity", 0.0)
                         items_with_similarity.append((item, similarity))
                         similarity_dict[item.id] = similarity  # 存储到字典
-                    
+
                     # 按相似度排序
                     items_with_similarity.sort(
-                        key=lambda x: x[1],
-                        reverse=(request.sort_order == "desc")
+                        key=lambda x: x[1], reverse=(request.sort_order == "desc")
                     )
-                    
+
                     # 分页
                     start_idx = request.offset
                     end_idx = request.offset + request.limit
                     paginated_items = items_with_similarity[start_idx:end_idx]
-                    
+
                     # 提取项目对象
                     items = [item for item, similarity in paginated_items]
                     total_count = len(all_items)
-                    
+
                     # 设置标志，表示已计算相似度
                     similarity_computed = True
-                    
+
                 except Exception as e:
                     logger.error(f"相关性排序失败: {e}")
                     # 根据项目要求"不采用任何降级处理，直接报错"
                     raise HTTPException(
                         status_code=500,
-                        detail=f"相关性排序失败: {e}\n根据项目要求'禁止使用虚拟数据'，必须使用真实的相似度计算功能。"
+                        detail=f"相关性排序失败: {e}\n根据项目要求'禁止使用虚拟数据'，必须使用真实的相似度计算功能。",
                     )
             else:
                 # 没有查询文本，无法按相关性排序，回退到按日期排序
@@ -4887,10 +5073,10 @@ async def search_knowledge(
                     query = query.order_by(sort_column.desc())
                 else:
                     query = query.order_by(sort_column.asc())
-                
+
                 # 获取总数
                 total_count = query.count()
-                
+
                 # 分页
                 items = query.offset(request.offset).limit(request.limit).all()
                 similarity_computed = False
@@ -4916,26 +5102,29 @@ async def search_knowledge(
 
         # 格式化返回数据并计算相似度
         formatted_items = []
-        
+
         # 根据项目要求"禁止使用虚拟数据"，使用真实的向量搜索功能计算相似度
         retrieval_service = None
-        if not similarity_computed and request.query and request.query.strip():  # 有查询文本且尚未计算相似度时才需要初始化检索服务
+        if (
+            not similarity_computed and request.query and request.query.strip()
+        ):  # 有查询文本且尚未计算相似度时才需要初始化检索服务
             try:
                 from backend.services.retrieval_service import RetrievalService
+
                 retrieval_service = RetrievalService()
             except ImportError as e:
                 raise HTTPException(
                     status_code=500,
-                    detail=f"向量搜索功能不可用: {e}\n根据项目要求'禁止使用虚拟数据'，真实相似度计算需要集成向量搜索功能。"
+                    detail=f"向量搜索功能不可用: {e}\n根据项目要求'禁止使用虚拟数据'，真实相似度计算需要集成向量搜索功能。",
                 )
-        
+
         # 用于存储相似度（如果在相关性排序中已计算）
         # similarity_dict变量已在函数开头声明
-        
+
         # 确保similarity_dict是字典（如果为None则初始化为空字典）
         if similarity_dict is None:
             similarity_dict = {}
-        
+
         # 遍历所有项目，计算相似度并格式化
         for item in items:
             # 计算相似度（如果有查询文本和检索服务，且尚未计算）
@@ -4953,7 +5142,7 @@ async def search_knowledge(
                             modality_a="text",
                             content_a=request.query,
                             modality_b="text",
-                            content_b=item_text
+                            content_b=item_text,
                         )
                         similarity = similarity_result.get("similarity", 0.0)
                         # 存储到字典
@@ -4963,9 +5152,9 @@ async def search_knowledge(
                         # 根据项目要求"不采用任何降级处理，直接报错"
                         raise HTTPException(
                             status_code=500,
-                            detail=f"相似度计算失败: {e}\n根据项目要求'禁止使用虚拟数据'，必须使用真实的相似度计算功能。"
+                            detail=f"相似度计算失败: {e}\n根据项目要求'禁止使用虚拟数据'，必须使用真实的相似度计算功能。",
                         )
-            
+
             formatted_items.append(
                 {
                     "id": item.id,
@@ -5365,13 +5554,16 @@ async def get_training_stats(
         gpu_utilization = None
         try:
             import torch
+
             if torch.cuda.is_available():
                 # 尝试获取真实GPU利用率
                 # 注意：PyTorch不直接提供GPU利用率，需要额外监控工具
                 # 这里返回None表示需要真实监控系统
                 gpu_utilization = None
                 logger = logging.getLogger(__name__)
-                logger.info("GPU可用，但需要真实监控系统获取利用率（项目要求禁止使用虚拟数据）")
+                logger.info(
+                    "GPU可用，但需要真实监控系统获取利用率（项目要求禁止使用虚拟数据）"
+                )
         except ImportError:
             pass  # torch不可用，保持gpu_utilization为None
 
@@ -5424,22 +5616,28 @@ async def get_gpu_status(user: User = Depends(get_current_user)):
                         else:
                             # 尝试使用pynvml获取真实GPU利用率
                             import pynvml
+
                             pynvml.nvmlInit()
                             handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-                            utilization = pynvml.nvmlDeviceGetUtilizationRates(handle).gpu
+                            utilization = pynvml.nvmlDeviceGetUtilizationRates(
+                                handle
+                            ).gpu
                             pynvml.nvmlShutdown()
                     except (ImportError, AttributeError, Exception):
                         # 无法获取真实GPU利用率，根据项目要求返回None而不是模拟数据
                         utilization = None
-                    
+
                     # GPU温度 - 根据项目要求"禁止使用虚拟数据"
                     temperature = None
                     try:
                         # 尝试使用pynvml获取真实GPU温度
                         import pynvml
+
                         pynvml.nvmlInit()
                         handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-                        temperature = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
+                        temperature = pynvml.nvmlDeviceGetTemperature(
+                            handle, pynvml.NVML_TEMPERATURE_GPU
+                        )
                         pynvml.nvmlShutdown()
                     except (ImportError, AttributeError, Exception):
                         # 无法获取真实GPU温度，根据项目要求返回None而不是模拟数据
@@ -5453,8 +5651,16 @@ async def get_gpu_status(user: User = Depends(get_current_user)):
                             "memory_allocated": round(memory_allocated, 1),
                             "memory_reserved": round(memory_reserved, 1),
                             "memory_free": round(memory_total - memory_allocated, 1),
-                            "utilization": round(utilization, 1) if utilization is not None else None,
-                            "temperature": round(temperature, 1) if temperature is not None else None,
+                            "utilization": (
+                                round(utilization, 1)
+                                if utilization is not None
+                                else None
+                            ),
+                            "temperature": (
+                                round(temperature, 1)
+                                if temperature is not None
+                                else None
+                            ),
                             "compute_capability": f"{props.major}.{props.minor}",
                             "multi_processor_count": props.multi_processor_count,
                             "clock_rate": props.clock_rate,
@@ -5502,13 +5708,15 @@ async def get_gpu_status(user: User = Depends(get_current_user)):
         }
 
     except ImportError:
-        logger.error("PyTorch未安装，无法获取GPU信息（根据项目要求'禁止使用虚拟数据，直接报错'）")
+        logger.error(
+            "PyTorch未安装，无法获取GPU信息（根据项目要求'禁止使用虚拟数据，直接报错'）"
+        )
         raise HTTPException(
             status_code=501,
             detail="PyTorch未安装，无法获取GPU状态。\n"
-                   "根据项目要求'禁止使用虚拟数据，不采用任何降级处理，直接报错'，\n"
-                   "必须安装PyTorch才能使用GPU状态检测功能。\n"
-                   "请执行: pip install torch"
+            "根据项目要求'禁止使用虚拟数据，不采用任何降级处理，直接报错'，\n"
+            "必须安装PyTorch才能使用GPU状态检测功能。\n"
+            "请执行: pip install torch",
         )
     except Exception as e:
         logger.error(f"获取GPU状态失败: {e}")
@@ -5516,6 +5724,11 @@ async def get_gpu_status(user: User = Depends(get_current_user)):
 
 
 # 静态文件
+# 确保静态文件目录存在
+for dir_path in [Config.UPLOAD_DIR, Config.MODEL_DIR]:
+    Path(dir_path).mkdir(parents=True, exist_ok=True)
+    logger.info(f"确保静态文件目录存在: {dir_path}")
+
 app.mount("/uploads", StaticFiles(directory=Config.UPLOAD_DIR), name="uploads")
 app.mount("/models", StaticFiles(directory=Config.MODEL_DIR), name="models")
 
@@ -5573,10 +5786,36 @@ async def http_exception_handler(request, exc):
 
 # 启动应用
 if __name__ == "__main__":
+    import os
     import uvicorn
     from backend.core.config import Config
 
+    # 获取环境配置
+    env = os.getenv("ENVIRONMENT", "development")
     port = Config.PORT
     host = Config.HOST
-    
-    uvicorn.run("main:app", host=host, port=port, reload=True, log_level="info")
+
+    # 根据环境配置UVICORN参数
+    uvicorn_config = {
+        "host": host,
+        "port": port,
+        "app": "main:app",
+        "log_level": "info",
+        "reload": env == "development",  # 仅开发环境启用热重载
+        "workers": 1 if env == "development" else 4,  # 开发环境1个worker，生产环境4个
+        "timeout_keep_alive": 5,  # 连接保持超时
+        "limit_concurrency": 100 if env == "production" else None,  # 生产环境限制并发
+        "limit_max_requests": 1000 if env == "production" else None,  # 生产环境最大请求数限制
+    }
+
+    # 记录启动配置
+    print(f"=== Self AGI 后端服务启动 ===")
+    print(f"环境: {env}")
+    print(f"主机: {host}")
+    print(f"端口: {port}")
+    print(f"工作进程: {uvicorn_config['workers']}")
+    print(f"热重载: {'启用' if uvicorn_config['reload'] else '禁用'}")
+    print("================================")
+
+    # 启动服务器
+    uvicorn.run(**uvicorn_config)

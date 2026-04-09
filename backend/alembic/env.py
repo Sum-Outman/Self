@@ -1,15 +1,17 @@
+from alembic import context
+from sqlalchemy import pool
+from sqlalchemy import engine_from_config
 from logging.config import fileConfig
 import os
 import sys
 
 # 添加项目根目录到Python路径，以便导入后端模块
 # alembic/env.py 位于 backend/alembic/env.py，所以需要上溯三级到项目根目录
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+project_root = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 sys.path.insert(0, project_root)
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-from alembic import context
 
 # 导入后端数据库模型
 try:
@@ -73,8 +75,8 @@ def run_migrations_online() -> None:
     """
     # 从配置获取数据库URL，覆盖alembic.ini中的设置
     configuration = config.get_section(config.config_ini_section, {})
-    configuration['sqlalchemy.url'] = Config.DATABASE_URL
-    
+    configuration["sqlalchemy.url"] = Config.DATABASE_URL
+
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
@@ -82,10 +84,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, 
-            target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

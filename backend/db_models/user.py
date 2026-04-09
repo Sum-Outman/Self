@@ -14,7 +14,7 @@ from sqlalchemy import (
     ForeignKey,
 )
 from sqlalchemy.orm import relationship
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from ..core.database import Base
 from ..core.config import Config
@@ -46,17 +46,41 @@ class User(Base):
     sessions = relationship("UserSession", back_populates="user")
     memories = relationship("Memory", back_populates="user")
     robots = relationship("Robot", back_populates="user")
-    demonstrations = relationship("Demonstration", back_populates="user", cascade="all, delete-orphan")
-    demonstration_tasks = relationship("DemonstrationTask", back_populates="user", cascade="all, delete-orphan")
-    
+    demonstrations = relationship(
+        "Demonstration", back_populates="user", cascade="all, delete-orphan"
+    )
+    demonstration_tasks = relationship(
+        "DemonstrationTask", back_populates="user", cascade="all, delete-orphan"
+    )
+
     # 机器人市场关系
-    market_listings_owned = relationship("RobotMarketListing", foreign_keys="[RobotMarketListing.owner_id]", back_populates="owner", cascade="all, delete-orphan")
-    market_listings_reviewed = relationship("RobotMarketListing", foreign_keys="[RobotMarketListing.reviewer_id]", back_populates="reviewer", cascade="all, delete-orphan")
-    market_ratings = relationship("RobotMarketRating", back_populates="user", cascade="all, delete-orphan")
-    market_comments = relationship("RobotMarketComment", back_populates="user", cascade="all, delete-orphan")
-    market_downloads = relationship("RobotMarketDownload", back_populates="user", cascade="all, delete-orphan")
-    market_favorites = relationship("RobotMarketFavorite", back_populates="user", cascade="all, delete-orphan")
-    chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
+    market_listings_owned = relationship(
+        "RobotMarketListing",
+        foreign_keys="[RobotMarketListing.owner_id]",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+    market_listings_reviewed = relationship(
+        "RobotMarketListing",
+        foreign_keys="[RobotMarketListing.reviewer_id]",
+        back_populates="reviewer",
+        cascade="all, delete-orphan",
+    )
+    market_ratings = relationship(
+        "RobotMarketRating", back_populates="user", cascade="all, delete-orphan"
+    )
+    market_comments = relationship(
+        "RobotMarketComment", back_populates="user", cascade="all, delete-orphan"
+    )
+    market_downloads = relationship(
+        "RobotMarketDownload", back_populates="user", cascade="all, delete-orphan"
+    )
+    market_favorites = relationship(
+        "RobotMarketFavorite", back_populates="user", cascade="all, delete-orphan"
+    )
+    chat_sessions = relationship(
+        "ChatSession", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class APIKey(Base):
@@ -66,7 +90,9 @@ class APIKey(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     key = Column(String(100), unique=True, index=True, nullable=False)
-    prefix = Column(String(10), nullable=False, default=Config.API_KEY_PREFIX)  # 密钥前缀，使用可配置值
+    prefix = Column(
+        String(10), nullable=False, default=Config.API_KEY_PREFIX
+    )  # 密钥前缀，使用可配置值
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String(50))
     is_active = Column(Boolean, default=True)
@@ -155,7 +181,7 @@ class TwoFactorTempSession(Base):
     temp_token = Column(String(100), unique=True, index=True, nullable=False)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # 关系
     user = relationship("User")
 
@@ -171,7 +197,7 @@ class EmailTwoFactorCode(Base):
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # 关系
     user = relationship("User")
 
@@ -185,7 +211,9 @@ class Payment(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     amount = Column(Float, nullable=False, default=0.0)
     currency = Column(String(10), default="CNY")
-    status = Column(String(20), default="pending")  # pending, completed, failed, refunded
+    status = Column(
+        String(20), default="pending"
+    )  # pending, completed, failed, refunded
     payment_method = Column(String(20))  # wechat, alipay, bank, credit_card
     transaction_id = Column(String(100), unique=True, index=True, nullable=True)
     description = Column(Text, nullable=True)
@@ -193,19 +221,19 @@ class Payment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
-    
+
     # 关系
     user = relationship("User")
 
 
 __all__ = [
-    "User", 
-    "APIKey", 
+    "User",
+    "APIKey",
     "Payment",
-    "UserSession", 
-    "PasswordResetToken", 
+    "UserSession",
+    "PasswordResetToken",
     "EmailVerificationToken",
     "LoginAttempt",
     "TwoFactorTempSession",
-    "EmailTwoFactorCode"
+    "EmailTwoFactorCode",
 ]

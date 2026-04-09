@@ -4,7 +4,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
+
 
 class SystemControlModule(nn.Module):
     """系统控制模块 - 实现多系统协调和资源管理
@@ -140,7 +141,7 @@ class SystemControlModule(nn.Module):
         for i in range(3):
             # 为每个子系统生成不同的特征（通过不同的线性变换）
             subsystem_feature = system_features[
-                :, :, i * (hidden_dim // 3) : (i + 1) * (hidden_dim // 3)
+                :, :, i * (hidden_dim // 3): (i + 1) * (hidden_dim // 3)
             ]
             if subsystem_feature.size(-1) < hidden_dim // 3:
                 subsystem_feature = F.pad(
@@ -170,6 +171,3 @@ class SystemControlModule(nn.Module):
             "performance_metrics": performance_metrics,
             "subsystem_features": subsystem_features,
         }
-
-
-

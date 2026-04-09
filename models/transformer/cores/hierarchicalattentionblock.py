@@ -3,9 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Optional
+
 
 class HierarchicalAttentionBlock(nn.Module):
     """层次化注意力块 - 实现文档级、段落级、句子级多层次注意力
@@ -22,7 +21,7 @@ class HierarchicalAttentionBlock(nn.Module):
     4. 选择性计算: 仅对重要内容进行细粒度处理
     """
 
-    def __init__(self, config: 'AGIModelConfig'):
+    def __init__(self, config: "AGIModelConfig"):
         super().__init__()
         self.config = config
         self.hidden_size = config.hidden_size
@@ -116,7 +115,7 @@ class HierarchicalAttentionBlock(nn.Module):
         medium_importance_mask = (
             importance_scores > self.importance_threshold * 0.5
         ) & ~high_importance_mask
-        low_importance_mask = ~(high_importance_mask | medium_importance_mask)
+        ~(high_importance_mask | medium_importance_mask)
 
         # 3. 准备不同层次的输入
         # 文档级输入 (对所有token)
@@ -182,7 +181,7 @@ class HierarchicalAttentionBlock(nn.Module):
             end = min(start + paragraph_size, seq_len)
             para_len = end - start
             # 重复段落表示到每个token
-            para_token = para_output[:, i : i + 1, :].expand(
+            para_token = para_output[:, i: i + 1, :].expand(
                 batch_size, para_len, self.hidden_size
             )
             para_output_expanded.append(para_token)
@@ -231,6 +230,3 @@ class HierarchicalAttentionBlock(nn.Module):
             return output, {"importance_scores": importance_scores}
         else:
             return output
-
-
-

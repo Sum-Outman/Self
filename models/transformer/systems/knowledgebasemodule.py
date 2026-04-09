@@ -4,7 +4,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
+
 
 class KnowledgeBaseModule(nn.Module):
     """知识库模块 - 实现结构化知识存储和检索
@@ -161,6 +162,3 @@ class KnowledgeBaseModule(nn.Module):
             "reasoning_output": reasoning_output,
             "validation_scores": validation_scores,
         }
-
-
-

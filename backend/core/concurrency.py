@@ -15,12 +15,10 @@ import threading
 import time
 import logging
 import concurrent.futures
-from typing import Dict, Any, Optional, List, Callable, Union
-from contextlib import contextmanager
+from typing import Dict, Any, Optional, List, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-import redis
 from sqlalchemy.pool import QueuePool
 from sqlalchemy import create_engine
 
@@ -33,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 class ConnectionPoolType(Enum):
     """连接池类型枚举"""
+
     DATABASE = "database"
     REDIS = "redis"
     HTTP = "http"
@@ -42,6 +41,7 @@ class ConnectionPoolType(Enum):
 @dataclass
 class PoolStats:
     """连接池统计信息"""
+
     pool_type: str
     total_connections: int = 0
     active_connections: int = 0
@@ -55,24 +55,24 @@ class PoolStats:
 
 class ConnectionPoolManager:
     """连接池管理器
-    
+
     统一管理各种类型的连接池，提供统计和监控功能
     """
-    
+
     def __init__(self):
         """初始化连接池管理器"""
         self.pools: Dict[str, Any] = {}
         self.stats: Dict[str, PoolStats] = {}
         self.lock = threading.RLock()
-        
+
         # 初始化数据库连接池
         self._init_database_pool()
-        
+
         # 初始化Redis连接池
         self._init_redis_pool()
-        
+
         logger.info("连接池管理器初始化完成")
-    
+
     def _init_database_pool(self):
         """初始化数据库连接池"""
         try:
@@ -86,18 +86,20 @@ class ConnectionPoolManager:
                 pool_recycle=Config.DATABASE_POOL_RECYCLE,
                 pool_pre_ping=True,  # 连接前进行健康检查
             )
-            
+
             pool_name = "database_main"
             self.pools[pool_name] = engine
             self.stats[pool_name] = PoolStats(
                 pool_type=ConnectionPoolType.DATABASE.value,
                 total_connections=Config.DATABASE_POOL_SIZE,
             )
-            
-            logger.info(f"数据库连接池初始化完成: pool_size={Config.DATABASE_POOL_SIZE}, max_overflow={Config.DATABASE_MAX_OVERFLOW}")
+
+            logger.info(
+                f"数据库连接池初始化完成: pool_size={Config.DATABASE_POOL_SIZE}, max_overflow={Config.DATABASE_MAX_OVERFLOW}"
+            )
         except Exception as e:
             logger.error(f"初始化数据库连接池失败: {e}")
-    
+
     def _init_redis_pool(self):
         """初始化Redis连接池"""
         try:
@@ -105,7 +107,7 @@ class ConnectionPoolManager:
             redis_client = get_redis_client()
             pool_name = "redis_main"
             self.pools[pool_name] = redis_client
-            
+
             # 获取Redis连接池信息
             connection_pool = redis_client.connection_pool
             if connection_pool:
@@ -113,16 +115,16 @@ class ConnectionPoolManager:
                     pool_type=ConnectionPoolType.REDIS.value,
                     total_connections=connection_pool.max_connections,
                 )
-            
-            logger.info(f"Redis连接池初始化完成")
+
+            logger.info("Redis连接池初始化完成")
         except Exception as e:
             logger.error(f"初始化Redis连接池失败: {e}")
-    
+
     def get_pool(self, pool_name: str) -> Optional[Any]:
         """获取连接池"""
         with self.lock:
             return self.pools.get(pool_name)
-    
+
     def get_stats(self, pool_name: Optional[str] = None) -> Dict[str, Any]:
         """获取连接池统计信息"""
         with self.lock:
@@ -140,8 +142,12 @@ class ConnectionPoolManager:
                     stats = self.stats.get(name)
                     if stats:
                         self._update_pool_stats(name, pool, stats)
-                return {name: self.stats[name] for name in self.pools.keys() if name in self.stats}
-    
+                return {
+                    name: self.stats[name]
+                    for name in self.pools.keys()
+                    if name in self.stats
+                }
+
     def _update_pool_stats(self, pool_name: str, pool: Any, stats: PoolStats):
         """更新连接池统计信息"""
         try:
@@ -150,7 +156,9 @@ class ConnectionPoolManager:
                 pool_status = pool.pool.status()
                 stats.active_connections = pool_status.get("checkedin", 0)
                 stats.idle_connections = pool_status.get("checkedout", 0)
-                stats.total_connections = stats.active_connections + stats.idle_connections
+                stats.total_connections = (
+                    stats.active_connections + stats.idle_connections
+                )
             elif pool_name == "redis_main" and hasattr(pool, "connection_pool"):
                 # Redis连接池统计
                 connection_pool = pool.connection_pool
@@ -158,11 +166,11 @@ class ConnectionPoolManager:
                     stats.active_connections = len(connection_pool._in_use_connections)
                     stats.idle_connections = len(connection_pool._available_connections)
                     stats.total_connections = connection_pool.max_connections
-            
+
             stats.last_updated = datetime.now(timezone.utc)
         except Exception as e:
             logger.error(f"更新连接池统计信息失败: {e}")
-    
+
     def close_all(self):
         """关闭所有连接池"""
         with self.lock:
@@ -179,10 +187,10 @@ class ConnectionPoolManager:
 
 class AsyncTaskQueue:
     """异步任务队列
-    
+
     用于处理高并发异步任务，支持任务优先级、超时和重试
     """
-    
+
     def __init__(self, max_workers: int = None, queue_size: int = 1000):
         """初始化异步任务队列"""
         self.max_workers = max_workers or Config.ASYNC_TASK_MAX_WORKERS
@@ -198,51 +206,52 @@ class AsyncTaskQueue:
             "average_process_time_ms": 0.0,
             "last_task_time": None,
         }
-        
+
         # 线程池用于阻塞任务
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(
-            max_workers=self.max_workers,
-            thread_name_prefix="async_task_worker"
+            max_workers=self.max_workers, thread_name_prefix="async_task_worker"
         )
-        
-        logger.info(f"异步任务队列初始化完成: max_workers={self.max_workers}, queue_size={queue_size}")
-    
+
+        logger.info(
+            f"异步任务队列初始化完成: max_workers={self.max_workers}, queue_size={queue_size}"
+        )
+
     async def start(self):
         """启动任务队列"""
         if self.running:
             return
-        
+
         self.running = True
         # 启动工作线程
         for i in range(self.max_workers):
             task = asyncio.create_task(self._worker_loop(i), name=f"async_worker_{i}")
             self.worker_tasks.append(task)
-        
+
         logger.info(f"异步任务队列已启动，工作线程数: {self.max_workers}")
-    
+
     async def stop(self):
         """停止任务队列"""
         if not self.running:
             return
-        
+
         self.running = False
-        
+
         # 等待所有工作线程完成
         for task in self.worker_tasks:
             task.cancel()
-        
+
         if self.worker_tasks:
             await asyncio.gather(*self.worker_tasks, return_exceptions=True)
-        
+
         # 关闭线程池
         self.thread_pool.shutdown(wait=True)
-        
+
         logger.info("异步任务队列已停止")
-    
+
     async def submit(self, task_func: Callable, *args, **kwargs) -> Any:
         """提交异步任务"""
         task_id = f"task_{self.stats['total_tasks']}_{time.time()}"
-        
+
         # 创建任务包装器
         async def task_wrapper():
             start_time = time.time()
@@ -256,9 +265,9 @@ class AsyncTaskQueue:
                     result = await loop.run_in_executor(
                         self.thread_pool, task_func, *args
                     )
-                
+
                 process_time = (time.time() - start_time) * 1000
-                
+
                 # 更新统计信息
                 with threading.Lock():
                     self.stats["completed_tasks"] += 1
@@ -270,50 +279,51 @@ class AsyncTaskQueue:
                         old_avg * (total_completed - 1) + process_time
                     ) / total_completed
                     self.stats["last_task_time"] = datetime.now(timezone.utc)
-                
+
                 logger.debug(f"任务 {task_id} 完成，耗时: {process_time:.2f}ms")
                 return result
-                
+
             except Exception as e:
                 process_time = (time.time() - start_time) * 1000
-                
+
                 # 更新统计信息
                 with threading.Lock():
                     self.stats["failed_tasks"] += 1
                     self.stats["pending_tasks"] = self.task_queue.qsize()
-                
-                logger.error(f"任务 {task_id} 失败，耗时: {process_time:.2f}ms, 错误: {e}")
+
+                logger.error(
+                    f"任务 {task_id} 失败，耗时: {process_time:.2f}ms, 错误: {e}"
+                )
                 raise
-        
+
         # 将任务放入队列
         await self.task_queue.put(task_wrapper)
-        
+
         # 更新统计信息
         with threading.Lock():
             self.stats["total_tasks"] += 1
             self.stats["pending_tasks"] = self.task_queue.qsize()
-        
+
         logger.debug(f"任务 {task_id} 已提交，队列大小: {self.task_queue.qsize()}")
-    
+
     async def _worker_loop(self, worker_id: int):
         """工作线程循环"""
         logger.debug(f"工作线程 {worker_id} 启动")
-        
+
         while self.running:
             try:
                 # 从队列获取任务，设置超时
                 task_wrapper = await asyncio.wait_for(
-                    self.task_queue.get(), 
-                    timeout=1.0
+                    self.task_queue.get(), timeout=1.0
                 )
-                
+
                 try:
                     await task_wrapper()
                 except Exception as e:
                     logger.error(f"工作线程 {worker_id} 执行任务失败: {e}")
                 finally:
                     self.task_queue.task_done()
-                    
+
             except asyncio.TimeoutError:
                 # 队列为空，继续等待
                 continue
@@ -323,9 +333,9 @@ class AsyncTaskQueue:
             except Exception as e:
                 logger.error(f"工作线程 {worker_id} 出错: {e}")
                 await asyncio.sleep(0.1)
-        
+
         logger.debug(f"工作线程 {worker_id} 停止")
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """获取队列统计信息"""
         with threading.Lock():
@@ -338,10 +348,10 @@ class AsyncTaskQueue:
 
 class PerformanceMonitor:
     """性能监控器
-    
+
     监控系统性能指标，提供实时统计和警报
     """
-    
+
     def __init__(self, update_interval: Optional[float] = None):
         """初始化性能监控器"""
         self.update_interval = update_interval or Config.PERFORMANCE_MONITOR_INTERVAL
@@ -357,7 +367,7 @@ class PerformanceMonitor:
         self.alerts: List[Dict[str, Any]] = []
         self.running = False
         self.monitor_thread: Optional[threading.Thread] = None
-        
+
         # 阈值配置 - 从Config中读取
         self.thresholds = {
             "cpu_usage": Config.PERFORMANCE_ALERT_THRESHOLD_CPU,
@@ -366,58 +376,62 @@ class PerformanceMonitor:
             "response_time": 1000.0,  # 响应时间阈值（ms）
             "error_rate": 5.0,  # 错误率阈值（%）
         }
-        
+
         logger.info(f"性能监控器初始化完成: update_interval={self.update_interval}s")
-        logger.info(f"性能阈值: CPU={self.thresholds['cpu_usage']}%, Memory={self.thresholds['memory_usage']}%, Disk={self.thresholds['disk_usage']}%")
-    
+        logger.info(
+            f"性能阈值: CPU={self.thresholds['cpu_usage']}%, Memory={self.thresholds['memory_usage']}%, Disk={self.thresholds['disk_usage']}%"
+        )
+
     def start(self):
         """启动性能监控器"""
         if self.running:
             return
-        
+
         self.running = True
         self.monitor_thread = threading.Thread(
-            target=self._monitoring_loop,
-            daemon=True,
-            name="performance_monitor"
+            target=self._monitoring_loop, daemon=True, name="performance_monitor"
         )
         self.monitor_thread.start()
-        
+
         logger.info("性能监控器已启动")
-    
+
     def stop(self):
         """停止性能监控器"""
         self.running = False
         if self.monitor_thread:
             self.monitor_thread.join(timeout=5.0)
-        
+
         logger.info("性能监控器已停止")
-    
+
     def _monitoring_loop(self):
         """监控循环"""
         import psutil
-        
+
         while self.running:
             try:
                 # 收集系统指标
                 metrics = {}
-                
+
                 # CPU使用率
                 cpu_percent = psutil.cpu_percent(interval=0.1)
                 metrics["cpu_usage"] = cpu_percent
-                self.metrics["cpu_usage"].append({
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "value": cpu_percent
-                })
-                
+                self.metrics["cpu_usage"].append(
+                    {
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "value": cpu_percent,
+                    }
+                )
+
                 # 内存使用率
                 memory = psutil.virtual_memory()
                 metrics["memory_usage"] = memory.percent
-                self.metrics["memory_usage"].append({
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "value": memory.percent
-                })
-                
+                self.metrics["memory_usage"].append(
+                    {
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "value": memory.percent,
+                    }
+                )
+
                 # 磁盘IO
                 disk_io = psutil.disk_io_counters()
                 if disk_io:
@@ -427,11 +441,13 @@ class PerformanceMonitor:
                         "read_count": disk_io.read_count,
                         "write_count": disk_io.write_count,
                     }
-                    self.metrics["disk_io"].append({
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "value": metrics["disk_io"]
-                    })
-                
+                    self.metrics["disk_io"].append(
+                        {
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "value": metrics["disk_io"],
+                        }
+                    )
+
                 # 网络IO
                 net_io = psutil.net_io_counters()
                 if net_io:
@@ -441,58 +457,66 @@ class PerformanceMonitor:
                         "packets_sent": net_io.packets_sent,
                         "packets_recv": net_io.packets_recv,
                     }
-                    self.metrics["network_io"].append({
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "value": metrics["network_io"]
-                    })
-                
+                    self.metrics["network_io"].append(
+                        {
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "value": metrics["network_io"],
+                        }
+                    )
+
                 # 检查阈值并生成警报
                 self._check_thresholds(metrics)
-                
+
                 # 清理旧数据（保留最近1000个数据点）
                 for metric_name in self.metrics:
                     if len(self.metrics[metric_name]) > 1000:
                         self.metrics[metric_name] = self.metrics[metric_name][-1000:]
-                
+
                 # 清理旧警报（保留最近100个）
                 if len(self.alerts) > 100:
                     self.alerts = self.alerts[-100:]
-                
+
             except Exception as e:
                 logger.error(f"性能监控收集失败: {e}")
-            
+
             # 等待下一个收集周期
             time.sleep(self.update_interval)
-    
+
     def _check_thresholds(self, metrics: Dict[str, Any]):
         """检查阈值并生成警报"""
         current_time = datetime.now(timezone.utc)
-        
+
         # 检查CPU使用率
         cpu_usage = metrics.get("cpu_usage")
         if cpu_usage and cpu_usage > self.thresholds["cpu_usage"]:
-            self.alerts.append({
-                "timestamp": current_time.isoformat(),
-                "type": "high_cpu_usage",
-                "level": "warning",
-                "value": cpu_usage,
-                "threshold": self.thresholds["cpu_usage"],
-                "message": f"CPU使用率过高: {cpu_usage:.1f}% (阈值: {self.thresholds['cpu_usage']}%)"
-            })
-        
+            self.alerts.append(
+                {
+                    "timestamp": current_time.isoformat(),
+                    "type": "high_cpu_usage",
+                    "level": "warning",
+                    "value": cpu_usage,
+                    "threshold": self.thresholds["cpu_usage"],
+                    "message": f"CPU使用率过高: {cpu_usage:.1f}% (阈值: {self.thresholds['cpu_usage']}%)",
+                }
+            )
+
         # 检查内存使用率
         memory_usage = metrics.get("memory_usage")
         if memory_usage and memory_usage > self.thresholds["memory_usage"]:
-            self.alerts.append({
-                "timestamp": current_time.isoformat(),
-                "type": "high_memory_usage",
-                "level": "warning",
-                "value": memory_usage,
-                "threshold": self.thresholds["memory_usage"],
-                "message": f"内存使用率过高: {memory_usage:.1f}% (阈值: {self.thresholds['memory_usage']}%)"
-            })
-    
-    def get_metrics(self, metric_name: Optional[str] = None, limit: int = 100) -> Dict[str, Any]:
+            self.alerts.append(
+                {
+                    "timestamp": current_time.isoformat(),
+                    "type": "high_memory_usage",
+                    "level": "warning",
+                    "value": memory_usage,
+                    "threshold": self.thresholds["memory_usage"],
+                    "message": f"内存使用率过高: {memory_usage:.1f}% (阈值: {self.thresholds['memory_usage']}%)",
+                }
+            )
+
+    def get_metrics(
+        self, metric_name: Optional[str] = None, limit: int = 100
+    ) -> Dict[str, Any]:
         """获取性能指标"""
         if metric_name:
             if metric_name in self.metrics:
@@ -504,15 +528,15 @@ class PerformanceMonitor:
             for name, values in self.metrics.items():
                 result[name] = values[-limit:]
             return result
-    
+
     def get_alerts(self, limit: int = 50) -> List[Dict[str, Any]]:
         """获取警报"""
         return self.alerts[-limit:] if self.alerts else []
-    
+
     def get_summary(self) -> Dict[str, Any]:
         """获取性能摘要"""
         summary = {}
-        
+
         # CPU使用率统计
         cpu_values = [m["value"] for m in self.metrics["cpu_usage"][-100:]]
         if cpu_values:
@@ -522,25 +546,34 @@ class PerformanceMonitor:
                 "max": max(cpu_values) if cpu_values else 0,
                 "min": min(cpu_values) if cpu_values else 0,
             }
-        
+
         # 内存使用率统计
         memory_values = [m["value"] for m in self.metrics["memory_usage"][-100:]]
         if memory_values:
             summary["memory_usage"] = {
                 "current": memory_values[-1] if memory_values else 0,
-                "average": sum(memory_values) / len(memory_values) if memory_values else 0,
+                "average": (
+                    sum(memory_values) / len(memory_values) if memory_values else 0
+                ),
                 "max": max(memory_values) if memory_values else 0,
                 "min": min(memory_values) if memory_values else 0,
             }
-        
+
         # 警报统计
         summary["alerts"] = {
             "total": len(self.alerts),
             "warning": len([a for a in self.alerts if a.get("level") == "warning"]),
             "critical": len([a for a in self.alerts if a.get("level") == "critical"]),
-            "recent": len([a for a in self.alerts[-10:] if datetime.fromisoformat(a["timestamp"]) > datetime.now(timezone.utc) - timedelta(hours=1)])
+            "recent": len(
+                [
+                    a
+                    for a in self.alerts[-10:]
+                    if datetime.fromisoformat(a["timestamp"])
+                    > datetime.now(timezone.utc) - timedelta(hours=1)
+                ]
+            ),
         }
-        
+
         return summary
 
 
@@ -555,7 +588,7 @@ def init_concurrency_systems():
     try:
         # 启动性能监控器
         performance_monitor.start()
-        
+
         logger.info("并发系统初始化完成")
         return True
     except Exception as e:
@@ -568,10 +601,10 @@ def shutdown_concurrency_systems():
     try:
         # 停止性能监控器
         performance_monitor.stop()
-        
+
         # 关闭连接池
         connection_pool_manager.close_all()
-        
+
         logger.info("并发系统已关闭")
         return True
     except Exception as e:
@@ -581,7 +614,7 @@ def shutdown_concurrency_systems():
 
 __all__ = [
     "ConnectionPoolManager",
-    "AsyncTaskQueue", 
+    "AsyncTaskQueue",
     "PerformanceMonitor",
     "connection_pool_manager",
     "async_task_queue",

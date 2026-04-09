@@ -3,7 +3,6 @@
 包含数据库会话依赖项
 """
 
-from sqlalchemy.orm import Session
 
 from ..core.database import SessionLocal
 

@@ -8,13 +8,9 @@
 import sys
 import os
 import logging
-from typing import Dict, Any, List, Optional, Union
-from fastapi import APIRouter, Depends, HTTPException, status, Body
-from sqlalchemy.orm import Session
+from typing import Dict, Any, List
+from fastapi import APIRouter, HTTPException, status, Body
 
-from backend.dependencies import get_db
-from backend.dependencies.auth import get_current_user
-from backend.db_models.user import User
 
 # 导入仿真管理器 - 多种导入方式尝试
 # 根据项目要求"禁止使用虚拟数据"，导入失败时不提供模拟实现
@@ -30,7 +26,9 @@ except ImportError:
     except ImportError:
         try:
             # 方式3：添加项目根目录到路径
-            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            project_root = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "..", "..")
+            )
             if project_root not in sys.path:
                 sys.path.insert(0, project_root)
             from hardware.simulation import get_global_simulation_manager
@@ -38,7 +36,9 @@ except ImportError:
         except ImportError as e:
             logger = logging.getLogger(__name__)
             logger.error(f"导入仿真模块失败: {e}")
-            logger.error("根据项目要求'禁止使用虚拟数据'，仿真模块不可用时将无法提供仿真功能。")
+            logger.error(
+                "根据项目要求'禁止使用虚拟数据'，仿真模块不可用时将无法提供仿真功能。"
+            )
             # 导入失败时设置为None，相关功能将不可用
             get_global_simulation_manager = None
             GazeboSimulation = None
@@ -64,16 +64,17 @@ async def plan_path(
     grid_size: float = Body(0.1, description="网格大小"),
     max_iterations: int = Body(1000, description="最大迭代次数"),
     simulation_type: str = Body("pybullet", description="仿真类型 (pybullet, gazebo)"),
-
 ):
     """规划机器人从起点到目标的路径"""
     try:
-        logger.info(f"运动控制API: 规划路径 {start_position} -> {goal_position}, 算法: {algorithm}")
-        
+        logger.info(
+            f"运动控制API: 规划路径 {start_position} -> {goal_position}, 算法: {algorithm}"
+        )
+
         # 获取仿真管理器
         sim_manager = get_simulation_manager()
         logger.info(f"仿真管理器: {sim_manager}")
-        
+
         # 获取仿真实例
         simulation = None
         if simulation_type == "pybullet":
@@ -88,37 +89,36 @@ async def plan_path(
             if GazeboSimulation is None:
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="Gazebo仿真模块不可用。根据项目要求'禁止使用虚拟数据'，仿真模块导入失败时无法提供仿真功能。"
+                    detail="Gazebo仿真模块不可用。根据项目要求'禁止使用虚拟数据'，仿真模块导入失败时无法提供仿真功能。",
                 )
             simulation = GazeboSimulation(gui_enabled=False)
             simulation.connect()
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的仿真类型: {simulation_type}"
+                detail=f"不支持的仿真类型: {simulation_type}",
             )
-        
+
         if not simulation:
             raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="仿真环境不可用"
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="仿真环境不可用"
             )
-        
+
         # 调用仿真路径规划
         result = simulation.plan_path(
             start_position=start_position,
             goal_position=goal_position,
             algorithm=algorithm,
             grid_size=grid_size,
-            max_iterations=max_iterations
+            max_iterations=max_iterations,
         )
-        
+
         if not result.get("success", False):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result.get("message", "路径规划失败")
+                detail=result.get("message", "路径规划失败"),
             )
-        
+
         return {
             "success": True,
             "message": result.get("message", "路径规划成功"),
@@ -128,40 +128,40 @@ async def plan_path(
                 "computation_time": result.get("computation_time", 0.0),
                 "nodes_explored": result.get("nodes_explored", 0),
                 "algorithm": result.get("algorithm", algorithm),
-                "simulation_type": simulation_type
-            }
+                "simulation_type": simulation_type,
+            },
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"路径规划API错误: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"路径规划失败: {str(e)}"
+            detail=f"路径规划失败: {str(e)}",
         )
 
 
 @router.post("/execute-path", response_model=Dict[str, Any])
 async def execute_path(
-    path: List[List[float]] = Body(..., description="路径点列表 [[x1, y1, z1], [x2, y2, z2], ...]"),
+    path: List[List[float]] = Body(
+        ..., description="路径点列表 [[x1, y1, z1], [x2, y2, z2], ...]"
+    ),
     speed: float = Body(0.1, description="移动速度（米/秒）"),
     simulation_type: str = Body("pybullet", description="仿真类型 (pybullet, gazebo)"),
-
 ):
     """执行规划好的路径"""
     try:
         logger.info(f"运动控制API: 执行路径, {len(path)} 个点, 速度: {speed} m/s")
-        
+
         if len(path) < 2:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="路径点至少需要2个"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="路径点至少需要2个"
             )
-        
+
         # 获取仿真管理器
         sim_manager = get_simulation_manager()
-        
+
         # 获取仿真实例
         simulation = None
         if simulation_type == "pybullet":
@@ -169,55 +169,53 @@ async def execute_path(
             if not simulation:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="PyBullet仿真环境未初始化"
+                    detail="PyBullet仿真环境未初始化",
                 )
         elif simulation_type == "gazebo":
             # 创建Gazebo仿真实例
             if GazeboSimulation is None:
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="Gazebo仿真模块不可用。根据项目要求'禁止使用虚拟数据'，仿真模块导入失败时无法提供仿真功能。"
+                    detail="Gazebo仿真模块不可用。根据项目要求'禁止使用虚拟数据'，仿真模块导入失败时无法提供仿真功能。",
                 )
             simulation = GazeboSimulation(gui_enabled=False)
             simulation.connect()
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的仿真类型: {simulation_type}"
+                detail=f"不支持的仿真类型: {simulation_type}",
             )
-        
+
         if not simulation:
             raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="仿真环境不可用"
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="仿真环境不可用"
             )
-        
+
         # 执行路径
         success = simulation.execute_path(path, speed)
-        
+
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="路径执行失败"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="路径执行失败"
             )
-        
+
         return {
             "success": True,
             "message": "路径执行成功",
             "data": {
                 "points_executed": len(path),
                 "speed": speed,
-                "simulation_type": simulation_type
-            }
+                "simulation_type": simulation_type,
+            },
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"路径执行API错误: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"路径执行失败: {str(e)}"
+            detail=f"路径执行失败: {str(e)}",
         )
 
 
@@ -226,15 +224,14 @@ async def move_to_position(
     target_position: List[float] = Body(..., description="目标位置 [x, y, z]"),
     speed: float = Body(0.1, description="移动速度（米/秒）"),
     simulation_type: str = Body("pybullet", description="仿真类型 (pybullet, gazebo)"),
-
 ):
     """移动机器人到指定位置"""
     try:
         logger.info(f"运动控制API: 移动到位置 {target_position}, 速度: {speed} m/s")
-        
+
         # 获取仿真管理器
         sim_manager = get_simulation_manager()
-        
+
         # 获取仿真实例
         simulation = None
         if simulation_type == "pybullet":
@@ -251,56 +248,53 @@ async def move_to_position(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的仿真类型: {simulation_type}"
+                detail=f"不支持的仿真类型: {simulation_type}",
             )
-        
+
         if not simulation:
             raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="仿真环境不可用"
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="仿真环境不可用"
             )
-        
+
         # 移动到位置
         success = simulation.move_to_position(target_position, speed)
-        
+
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="移动机器人失败"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="移动机器人失败"
             )
-        
+
         return {
             "success": True,
             "message": "机器人移动成功",
             "data": {
                 "target_position": target_position,
                 "speed": speed,
-                "simulation_type": simulation_type
-            }
+                "simulation_type": simulation_type,
+            },
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"移动机器人API错误: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"移动机器人失败: {str(e)}"
+            detail=f"移动机器人失败: {str(e)}",
         )
 
 
 @router.get("/simulation-info", response_model=Dict[str, Any])
 async def get_simulation_info(
     simulation_type: str = "pybullet",
-
 ):
     """获取仿真环境信息"""
     try:
         logger.info(f"运动控制API: 获取仿真信息, 类型: {simulation_type}")
-        
+
         # 获取仿真管理器
         sim_manager = get_simulation_manager()
-        
+
         # 获取仿真实例
         simulation = None
         if simulation_type == "pybullet":
@@ -311,25 +305,22 @@ async def get_simulation_info(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的仿真类型: {simulation_type}"
+                detail=f"不支持的仿真类型: {simulation_type}",
             )
-        
+
         if not simulation:
             return {
                 "success": True,
                 "message": "仿真环境未初始化",
-                "data": {
-                    "initialized": False,
-                    "simulation_type": simulation_type
-                }
+                "data": {"initialized": False, "simulation_type": simulation_type},
             }
-        
+
         # 获取仿真信息
         if simulation_type == "pybullet":
             info = simulation.get_simulation_info()
         else:  # gazebo
             info = simulation.get_interface_info()
-        
+
         return {
             "success": True,
             "message": "获取仿真信息成功",
@@ -337,15 +328,15 @@ async def get_simulation_info(
                 "initialized": True,
                 "connected": simulation.is_connected(),
                 "simulation_type": simulation_type,
-                "info": info
-            }
+                "info": info,
+            },
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"获取仿真信息API错误: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取仿真信息失败: {str(e)}"
+            detail=f"获取仿真信息失败: {str(e)}",
         )

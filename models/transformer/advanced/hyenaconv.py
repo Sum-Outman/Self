@@ -3,8 +3,7 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import logging
+
 
 class HyenaConv(nn.Module):
     """Hyena卷积层 - 长卷积核实现
@@ -54,6 +53,3 @@ class HyenaConv(nn.Module):
         y = y + x + self.bias.unsqueeze(-1)
 
         return y
-
-
-

@@ -12,6 +12,7 @@ from typing import Dict, Any, List, Optional
 # 导入配置
 try:
     from models.transformer.config import AGIModelConfig
+
     AGIModelConfig_available = True
 except ImportError:
     # 定义备用配置类
@@ -20,6 +21,7 @@ except ImportError:
             self.hidden_size = 768
             self.layer_norm_eps = 1e-12
             self.hidden_dropout_prob = 0.1
+
     AGIModelConfig_available = False
 
 
@@ -215,8 +217,9 @@ class RobotControlModule(nn.Module):
             "control_policy": control_policy,
         }
 
-    def recognize_objects(self, visual_features: torch.Tensor,
-                          depth_data: Optional[torch.Tensor] = None) -> Dict[str, Any]:
+    def recognize_objects(
+        self, visual_features: torch.Tensor, depth_data: Optional[torch.Tensor] = None
+    ) -> Dict[str, Any]:
         """识别物体
 
         基于视觉特征识别物体，支持3D位置估计（如果提供深度数据）
@@ -240,9 +243,9 @@ class RobotControlModule(nn.Module):
 
             # 如果维度不匹配，进行投影
             if depth_dim != hidden_dim:
-                depth_projection = nn.Linear(
-                    depth_dim, hidden_dim).to(
-                    visual_features.device)
+                depth_projection = nn.Linear(depth_dim, hidden_dim).to(
+                    visual_features.device
+                )
                 depth_embedding = depth_projection(depth_embedding)
 
             # 结合视觉和深度特征
@@ -253,7 +256,8 @@ class RobotControlModule(nn.Module):
 
         # 物体识别
         object_probs = self.object_recognition(
-            combined_features)  # [batch_size, num_classes]
+            combined_features
+        )  # [batch_size, num_classes]
 
         # 获取Top-K预测
         top_k = 3
@@ -261,8 +265,26 @@ class RobotControlModule(nn.Module):
 
         # 物体类别名称（示例）
         object_classes = [
-            "杯子", "书", "手机", "键盘", "鼠标", "瓶子", "碗", "盘子", "叉子", "刀子",
-            "勺子", "遥控器", "笔", "笔记本", "眼镜", "帽子", "鞋子", "玩具", "水果", "其他"
+            "杯子",
+            "书",
+            "手机",
+            "键盘",
+            "鼠标",
+            "瓶子",
+            "碗",
+            "盘子",
+            "叉子",
+            "刀子",
+            "勺子",
+            "遥控器",
+            "笔",
+            "笔记本",
+            "眼镜",
+            "帽子",
+            "鞋子",
+            "玩具",
+            "水果",
+            "其他",
         ]
 
         # 构建结果
@@ -277,41 +299,55 @@ class RobotControlModule(nn.Module):
                 if depth_data is not None:
                     # 简单的3D位置估计
                     position = self._estimate_object_position(
-                        visual_embedding[i], depth_data[i] if depth_data is not None else None)
+                        visual_embedding[i],
+                        depth_data[i] if depth_data is not None else None,
+                    )
                 else:
                     # 如果没有深度数据，仅返回2D位置估计
                     position = {
                         "x": 0.5,
                         "y": 0.5,
                         "z": 0.0,
-                        "confidence": confidence * 0.5}
+                        "confidence": confidence * 0.5,
+                    }
 
-                objects.append({
-                    "class_id": class_idx,
-                    "class_name": object_classes[class_idx] if class_idx < len(object_classes) else "未知",
-                    "confidence": confidence,
-                    "position": position,
-                    # 简化边界框估计
-                    "bbox": self._estimate_bounding_box(visual_embedding[i], class_idx)
-                })
+                objects.append(
+                    {
+                        "class_id": class_idx,
+                        "class_name": (
+                            object_classes[class_idx]
+                            if class_idx < len(object_classes)
+                            else "未知"
+                        ),
+                        "confidence": confidence,
+                        "position": position,
+                        # 简化边界框估计
+                        "bbox": self._estimate_bounding_box(
+                            visual_embedding[i], class_idx
+                        ),
+                    }
+                )
 
-            results.append({
-                "objects": objects,
-                "num_objects_detected": len([obj for obj in objects if obj["confidence"] > 0.3]),
-                "recognition_confidence": float(torch.mean(top_probs[i]))
-            })
+            results.append(
+                {
+                    "objects": objects,
+                    "num_objects_detected": len(
+                        [obj for obj in objects if obj["confidence"] > 0.3]
+                    ),
+                    "recognition_confidence": float(torch.mean(top_probs[i])),
+                }
+            )
 
         return {
             "success": True,
             "object_detections": results if batch_size > 1 else results[0],
             "batch_size": batch_size,
-            "timestamp": time.time() if 'time' in globals() else 0.0
+            "timestamp": time.time() if "time" in globals() else 0.0,
         }
 
-    def _estimate_object_position(self,
-                                  visual_embedding: torch.Tensor,
-                                  depth_map: Optional[torch.Tensor] = None) -> Dict[str,
-                                                                                    float]:
+    def _estimate_object_position(
+        self, visual_embedding: torch.Tensor, depth_map: Optional[torch.Tensor] = None
+    ) -> Dict[str, float]:
         """估计物体位置（简化实现）"""
         # 在实际系统中，这里会使用视觉里程计、深度学习和几何计算
         if depth_map is not None and depth_map.numel() > 0:
@@ -343,11 +379,12 @@ class RobotControlModule(nn.Module):
             "x": float(x),
             "y": float(y),
             "z": float(z),
-            "confidence": float(position_confidence)
+            "confidence": float(position_confidence),
         }
 
     def _estimate_bounding_box(
-            self, visual_embedding: torch.Tensor, class_id: int) -> Dict[str, float]:
+        self, visual_embedding: torch.Tensor, class_id: int
+    ) -> Dict[str, float]:
         """估计物体边界框（简化实现）"""
         # 基于类别和视觉特征估计边界框
         if visual_embedding.numel() > 4:
@@ -355,8 +392,9 @@ class RobotControlModule(nn.Module):
             features = visual_embedding[:4].cpu().numpy()
 
             # 归一化到[0, 1]范围
-            features_normalized = (features - np.min(features)) / \
-                (np.max(features) - np.min(features) + 1e-12)
+            features_normalized = (features - np.min(features)) / (
+                np.max(features) - np.min(features) + 1e-12
+            )
 
             # 基于类别调整边界框大小
             if class_id in [0, 5, 6]:  # 杯子、瓶子、碗 - 较小的物体
@@ -377,11 +415,12 @@ class RobotControlModule(nn.Module):
             "y": float(center_y - height / 2),
             "width": float(width),
             "height": float(height),
-            "confidence": 0.6  # 边界框置信度
+            "confidence": 0.6,  # 边界框置信度
         }
 
-    def plan_grasp(self, object_info: Dict[str, Any],
-                   robot_state: Dict[str, Any]) -> Dict[str, Any]:
+    def plan_grasp(
+        self, object_info: Dict[str, Any], robot_state: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """规划抓取
 
         基于物体信息和机器人状态规划抓取位姿
@@ -399,7 +438,8 @@ class RobotControlModule(nn.Module):
 
             # 提取物体特征
             object_position = object_info.get(
-                "position", {"x": 0.5, "y": 0.5, "z": 0.5})
+                "position", {"x": 0.5, "y": 0.5, "z": 0.5}
+            )
             object_class = object_info.get("class_id", 0)
             object_confidence = object_info.get("confidence", 0.5)
 
@@ -408,11 +448,15 @@ class RobotControlModule(nn.Module):
             ee_position = robot_state.get("end_effector_position", torch.zeros(3))
 
             # 创建特征向量
-            object_features = torch.tensor([
-                object_position["x"], object_position["y"], object_position["z"],
-                object_class / 20.0,  # 归一化类别
-                object_confidence
-            ])
+            object_features = torch.tensor(
+                [
+                    object_position["x"],
+                    object_position["y"],
+                    object_position["z"],
+                    object_class / 20.0,  # 归一化类别
+                    object_confidence,
+                ]
+            )
 
             robot_features = torch.cat([joint_angles.flatten(), ee_position.flatten()])
 
@@ -432,14 +476,14 @@ class RobotControlModule(nn.Module):
             if current_dim < target_dim:
                 # 填充到目标维度
                 padding = torch.zeros(
-                    combined_features.size(0),
-                    target_dim - current_dim)
+                    combined_features.size(0), target_dim - current_dim
+                )
                 combined_features = torch.cat([combined_features, padding], dim=-1)
             elif current_dim > target_dim:
                 # 投影到目标维度
-                projection = nn.Linear(
-                    current_dim, target_dim).to(
-                    combined_features.device)
+                projection = nn.Linear(current_dim, target_dim).to(
+                    combined_features.device
+                )
                 combined_features = projection(combined_features)
 
             # 规划抓取位姿
@@ -448,22 +492,24 @@ class RobotControlModule(nn.Module):
             # 评估抓取质量
             quality_features = torch.cat([object_features, grasp_pose], dim=-1)
             quality_features_dim = quality_features.size(-1)
-            target_quality_dim = self.config.hidden_size * 2  # grasp_quality_evaluator输入维度
+            target_quality_dim = (
+                self.config.hidden_size * 2
+            )  # grasp_quality_evaluator输入维度
 
             if quality_features_dim < target_quality_dim:
                 padding = torch.zeros(
-                    quality_features.size(0),
-                    target_quality_dim - quality_features_dim)
+                    quality_features.size(0), target_quality_dim - quality_features_dim
+                )
                 quality_features = torch.cat([quality_features, padding], dim=-1)
             elif quality_features_dim > target_quality_dim:
-                projection = nn.Linear(
-                    quality_features_dim,
-                    target_quality_dim).to(
-                    quality_features.device)
+                projection = nn.Linear(quality_features_dim, target_quality_dim).to(
+                    quality_features.device
+                )
                 quality_features = projection(quality_features)
 
             grasp_quality = self.grasp_quality_evaluator(
-                quality_features)  # [batch_size, 1]
+                quality_features
+            )  # [batch_size, 1]
 
             # 转换为实际位姿（归一化到实际工作空间）
             workspace_bounds = {
@@ -472,14 +518,15 @@ class RobotControlModule(nn.Module):
                 "z": [0.1, 0.8],
                 "rx": [-math.pi, math.pi],  # 弧度
                 "ry": [-math.pi / 2, math.pi / 2],
-                "rz": [-math.pi, math.pi]
+                "rz": [-math.pi, math.pi],
             }
 
             grasp_pose_actual = []
             for i in range(6):
                 normalized = grasp_pose[0, i].item()  # 假设batch_size=1
-                min_val, max_val = workspace_bounds[[
-                    "x", "y", "z", "rx", "ry", "rz"][i]]
+                min_val, max_val = workspace_bounds[
+                    ["x", "y", "z", "rx", "ry", "rz"][i]
+                ]
                 actual = min_val + (normalized + 1) / 2 * (max_val - min_val)
                 grasp_pose_actual.append(actual)
 
@@ -493,15 +540,15 @@ class RobotControlModule(nn.Module):
                     "orientation": grasp_pose_actual[3:],
                     "transform_matrix": (
                         grasp_transform.tolist()
-                        if hasattr(grasp_transform, 'tolist')
+                        if hasattr(grasp_transform, "tolist")
                         else grasp_transform
-                    )
+                    ),
                 },
                 "grasp_quality": float(grasp_quality[0, 0].item()),
                 "approach_vector": [0, 0, -1],  # 默认垂直向下接近
                 "gripper_width": self._estimate_gripper_width(object_class),
                 "planning_time": time.time() - start_time,  # 实际规划时间
-                "object_info": object_info
+                "object_info": object_info,
             }
 
         except Exception as e:
@@ -509,7 +556,7 @@ class RobotControlModule(nn.Module):
                 "success": False,
                 "error": str(e),
                 "grasp_pose": None,
-                "grasp_quality": 0.0
+                "grasp_quality": 0.0,
             }
 
     def _pose_to_transform(self, pose: List[float]) -> np.ndarray:
@@ -517,17 +564,29 @@ class RobotControlModule(nn.Module):
         x, y, z, rx, ry, rz = pose
 
         # 创建旋转矩阵（使用欧拉角ZYX顺序）
-        R_x = np.array([[1, 0, 0],
-                        [0, math.cos(rx), -math.sin(rx)],
-                        [0, math.sin(rx), math.cos(rx)]])
+        R_x = np.array(
+            [
+                [1, 0, 0],
+                [0, math.cos(rx), -math.sin(rx)],
+                [0, math.sin(rx), math.cos(rx)],
+            ]
+        )
 
-        R_y = np.array([[math.cos(ry), 0, math.sin(ry)],
-                        [0, 1, 0],
-                        [-math.sin(ry), 0, math.cos(ry)]])
+        R_y = np.array(
+            [
+                [math.cos(ry), 0, math.sin(ry)],
+                [0, 1, 0],
+                [-math.sin(ry), 0, math.cos(ry)],
+            ]
+        )
 
-        R_z = np.array([[math.cos(rz), -math.sin(rz), 0],
-                        [math.sin(rz), math.cos(rz), 0],
-                        [0, 0, 1]])
+        R_z = np.array(
+            [
+                [math.cos(rz), -math.sin(rz), 0],
+                [math.sin(rz), math.cos(rz), 0],
+                [0, 0, 1],
+            ]
+        )
 
         R = R_z @ R_y @ R_x
 
@@ -542,16 +601,16 @@ class RobotControlModule(nn.Module):
         """估计夹爪宽度（基于物体类别）"""
         # 不同类别物体的典型尺寸（米）
         typical_widths = {
-            0: 0.08,   # 杯子
-            1: 0.15,   # 书
-            2: 0.07,   # 手机
-            3: 0.12,   # 键盘
-            4: 0.06,   # 鼠标
-            5: 0.06,   # 瓶子
-            6: 0.10,   # 碗
-            7: 0.12,   # 盘子
-            8: 0.02,   # 叉子
-            9: 0.03,   # 刀子
+            0: 0.08,  # 杯子
+            1: 0.15,  # 书
+            2: 0.07,  # 手机
+            3: 0.12,  # 键盘
+            4: 0.06,  # 鼠标
+            5: 0.06,  # 瓶子
+            6: 0.10,  # 碗
+            7: 0.12,  # 盘子
+            8: 0.02,  # 叉子
+            9: 0.03,  # 刀子
             10: 0.02,  # 勺子
             11: 0.04,  # 遥控器
             12: 0.01,  # 笔
@@ -561,13 +620,14 @@ class RobotControlModule(nn.Module):
             16: 0.10,  # 鞋子
             17: 0.05,  # 玩具
             18: 0.06,  # 水果
-            19: 0.08   # 其他
+            19: 0.08,  # 其他
         }
 
         return typical_widths.get(object_class, 0.08)
 
-    def execute_task(self, task_type: str, task_params: Dict[str, Any],
-                     robot_state: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_task(
+        self, task_type: str, task_params: Dict[str, Any], robot_state: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """执行任务
 
         执行特定类型的机器人任务，如抓取、放置、移动等
@@ -595,9 +655,11 @@ class RobotControlModule(nn.Module):
                 "lift",
                 "drop",
                 "insert",
-                "extract"]
-            task_type_idx = task_types.index(
-                task_type) if task_type in task_types else 0
+                "extract",
+            ]
+            task_type_idx = (
+                task_types.index(task_type) if task_type in task_types else 0
+            )
 
             # 提取任务参数
             target_position = task_params.get("target_position", [0.5, 0.5, 0.5])
@@ -611,23 +673,32 @@ class RobotControlModule(nn.Module):
             ee_orientation = robot_state.get("end_effector_orientation", torch.zeros(3))
 
             # 创建任务特征向量
-            task_features = torch.tensor([
-                task_type_idx / len(task_types),
-                target_position[0], target_position[1], target_position[2],
-                target_orientation[0], target_orientation[1], target_orientation[2],
-                force_limit / 50.0,  # 归一化
-                speed
-            ])
+            task_features = torch.tensor(
+                [
+                    task_type_idx / len(task_types),
+                    target_position[0],
+                    target_position[1],
+                    target_position[2],
+                    target_orientation[0],
+                    target_orientation[1],
+                    target_orientation[2],
+                    force_limit / 50.0,  # 归一化
+                    speed,
+                ]
+            )
 
-            robot_features = torch.cat([
-                joint_angles.flatten(),
-                ee_position.flatten(),
-                ee_orientation.flatten()
-            ])
+            robot_features = torch.cat(
+                [
+                    joint_angles.flatten(),
+                    ee_position.flatten(),
+                    ee_orientation.flatten(),
+                ]
+            )
 
             # 结合任务和机器人特征
             combined_features = torch.cat(
-                [task_features.unsqueeze(0), robot_features.unsqueeze(0)], dim=-1)
+                [task_features.unsqueeze(0), robot_features.unsqueeze(0)], dim=-1
+            )
 
             # 调整维度以匹配任务规划网络
             current_dim = combined_features.size(-1)
@@ -637,9 +708,9 @@ class RobotControlModule(nn.Module):
                 padding = torch.zeros(1, target_dim - current_dim)
                 combined_features = torch.cat([combined_features, padding], dim=-1)
             elif current_dim > target_dim:
-                projection = nn.Linear(
-                    current_dim, target_dim).to(
-                    combined_features.device)
+                projection = nn.Linear(current_dim, target_dim).to(
+                    combined_features.device
+                )
                 combined_features = projection(combined_features)
 
             # 生成任务计划
@@ -659,7 +730,7 @@ class RobotControlModule(nn.Module):
                 "task_plan": task_plan_params.tolist(),
                 "execution_result": execution_result,
                 "completion_time": time.time() - start_time,  # 实际执行时间
-                "energy_consumption": None  # 需要真实能耗传感器数据，根据项目要求禁止使用模拟数据
+                "energy_consumption": None,  # 需要真实能耗传感器数据，根据项目要求禁止使用模拟数据
             }
 
         except Exception as e:
@@ -667,7 +738,7 @@ class RobotControlModule(nn.Module):
                 "success": False,
                 "error": str(e),
                 "task_type": task_type,
-                "execution_result": None
+                "execution_result": None,
             }
 
     def _execute_task_by_type(
@@ -675,7 +746,7 @@ class RobotControlModule(nn.Module):
         task_type: str,
         task_plan: np.ndarray,
         task_params: Dict[str, Any],
-        robot_state: Dict[str, Any]
+        robot_state: Dict[str, Any],
     ) -> Dict[str, Any]:
         """根据任务类型执行具体任务"""
 
@@ -697,11 +768,15 @@ class RobotControlModule(nn.Module):
                 "completion_status": "success",
                 "final_position": task_params.get("target_position", [0, 0, 0]),
                 "force_applied": task_plan[7] * 50.0,  # 反归一化
-                "accuracy": 0.8
+                "accuracy": 0.8,
             }
 
-    def _execute_grasp_task(self, task_plan: np.ndarray, task_params: Dict[str, Any],
-                            robot_state: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_grasp_task(
+        self,
+        task_plan: np.ndarray,
+        task_params: Dict[str, Any],
+        robot_state: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """执行抓取任务"""
         # 记录执行开始时间
         start_time = time.time()
@@ -716,16 +791,22 @@ class RobotControlModule(nn.Module):
             "task_type": "grasp",
             "executed": True,
             "object_grasped": object_info.get("class_name", "未知物体"),
-            "grasp_pose_used": grasp_pose.get("position", [0, 0, 0]) if grasp_pose else [0, 0, 0],
+            "grasp_pose_used": (
+                grasp_pose.get("position", [0, 0, 0]) if grasp_pose else [0, 0, 0]
+            ),
             "grasp_success": force_feedback["grasp_stability"] > 0.7,
             "grasp_force": force_feedback["grip_force"],
             "grasp_stability": force_feedback["grasp_stability"],
             "slip_detected": force_feedback["slip_detected"],
-            "completion_time": time.time() - start_time
+            "completion_time": time.time() - start_time,
         }
 
-    def _execute_place_task(self, task_plan: np.ndarray, task_params: Dict[str, Any],
-                            robot_state: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_place_task(
+        self,
+        task_plan: np.ndarray,
+        task_params: Dict[str, Any],
+        robot_state: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """执行放置任务"""
         target_position = task_params.get("target_position", [0.5, 0.5, 0.5])
 
@@ -736,26 +817,28 @@ class RobotControlModule(nn.Module):
             "target_position": target_position,
             "placement_accuracy": 0.95,
             "object_released": True,
-            "completion_time": 1.0
+            "completion_time": 1.0,
         }
 
     def _execute_move_task(
         self,
         task_plan: np.ndarray,
         task_params: Dict[str, Any],
-        robot_state: Dict[str, Any]
+        robot_state: Dict[str, Any],
     ) -> Dict[str, Any]:
         """执行移动任务"""
         start_position = robot_state.get("end_effector_position", [0, 0, 0])
         target_position = task_params.get("target_position", [0.5, 0.5, 0.5])
 
         # 计算移动距离
-        if isinstance(start_position, (list, tuple, np.ndarray)
-                      ) and len(start_position) >= 3:
+        if (
+            isinstance(start_position, (list, tuple, np.ndarray))
+            and len(start_position) >= 3
+        ):
             distance = math.sqrt(
-                (target_position[0] - start_position[0])**2
-                + (target_position[1] - start_position[1])**2
-                + (target_position[2] - start_position[2])**2
+                (target_position[0] - start_position[0]) ** 2
+                + (target_position[1] - start_position[1]) ** 2
+                + (target_position[2] - start_position[2]) ** 2
             )
         else:
             distance = 0.5
@@ -767,14 +850,14 @@ class RobotControlModule(nn.Module):
             "distance_traveled": distance,
             "final_position": target_position,
             "movement_smoothness": 0.9,
-            "completion_time": distance / task_params.get("speed", 0.1)
+            "completion_time": distance / task_params.get("speed", 0.1),
         }
 
     def _execute_push_task(
         self,
         task_plan: np.ndarray,
         task_params: Dict[str, Any],
-        robot_state: Dict[str, Any]
+        robot_state: Dict[str, Any],
     ) -> Dict[str, Any]:
         """执行推任务"""
         push_force = task_plan[7] * 50.0  # 反归一化
@@ -786,14 +869,14 @@ class RobotControlModule(nn.Module):
             "force_applied": push_force,
             "displacement": push_force * 0.01,  # 简化的位移计算
             "object_moved": True,
-            "completion_time": 1.2
+            "completion_time": 1.2,
         }
 
     def _execute_pull_task(
         self,
         task_plan: np.ndarray,
         task_params: Dict[str, Any],
-        robot_state: Dict[str, Any]
+        robot_state: Dict[str, Any],
     ) -> Dict[str, Any]:
         """执行拉任务"""
         pull_force = task_plan[7] * 50.0  # 反归一化
@@ -805,11 +888,12 @@ class RobotControlModule(nn.Module):
             "force_applied": pull_force,
             "displacement": pull_force * 0.01,
             "object_moved": True,
-            "completion_time": 1.2
+            "completion_time": 1.2,
         }
 
-    def _get_real_force_feedback(self, task_plan: np.ndarray,
-                                 task_type: str) -> Dict[str, float]:
+    def _get_real_force_feedback(
+        self, task_plan: np.ndarray, task_type: str
+    ) -> Dict[str, float]:
         """获取真实力反馈
 
         根据项目要求'禁止使用虚拟数据'，必须从力传感器获取真实数据
@@ -852,7 +936,7 @@ class RobotControlModule(nn.Module):
                     "grasp_stability": float(grasp_stability),
                     "contact_force_x": float(contact_forces[0]),
                     "contact_force_y": float(contact_forces[1]),
-                    "contact_force_z": float(contact_forces[2])
+                    "contact_force_z": float(contact_forces[2]),
                 }
             else:
                 # 其他任务：从力传感器提取接触力和力矩
@@ -862,16 +946,19 @@ class RobotControlModule(nn.Module):
                     "force_z": float(force_data.get("force_z", 0.0)),
                     "torque_x": float(force_data.get("torque_x", 0.0)),
                     "torque_y": float(force_data.get("torque_y", 0.0)),
-                    "torque_z": float(force_data.get("torque_z", 0.0))
+                    "torque_z": float(force_data.get("torque_z", 0.0)),
                 }
 
         except ImportError:
             raise RuntimeError("无法导入硬件接口模块。需要安装硬件接口依赖。")
         except Exception as e:
-            raise RuntimeError(f"无法获取真实力传感器数据: {str(e)}。根据项目要求'禁止使用虚拟数据'，必须使用真实传感器。")
+            raise RuntimeError(
+                f"无法获取真实力传感器数据: {str(e)}。根据项目要求'禁止使用虚拟数据'，必须使用真实传感器。"
+            )
 
     def monitor_task_execution(
-            self, task_id: str, execution_data: Dict[str, Any]) -> Dict[str, Any]:
+        self, task_id: str, execution_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """监控任务执行
 
         实时监控任务执行状态，检测异常并调整
@@ -894,9 +981,9 @@ class RobotControlModule(nn.Module):
 
             # 计算执行指标
             position_error = math.sqrt(
-                (target_position[0] - current_position[0])**2
-                + (target_position[1] - current_position[1])**2
-                + (target_position[2] - current_position[2])**2
+                (target_position[0] - current_position[0]) ** 2
+                + (target_position[1] - current_position[1]) ** 2
+                + (target_position[2] - current_position[2]) ** 2
             )
 
             force_ratio = applied_force / max(force_limit, 0.1)
@@ -925,10 +1012,18 @@ class RobotControlModule(nn.Module):
                 time_status = "error"
 
             # 综合评估
-            if position_status == "error" or force_status == "error" or time_status == "error":
+            if (
+                position_status == "error"
+                or force_status == "error"
+                or time_status == "error"
+            ):
                 overall_status = "error"
                 adjustment_needed = True
-            elif position_status == "warning" or force_status == "warning" or time_status == "warning":
+            elif (
+                position_status == "warning"
+                or force_status == "warning"
+                or time_status == "warning"
+            ):
                 overall_status = "warning"
                 adjustment_needed = True
             else:
@@ -947,22 +1042,26 @@ class RobotControlModule(nn.Module):
             return {
                 "success": True,
                 "task_id": task_id,
-                "monitoring_time": time.time() if 'time' in globals() else 0.0,
+                "monitoring_time": time.time() if "time" in globals() else 0.0,
                 "metrics": {
                     "position_error": float(position_error),
                     "force_ratio": float(force_ratio),
                     "time_ratio": float(time_ratio),
-                    "execution_progress": float(min(1.0, time_ratio))
+                    "execution_progress": float(min(1.0, time_ratio)),
                 },
                 "status": {
                     "position": position_status,
                     "force": force_status,
                     "time": time_status,
-                    "overall": overall_status
+                    "overall": overall_status,
                 },
                 "adjustments_needed": adjustment_needed,
                 "adjustment_suggestions": adjustments,
-                "recommended_actions": ["继续执行", "调整参数", "重新规划"] if adjustment_needed else ["继续执行"]
+                "recommended_actions": (
+                    ["继续执行", "调整参数", "重新规划"]
+                    if adjustment_needed
+                    else ["继续执行"]
+                ),
             }
 
         except Exception as e:
@@ -970,5 +1069,5 @@ class RobotControlModule(nn.Module):
                 "success": False,
                 "error": str(e),
                 "task_id": task_id,
-                "status": {"overall": "error"}
+                "status": {"overall": "error"},
             }

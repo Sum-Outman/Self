@@ -3,7 +3,16 @@
 包含所有SQLAlchemy数据库模型
 """
 
-from .user import User, APIKey, UserSession, PasswordResetToken, EmailVerificationToken, LoginAttempt, TwoFactorTempSession, EmailTwoFactorCode
+from .user import (
+    User,
+    APIKey,
+    UserSession,
+    PasswordResetToken,
+    EmailVerificationToken,
+    LoginAttempt,
+    TwoFactorTempSession,
+    EmailTwoFactorCode,
+)
 from .agi import AGIModel, TrainingJob, ProfessionalCapability
 from .memory import Memory, MemoryAssociation
 from .knowledge import KnowledgeItem, KnowledgeSearchHistory
@@ -15,7 +24,7 @@ from .demonstration import (
     TrainingResult,
     DemonstrationType,
     DemonstrationStatus,
-    DemonstrationFormat
+    DemonstrationFormat,
 )
 from .robot import Robot, RobotJoint, RobotSensor
 from .robot_market import (
@@ -25,9 +34,10 @@ from .robot_market import (
     RobotMarketDownload,
     RobotMarketFavorite,
     RobotMarketStatus,
-    RobotMarketCategory
+    RobotMarketCategory,
 )
 from .chat import ChatSession, ChatMessage
+from .system_log import SystemLog
 
 __all__ = [
     "User",
@@ -65,4 +75,5 @@ __all__ = [
     "RobotMarketCategory",
     "ChatSession",
     "ChatMessage",
+    "SystemLog",
 ]

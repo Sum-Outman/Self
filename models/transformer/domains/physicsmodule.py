@@ -3,9 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Dict, Optional
+
 
 class PhysicsModule(nn.Module):
     """物理专业领域能力模块 - 真实物理算法实现
@@ -72,7 +71,7 @@ class PhysicsModule(nn.Module):
                 hidden_dim=64,
                 num_layers=3,
                 activation="tanh",
-                use_gpu=getattr(config, 'use_gpu', False),  # 安全地获取属性
+                use_gpu=getattr(config, "use_gpu", False),  # 安全地获取属性
                 dtype=torch.float32,
             )
             self.pinn_model = PINNModel(pinn_config)
@@ -168,6 +167,3 @@ class PhysicsModule(nn.Module):
             output_dict["professional_physics_result"] = physics_result
 
         return output_dict
-
-
-

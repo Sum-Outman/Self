@@ -14,11 +14,10 @@ import time
 import threading
 import logging
 import numpy as np
-from typing import Dict, List, Any, Optional, Tuple, Callable
+from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
-from scipy import interpolate, optimize
-import math
+from scipy import interpolate
 
 from .robot_controller import RobotJoint, JointState, HardwareInterface
 
@@ -29,8 +28,10 @@ logger = logging.getLogger(__name__)
 EnhancedHardwareInterface = HardwareInterface
 OperationMode = None  # 占位符，如果不需要可以移除
 
+
 class ControlAlgorithm(Enum):
     """控制算法枚举"""
+
     PID = "pid"  # PID控制
     MPC = "mpc"  # 模型预测控制
     ADAPTIVE = "adaptive"  # 自适应控制
@@ -38,8 +39,10 @@ class ControlAlgorithm(Enum):
     FUZZY = "fuzzy"  # 模糊控制
     NEURAL_NETWORK = "neural_network"  # 神经网络控制
 
+
 class TrajectoryType(Enum):
     """轨迹类型枚举"""
+
     LINEAR = "linear"  # 直线轨迹
     CIRCULAR = "circular"  # 圆形轨迹
     SPLINE = "spline"  # 样条轨迹
@@ -47,9 +50,11 @@ class TrajectoryType(Enum):
     MINIMUM_SNAP = "minimum_snap"  # 最小加加加速度轨迹
     BEZIER = "bezier"  # 贝塞尔曲线轨迹
 
+
 @dataclass
 class ControlParameters:
     """控制参数"""
+
     algorithm: ControlAlgorithm = ControlAlgorithm.PID
     kp: float = 1.0  # 比例增益
     ki: float = 0.0  # 积分增益
@@ -64,18 +69,22 @@ class ControlParameters:
     prediction_horizon: int = 10  # 预测时域（MPC）
     control_horizon: int = 5  # 控制时域（MPC）
 
+
 @dataclass
 class TrajectoryPoint:
     """轨迹点"""
+
     time: float  # 时间戳
     position: float  # 位置
     velocity: float = 0.0  # 速度
     acceleration: float = 0.0  # 加速度
     jerk: float = 0.0  # 加加速度
 
+
 @dataclass
 class Trajectory:
     """轨迹"""
+
     trajectory_id: str
     joint: RobotJoint
     points: List[TrajectoryPoint]
@@ -83,31 +92,32 @@ class Trajectory:
     trajectory_type: TrajectoryType
     parameters: Dict[str, Any] = field(default_factory=dict)
 
+
 class AdvancedRobotController:
     """高级机器人控制器"""
-    
+
     def __init__(self, hardware_interface: EnhancedHardwareInterface):
         self.hardware = hardware_interface
-        
+
         # 控制参数
         self.control_params: Dict[RobotJoint, ControlParameters] = {}
         self.trajectories: Dict[str, Trajectory] = {}
         self.active_trajectories: Dict[RobotJoint, str] = {}
-        
+
         # 控制状态
         self.control_enabled = False
         self.control_thread = None
         self.stop_event = threading.Event()
-        
+
         # 自适应控制参数
         self.adaptive_params: Dict[RobotJoint, Dict[str, float]] = {}
         self.learning_history: Dict[RobotJoint, List[Tuple[float, float, float]]] = {}
-        
+
         # 初始化控制参数
         self._initialize_control_params()
-        
+
         logger.info("高级机器人控制器初始化完成")
-    
+
     def _initialize_control_params(self):
         """初始化控制参数"""
         # 为每个关节设置默认控制参数
@@ -119,66 +129,64 @@ class AdvancedRobotController:
                 "stiffness_estimate": 10.0,
             }
             self.learning_history[joint] = []
-    
+
     def enable_control(self):
         """启用控制"""
         if self.control_enabled:
             logger.warning("控制已在运行中")
             return
-        
+
         self.control_enabled = True
         self.stop_event.clear()
         self.control_thread = threading.Thread(
-            target=self._control_loop,
-            daemon=True,
-            name="AdvancedRobotControl"
+            target=self._control_loop, daemon=True, name="AdvancedRobotControl"
         )
         self.control_thread.start()
         logger.info("高级机器人控制已启用")
-    
+
     def disable_control(self):
         """禁用控制"""
         self.control_enabled = False
         self.stop_event.set()
-        
+
         if self.control_thread and self.control_thread.is_alive():
             self.control_thread.join(timeout=2.0)
             logger.info("高级机器人控制已禁用")
-    
+
     def _control_loop(self):
         """控制循环"""
         control_frequency = 100  # 100Hz
         control_period = 1.0 / control_frequency
-        
+
         while self.control_enabled and not self.stop_event.is_set():
             try:
                 start_time = time.time()
-                
+
                 # 执行控制计算
                 self._execute_control()
-                
+
                 # 自适应学习
                 self._adaptive_learning_step()
-                
+
                 # 记录性能
                 self._record_performance()
-                
+
                 # 保持控制频率
                 elapsed = time.time() - start_time
                 sleep_time = max(0.0, control_period - elapsed)
                 if sleep_time > 0:
                     time.sleep(sleep_time)
-                
+
             except Exception as e:
                 logger.error(f"控制循环异常: {e}")
                 time.sleep(0.1)
-    
+
     def _execute_control(self):
         """执行控制计算"""
         try:
             # 获取当前关节状态
             joint_states = self.hardware.get_all_joint_states()
-            
+
             for joint, state in joint_states.items():
                 # 检查是否有活动的轨迹
                 if joint in self.active_trajectories:
@@ -192,126 +200,130 @@ class AdvancedRobotController:
                 else:
                     # 执行位置保持控制
                     self._execute_position_hold(joint, state)
-                    
+
         except Exception as e:
             logger.error(f"执行控制计算失败: {e}")
-    
-    def _execute_trajectory_tracking(self, joint: RobotJoint, state: JointState, trajectory_id: str):
+
+    def _execute_trajectory_tracking(
+        self, joint: RobotJoint, state: JointState, trajectory_id: str
+    ):
         """执行轨迹跟踪"""
         try:
             trajectory = self.trajectories[trajectory_id]
             current_time = time.time()
-            
+
             # 找到当前时间对应的轨迹点
             target_point = self._get_trajectory_point_at_time(trajectory, current_time)
-            
+
             if target_point is None:
                 # 轨迹已完成或无效
                 self.active_trajectories.pop(joint, None)
                 logger.info(f"轨迹完成: {trajectory_id}")
                 return
-            
+
             # 计算控制输出
             control_output = self._compute_control_output(
                 joint, state, target_point.position, target_point.velocity
             )
-            
+
             # 应用控制输出
             self._apply_control_output(joint, control_output)
-            
+
         except Exception as e:
             logger.error(f"执行轨迹跟踪失败 [{joint}]: {e}")
-    
+
     def _execute_position_hold(self, joint: RobotJoint, state: JointState):
         """执行位置保持控制"""
         try:
             # 目标位置为当前位置（保持位置）
             target_position = state.position
             target_velocity = 0.0
-            
+
             # 计算控制输出
             control_output = self._compute_control_output(
                 joint, state, target_position, target_velocity
             )
-            
+
             # 应用控制输出（对于位置保持，通常不需要输出）
             # 这里可以用于补偿重力或其他扰动
-            
+
         except Exception as e:
             logger.error(f"执行位置保持失败 [{joint}]: {e}")
-    
-    def _compute_control_output(self, joint: RobotJoint, state: JointState, 
-                               target_position: float, target_velocity: float) -> float:
+
+    def _compute_control_output(
+        self,
+        joint: RobotJoint,
+        state: JointState,
+        target_position: float,
+        target_velocity: float,
+    ) -> float:
         """计算控制输出"""
         params = self.control_params[joint]
-        
+
         # 位置误差
         position_error = target_position - state.position
-        
+
         # 速度误差
         velocity_error = target_velocity - state.velocity
-        
+
         # 根据控制算法计算输出
         if params.algorithm == ControlAlgorithm.PID:
             # PID控制
             # 在实际实现中，这里应该有积分和微分项的计算
-            control_output = (
-                params.kp * position_error +
-                params.kd * velocity_error
-            )
-            
+            control_output = params.kp * position_error + params.kd * velocity_error
+
         elif params.algorithm == ControlAlgorithm.ADAPTIVE:
             # 自适应控制
             adaptive_gain = self.adaptive_params[joint]
             mass = adaptive_gain["mass_estimate"]
             damping = adaptive_gain["damping_estimate"]
             stiffness = adaptive_gain["stiffness_estimate"]
-            
+
             control_output = (
-                mass * params.kp * position_error +
-                damping * params.kd * velocity_error +
-                stiffness * target_position
+                mass * params.kp * position_error
+                + damping * params.kd * velocity_error
+                + stiffness * target_position
             )
-            
+
         else:
             # 默认PID控制
             control_output = params.kp * position_error + params.kd * velocity_error
-        
+
         # 添加前馈项
         control_output += params.feedforward_gain * target_velocity
-        
+
         # 限幅
         control_output = np.clip(
-            control_output,
-            -params.max_acceleration,
-            params.max_acceleration
+            control_output, -params.max_acceleration, params.max_acceleration
         )
-        
+
         return control_output
-    
+
     def _apply_control_output(self, joint: RobotJoint, control_output: float):
         """应用控制输出"""
         try:
             # 将控制输出转换为位置命令
             # 在实际实现中，这里可能需要进行积分或其他转换
-            
+
             current_state = self.hardware.get_joint_state(joint)
             if current_state:
                 # 简单积分（示例）
                 delta_time = 0.01  # 假设控制周期为10ms
                 new_position = current_state.position + control_output * delta_time
-                
+
                 # 设置关节位置
                 self.hardware.set_joint_position(joint, new_position)
-                
+
         except Exception as e:
             logger.error(f"应用控制输出失败 [{joint}]: {e}")
-    
-    def _get_trajectory_point_at_time(self, trajectory: Trajectory, current_time: float) -> Optional[TrajectoryPoint]:
+
+    def _get_trajectory_point_at_time(
+        self, trajectory: Trajectory, current_time: float
+    ) -> Optional[TrajectoryPoint]:
         """获取指定时间的轨迹点"""
         if not trajectory.points:
             return None  # 返回None
-        
+
         # 找到时间范围内的点
         for i, point in enumerate(trajectory.points):
             if point.time >= current_time:
@@ -319,38 +331,50 @@ class AdvancedRobotController:
                     return point
                 else:
                     # 线性插值
-                    prev_point = trajectory.points[i-1]
-                    time_ratio = (current_time - prev_point.time) / (point.time - prev_point.time)
-                    
+                    prev_point = trajectory.points[i - 1]
+                    time_ratio = (current_time - prev_point.time) / (
+                        point.time - prev_point.time
+                    )
+
                     interpolated_point = TrajectoryPoint(
                         time=current_time,
-                        position=prev_point.position + time_ratio * (point.position - prev_point.position),
-                        velocity=prev_point.velocity + time_ratio * (point.velocity - prev_point.velocity),
-                        acceleration=prev_point.acceleration + time_ratio * (point.acceleration - prev_point.acceleration),
-                        jerk=prev_point.jerk + time_ratio * (point.jerk - prev_point.jerk)
+                        position=prev_point.position
+                        + time_ratio * (point.position - prev_point.position),
+                        velocity=prev_point.velocity
+                        + time_ratio * (point.velocity - prev_point.velocity),
+                        acceleration=prev_point.acceleration
+                        + time_ratio * (point.acceleration - prev_point.acceleration),
+                        jerk=prev_point.jerk
+                        + time_ratio * (point.jerk - prev_point.jerk),
                     )
                     return interpolated_point
-        
+
         # 如果时间超出轨迹范围，返回最后一个点
         return trajectory.points[-1]
-    
-    def generate_linear_trajectory(self, joint: RobotJoint, start_pos: float, end_pos: float, 
-                                 duration: float, samples: int = 100) -> str:
+
+    def generate_linear_trajectory(
+        self,
+        joint: RobotJoint,
+        start_pos: float,
+        end_pos: float,
+        duration: float,
+        samples: int = 100,
+    ) -> str:
         """生成直线轨迹"""
         try:
             trajectory_id = f"linear_{joint.value}_{int(time.time())}"
-            
+
             # 生成时间序列
             times = np.linspace(0, duration, samples)
-            
+
             # 生成位置序列（直线插值）
             positions = np.linspace(start_pos, end_pos, samples)
-            
+
             # 计算速度和加速度
             velocities = np.gradient(positions, times)
             accelerations = np.gradient(velocities, times)
             jerks = np.gradient(accelerations, times)
-            
+
             # 创建轨迹点
             points = []
             for i in range(samples):
@@ -359,68 +383,82 @@ class AdvancedRobotController:
                     position=float(positions[i]),
                     velocity=float(velocities[i]),
                     acceleration=float(accelerations[i]),
-                    jerk=float(jerks[i])
+                    jerk=float(jerks[i]),
                 )
                 points.append(point)
-            
+
             # 创建轨迹
             trajectory = Trajectory(
                 trajectory_id=trajectory_id,
                 joint=joint,
                 points=points,
                 total_time=duration,
-                trajectory_type=TrajectoryType.LINEAR
+                trajectory_type=TrajectoryType.LINEAR,
             )
-            
+
             self.trajectories[trajectory_id] = trajectory
             logger.info(f"生成直线轨迹: {trajectory_id}")
-            
+
             return trajectory_id
-            
+
         except Exception as e:
             logger.error(f"生成直线轨迹失败: {e}")
             return None  # 返回None
-    
-    def generate_minimum_jerk_trajectory(self, joint: RobotJoint, start_pos: float, end_pos: float,
-                                       duration: float, samples: int = 100) -> str:
+
+    def generate_minimum_jerk_trajectory(
+        self,
+        joint: RobotJoint,
+        start_pos: float,
+        end_pos: float,
+        duration: float,
+        samples: int = 100,
+    ) -> str:
         """生成最小加加速度轨迹"""
         try:
             trajectory_id = f"min_jerk_{joint.value}_{int(time.time())}"
-            
+
             # 生成时间序列
             times = np.linspace(0, duration, samples)
-            
+
             # 最小加加速度轨迹公式
             # 位置: p(t) = p0 + (pf - p0) * (10*(t/T)^3 - 15*(t/T)^4 + 6*(t/T)^5)
             normalized_time = times / duration
-            
+
             positions = start_pos + (end_pos - start_pos) * (
-                10 * normalized_time**3 - 
-                15 * normalized_time**4 + 
-                6 * normalized_time**5
+                10 * normalized_time**3
+                - 15 * normalized_time**4
+                + 6 * normalized_time**5
             )
-            
+
             # 速度: v(t) = (pf - p0)/T * (30*(t/T)^2 - 60*(t/T)^3 + 30*(t/T)^4)
-            velocities = (end_pos - start_pos) / duration * (
-                30 * normalized_time**2 - 
-                60 * normalized_time**3 + 
-                30 * normalized_time**4
+            velocities = (
+                (end_pos - start_pos)
+                / duration
+                * (
+                    30 * normalized_time**2
+                    - 60 * normalized_time**3
+                    + 30 * normalized_time**4
+                )
             )
-            
+
             # 加速度: a(t) = (pf - p0)/T^2 * (60*(t/T) - 180*(t/T)^2 + 120*(t/T)^3)
-            accelerations = (end_pos - start_pos) / (duration**2) * (
-                60 * normalized_time - 
-                180 * normalized_time**2 + 
-                120 * normalized_time**3
+            accelerations = (
+                (end_pos - start_pos)
+                / (duration**2)
+                * (
+                    60 * normalized_time
+                    - 180 * normalized_time**2
+                    + 120 * normalized_time**3
+                )
             )
-            
+
             # 加加速度: j(t) = (pf - p0)/T^3 * (60 - 360*(t/T) + 360*(t/T)^2)
-            jerks = (end_pos - start_pos) / (duration**3) * (
-                60 - 
-                360 * normalized_time + 
-                360 * normalized_time**2
+            jerks = (
+                (end_pos - start_pos)
+                / (duration**3)
+                * (60 - 360 * normalized_time + 360 * normalized_time**2)
             )
-            
+
             # 创建轨迹点
             points = []
             for i in range(samples):
@@ -429,50 +467,55 @@ class AdvancedRobotController:
                     position=float(positions[i]),
                     velocity=float(velocities[i]),
                     acceleration=float(accelerations[i]),
-                    jerk=float(jerks[i])
+                    jerk=float(jerks[i]),
                 )
                 points.append(point)
-            
+
             # 创建轨迹
             trajectory = Trajectory(
                 trajectory_id=trajectory_id,
                 joint=joint,
                 points=points,
                 total_time=duration,
-                trajectory_type=TrajectoryType.MINIMUM_JERK
+                trajectory_type=TrajectoryType.MINIMUM_JERK,
             )
-            
+
             self.trajectories[trajectory_id] = trajectory
             logger.info(f"生成最小加加速度轨迹: {trajectory_id}")
-            
+
             return trajectory_id
-            
+
         except Exception as e:
             logger.error(f"生成最小加加速度轨迹失败: {e}")
             return None  # 返回None
-    
-    def generate_spline_trajectory(self, joint: RobotJoint, waypoints: List[Tuple[float, float]],
-                                 duration: float, samples: int = 100) -> str:
+
+    def generate_spline_trajectory(
+        self,
+        joint: RobotJoint,
+        waypoints: List[Tuple[float, float]],
+        duration: float,
+        samples: int = 100,
+    ) -> str:
         """生成样条轨迹"""
         try:
             trajectory_id = f"spline_{joint.value}_{int(time.time())}"
-            
+
             # 提取时间和位置
             times = [wp[0] for wp in waypoints]
             positions = [wp[1] for wp in waypoints]
-            
+
             # 创建样条插值器
-            spline = interpolate.CubicSpline(times, positions, bc_type='natural')
-            
+            spline = interpolate.CubicSpline(times, positions, bc_type="natural")
+
             # 生成采样点
             sample_times = np.linspace(0, duration, samples)
             sample_positions = spline(sample_times)
-            
+
             # 计算导数和二阶导数
             velocities = spline(sample_times, 1)
             accelerations = spline(sample_times, 2)
             jerks = spline(sample_times, 3)
-            
+
             # 创建轨迹点
             points = []
             for i in range(samples):
@@ -481,55 +524,55 @@ class AdvancedRobotController:
                     position=float(sample_positions[i]),
                     velocity=float(velocities[i]),
                     acceleration=float(accelerations[i]),
-                    jerk=float(jerks[i])
+                    jerk=float(jerks[i]),
                 )
                 points.append(point)
-            
+
             # 创建轨迹
             trajectory = Trajectory(
                 trajectory_id=trajectory_id,
                 joint=joint,
                 points=points,
                 total_time=duration,
-                trajectory_type=TrajectoryType.SPLINE
+                trajectory_type=TrajectoryType.SPLINE,
             )
-            
+
             self.trajectories[trajectory_id] = trajectory
             logger.info(f"生成样条轨迹: {trajectory_id}")
-            
+
             return trajectory_id
-            
+
         except Exception as e:
             logger.error(f"生成样条轨迹失败: {e}")
             return None  # 返回None
-    
+
     def execute_trajectory(self, trajectory_id: str):
         """执行轨迹
-        
+
         根据项目要求"不采用任何降级处理，直接报错"：
         1. 轨迹不存在时抛出RuntimeError
         2. 执行失败时抛出RuntimeError
-        
+
         成功时不返回值（或返回True）。
         """
         try:
             if trajectory_id not in self.trajectories:
                 raise RuntimeError(f"轨迹不存在: {trajectory_id}")
-            
+
             trajectory = self.trajectories[trajectory_id]
             joint = trajectory.joint
-            
+
             # 记录活动的轨迹
             self.active_trajectories[joint] = trajectory_id
-            
+
             logger.info(f"开始执行轨迹: {trajectory_id} (关节: {joint.value})")
-            
+
         except Exception as e:
             if isinstance(e, RuntimeError):
                 raise  # 重新抛出RuntimeError
             else:
                 raise RuntimeError(f"执行轨迹失败: {e}")
-    
+
     def stop_trajectory(self, joint: RobotJoint):
         """停止轨迹"""
         if joint in self.active_trajectories:
@@ -537,65 +580,61 @@ class AdvancedRobotController:
             logger.info(f"停止轨迹: {trajectory_id}")
             return True
         return False
-    
+
     def _adaptive_learning_step(self):
         """自适应学习步骤"""
         try:
             # 获取当前关节状态
             joint_states = self.hardware.get_all_joint_states()
-            
+
             for joint, state in joint_states.items():
                 # 记录学习历史
                 if len(self.learning_history[joint]) < 1000:
-                    self.learning_history[joint].append((
-                        time.time(),
-                        state.position,
-                        state.velocity
-                    ))
+                    self.learning_history[joint].append(
+                        (time.time(), state.position, state.velocity)
+                    )
                 else:
                     self.learning_history[joint].pop(0)
-                    self.learning_history[joint].append((
-                        time.time(),
-                        state.position,
-                        state.velocity
-                    ))
-                
+                    self.learning_history[joint].append(
+                        (time.time(), state.position, state.velocity)
+                    )
+
                 # 简单的自适应学习示例
                 # 在实际实现中，这里应该使用更复杂的自适应算法
                 if len(self.learning_history[joint]) > 100:
                     # 估计系统参数
                     self._estimate_system_parameters(joint)
-                    
+
         except Exception as e:
             logger.error(f"自适应学习步骤失败: {e}")
-    
+
     def _estimate_system_parameters(self, joint: RobotJoint):
         """估计系统参数"""
         try:
             history = self.learning_history[joint]
             if len(history) < 10:
                 return
-            
+
             # 简单的参数估计（示例）
             # 在实际实现中，这里应该使用系统辨识算法
-            
+
             positions = [h[1] for h in history]
             velocities = [h[2] for h in history]
-            
+
             # 估计质量（基于加速度和力）
             # 完整的估计方法
             if len(positions) > 2:
                 # 计算加速度
                 accelerations = []
-                for i in range(1, len(positions)-1):
-                    dt = history[i+1][0] - history[i][0]
+                for i in range(1, len(positions) - 1):
+                    dt = history[i + 1][0] - history[i][0]
                     if dt > 0:
-                        acc = (velocities[i+1] - velocities[i]) / dt
+                        acc = (velocities[i + 1] - velocities[i]) / dt
                         accelerations.append(acc)
-                
+
                 if accelerations:
                     avg_acceleration = np.mean(np.abs(accelerations))
-                    
+
                     # 完整的质量估计（假设力为1）
                     if avg_acceleration > 0:
                         estimated_mass = 1.0 / avg_acceleration
@@ -604,29 +643,29 @@ class AdvancedRobotController:
                         self.adaptive_params[joint]["mass_estimate"] = (
                             0.9 * current_mass + 0.1 * estimated_mass
                         )
-            
+
         except Exception as e:
             logger.error(f"估计系统参数失败 [{joint}]: {e}")
-    
+
     def _record_performance(self):
         """记录性能"""
         # 在实际实现中，这里应该记录控制性能指标
         pass  # 已修复: 实现函数功能
-    
+
     def set_control_parameters(self, joint: RobotJoint, params: ControlParameters):
         """设置控制参数"""
         self.control_params[joint] = params
         logger.info(f"设置关节控制参数: {joint.value}")
-    
+
     def get_control_parameters(self, joint: RobotJoint) -> ControlParameters:
         """获取控制参数"""
         return self.control_params.get(joint, ControlParameters())
-    
+
     def get_trajectory_info(self, trajectory_id: str) -> Optional[Dict[str, Any]]:
         """获取轨迹信息"""
         if trajectory_id not in self.trajectories:
             return None  # 返回None
-        
+
         trajectory = self.trajectories[trajectory_id]
         return {
             "trajectory_id": trajectory.trajectory_id,
@@ -634,12 +673,16 @@ class AdvancedRobotController:
             "trajectory_type": trajectory.trajectory_type.value,
             "total_time": trajectory.total_time,
             "point_count": len(trajectory.points),
-            "start_position": trajectory.points[0].position if trajectory.points else 0.0,
-            "end_position": trajectory.points[-1].position if trajectory.points else 0.0,
-            "active": trajectory.joint in self.active_trajectories and 
-                    self.active_trajectories[trajectory.joint] == trajectory_id
+            "start_position": (
+                trajectory.points[0].position if trajectory.points else 0.0
+            ),
+            "end_position": (
+                trajectory.points[-1].position if trajectory.points else 0.0
+            ),
+            "active": trajectory.joint in self.active_trajectories
+            and self.active_trajectories[trajectory.joint] == trajectory_id,
         }
-    
+
     def get_active_trajectories(self) -> Dict[str, Any]:
         """获取活动轨迹"""
         active_info = {}
@@ -649,46 +692,46 @@ class AdvancedRobotController:
                 active_info[joint.value] = {
                     "trajectory_id": trajectory_id,
                     "trajectory_type": trajectory.trajectory_type.value,
-                    "progress": self._get_trajectory_progress(trajectory_id)
+                    "progress": self._get_trajectory_progress(trajectory_id),
                 }
         return active_info
-    
+
     def _get_trajectory_progress(self, trajectory_id: str) -> float:
         """获取轨迹进度"""
         if trajectory_id not in self.trajectories:
             return 0.0
-        
+
         trajectory = self.trajectories[trajectory_id]
         current_time = time.time()
-        
+
         # 完整处理）
         if trajectory.points:
             start_time = trajectory.points[0].time
             elapsed = current_time - start_time
             progress = min(1.0, elapsed / trajectory.total_time)
             return progress
-        
+
         return 0.0
-    
+
     def emergency_stop(self):
         """紧急停止"""
         try:
             logger.critical("执行紧急停止（高级控制器）")
-            
+
             # 停止所有轨迹
             self.active_trajectories.clear()
-            
+
             # 禁用控制
             self.disable_control()
-            
+
             # 硬件紧急停止
             self.hardware.emergency_stop()
-            
+
             logger.info("紧急停止完成")
-            
+
         except Exception as e:
             logger.error(f"紧急停止失败: {e}")
-    
+
     def get_status_report(self) -> Dict[str, Any]:
         """获取状态报告"""
         return {
@@ -698,119 +741,134 @@ class AdvancedRobotController:
             "stored_trajectories": len(self.trajectories),
             "hardware_connected": self.hardware.is_connected(),
             "operation_mode": self.hardware.operation_mode.value,
-            "adaptive_learning_enabled": True
+            "adaptive_learning_enabled": True,
         }
-    
-    def calculate_forward_kinematics(self, joint_angles: Dict[RobotJoint, float], 
-                                   end_effector: str = "right_hand") -> np.ndarray:
+
+    def calculate_forward_kinematics(
+        self, joint_angles: Dict[RobotJoint, float], end_effector: str = "right_hand"
+    ) -> np.ndarray:
         """计算正运动学（末端执行器位置）
-        
+
         参数:
             joint_angles: 关节角度字典（弧度）
             end_effector: 末端执行器名称，如 "right_hand", "left_hand", "right_foot"
-            
+
         返回:
             末端执行器位置 [x, y, z]（米）
         """
         try:
             import numpy as np
-            
+
             # 完整的人形机器人运动学模型
             # 实际实现应使用DH参数或URDF模型
-            
+
             # 基础位置（骨盆）
-            base_position = np.array([0.0, 0.0, 0.8])
-            
+            np.array([0.0, 0.0, 0.8])
+
             if end_effector == "right_hand":
                 # 右臂运动学链：base -> right_hip -> right_shoulder -> right_hand
                 # 完整模型模型：使用关节角度计算手部位置
-                
+
                 # 获取相关关节角度
-                hip_yaw_pitch = joint_angles.get(RobotJoint.R_HIP_YAW_PITCH, 0.0)
-                hip_roll = joint_angles.get(RobotJoint.R_HIP_ROLL, 0.0)
+                joint_angles.get(RobotJoint.R_HIP_YAW_PITCH, 0.0)
+                joint_angles.get(RobotJoint.R_HIP_ROLL, 0.0)
                 hip_pitch = joint_angles.get(RobotJoint.R_HIP_PITCH, 0.0)
                 shoulder_pitch = joint_angles.get(RobotJoint.R_SHOULDER_PITCH, 0.0)
                 shoulder_roll = joint_angles.get(RobotJoint.R_SHOULDER_ROLL, 0.0)
-                elbow_yaw = joint_angles.get(RobotJoint.R_ELBOW_YAW, 0.0)
-                elbow_roll = joint_angles.get(RobotJoint.R_ELBOW_ROLL, 0.0)
-                
+                joint_angles.get(RobotJoint.R_ELBOW_YAW, 0.0)
+                joint_angles.get(RobotJoint.R_ELBOW_ROLL, 0.0)
+
                 # 完整运动学计算（基于NAO机器人近似尺寸）
                 upper_arm_length = 0.15  # 上臂长度（米）
                 lower_arm_length = 0.15  # 前臂长度（米）
-                
+
                 # 计算手臂位置
                 # 使用完整模型，实际应使用完整的DH参数
-                x = 0.1 + upper_arm_length * np.sin(shoulder_pitch) * np.cos(shoulder_roll)
+                x = 0.1 + upper_arm_length * np.sin(shoulder_pitch) * np.cos(
+                    shoulder_roll
+                )
                 y = -0.05 + upper_arm_length * np.sin(shoulder_roll)
-                z = 0.8 + upper_arm_length * np.cos(shoulder_pitch) * np.cos(shoulder_roll)
-                
+                z = 0.8 + upper_arm_length * np.cos(shoulder_pitch) * np.cos(
+                    shoulder_roll
+                )
+
                 return np.array([x, y, z])
-                
+
             elif end_effector == "left_hand":
                 # 左臂运动学链
                 # 类似右臂，但方向相反
                 shoulder_pitch = joint_angles.get(RobotJoint.L_SHOULDER_PITCH, 0.0)
                 shoulder_roll = joint_angles.get(RobotJoint.L_SHOULDER_ROLL, 0.0)
-                
+
                 upper_arm_length = 0.15
-                x = 0.1 + upper_arm_length * np.sin(shoulder_pitch) * np.cos(shoulder_roll)
+                x = 0.1 + upper_arm_length * np.sin(shoulder_pitch) * np.cos(
+                    shoulder_roll
+                )
                 y = 0.05 + upper_arm_length * np.sin(shoulder_roll)
-                z = 0.8 + upper_arm_length * np.cos(shoulder_pitch) * np.cos(shoulder_roll)
-                
+                z = 0.8 + upper_arm_length * np.cos(shoulder_pitch) * np.cos(
+                    shoulder_roll
+                )
+
                 return np.array([x, y, z])
-                
+
             elif end_effector == "right_foot":
                 # 右腿运动学链
-                hip_yaw_pitch = joint_angles.get(RobotJoint.R_HIP_YAW_PITCH, 0.0)
-                hip_roll = joint_angles.get(RobotJoint.R_HIP_ROLL, 0.0)
+                joint_angles.get(RobotJoint.R_HIP_YAW_PITCH, 0.0)
+                joint_angles.get(RobotJoint.R_HIP_ROLL, 0.0)
                 hip_pitch = joint_angles.get(RobotJoint.R_HIP_PITCH, 0.0)
                 knee_pitch = joint_angles.get(RobotJoint.R_KNEE_PITCH, 0.0)
-                ankle_pitch = joint_angles.get(RobotJoint.R_ANKLE_PITCH, 0.0)
-                ankle_roll = joint_angles.get(RobotJoint.R_ANKLE_ROLL, 0.0)
-                
+                joint_angles.get(RobotJoint.R_ANKLE_PITCH, 0.0)
+                joint_angles.get(RobotJoint.R_ANKLE_ROLL, 0.0)
+
                 thigh_length = 0.1  # 大腿长度
-                shin_length = 0.1   # 小腿长度
-                
+                shin_length = 0.1  # 小腿长度
+
                 x = 0.0
                 y = -0.05
-                z = 0.8 - (thigh_length * np.cos(hip_pitch) + shin_length * np.cos(hip_pitch + knee_pitch))
-                
+                z = 0.8 - (
+                    thigh_length * np.cos(hip_pitch)
+                    + shin_length * np.cos(hip_pitch + knee_pitch)
+                )
+
                 return np.array([x, y, z])
-                
+
             else:
                 logger.warning(f"不支持的末端执行器: {end_effector}")
                 return np.array([0.0, 0.0, 0.0])
-                
+
         except Exception as e:
             logger.error(f"计算正运动学失败: {e}")
             return np.array([0.0, 0.0, 0.0])
-    
-    def calculate_inverse_kinematics(self, target_position: np.ndarray, 
-                                   end_effector: str = "right_hand",
-                                   initial_angles: Optional[Dict[RobotJoint, float]] = None) -> Dict[RobotJoint, float]:
+
+    def calculate_inverse_kinematics(
+        self,
+        target_position: np.ndarray,
+        end_effector: str = "right_hand",
+        initial_angles: Optional[Dict[RobotJoint, float]] = None,
+    ) -> Dict[RobotJoint, float]:
         """计算逆运动学（给定末端执行器位置，求关节角度）
-        
+
         参数:
             target_position: 目标位置 [x, y, z]（米）
             end_effector: 末端执行器名称
             initial_angles: 初始关节角度（用于数值求解）
-            
+
         返回:
             关节角度字典（弧度）
         """
         try:
             import numpy as np
             from scipy.optimize import minimize
-            
+
             # 默认初始角度
             if initial_angles is None:
                 initial_angles = {
                     RobotJoint.R_SHOULDER_PITCH: 0.0,
                     RobotJoint.R_SHOULDER_ROLL: 0.0,
                     RobotJoint.R_ELBOW_YAW: 0.0,
-                    RobotJoint.R_ELBOW_ROLL: 0.0
+                    RobotJoint.R_ELBOW_ROLL: 0.0,
                 }
-            
+
             # 定义优化目标函数
             def objective(joint_angles_array):
                 # 将数组转换为字典
@@ -820,151 +878,171 @@ class AdvancedRobotController:
                     angles_dict[RobotJoint.R_SHOULDER_ROLL] = joint_angles_array[1]
                     angles_dict[RobotJoint.R_ELBOW_YAW] = joint_angles_array[2]
                     angles_dict[RobotJoint.R_ELBOW_ROLL] = joint_angles_array[3]
-                
+
                 # 计算当前末端执行器位置
-                current_position = self.calculate_forward_kinematics(angles_dict, end_effector)
-                
+                current_position = self.calculate_forward_kinematics(
+                    angles_dict, end_effector
+                )
+
                 # 计算位置误差
                 error = np.linalg.norm(current_position - target_position)
-                
+
                 # 添加关节限制惩罚
                 penalty = 0.0
                 for angle in joint_angles_array:
                     if abs(angle) > 2.0:  # 限制在±2弧度内
                         penalty += (abs(angle) - 2.0) ** 2
-                
+
                 return error + 0.1 * penalty
-            
+
             # 初始猜测
-            initial_guess = np.array([
-                initial_angles.get(RobotJoint.R_SHOULDER_PITCH, 0.0),
-                initial_angles.get(RobotJoint.R_SHOULDER_ROLL, 0.0),
-                initial_angles.get(RobotJoint.R_ELBOW_YAW, 0.0),
-                initial_angles.get(RobotJoint.R_ELBOW_ROLL, 0.0)
-            ])
-            
+            initial_guess = np.array(
+                [
+                    initial_angles.get(RobotJoint.R_SHOULDER_PITCH, 0.0),
+                    initial_angles.get(RobotJoint.R_SHOULDER_ROLL, 0.0),
+                    initial_angles.get(RobotJoint.R_ELBOW_YAW, 0.0),
+                    initial_angles.get(RobotJoint.R_ELBOW_ROLL, 0.0),
+                ]
+            )
+
             # 优化求解
             bounds = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
-            result = minimize(objective, initial_guess, bounds=bounds, method='L-BFGS-B')
-            
+            result = minimize(
+                objective, initial_guess, bounds=bounds, method="L-BFGS-B"
+            )
+
             if result.success:
                 # 提取结果
                 optimal_angles = {
                     RobotJoint.R_SHOULDER_PITCH: result.x[0],
                     RobotJoint.R_SHOULDER_ROLL: result.x[1],
                     RobotJoint.R_ELBOW_YAW: result.x[2],
-                    RobotJoint.R_ELBOW_ROLL: result.x[3]
+                    RobotJoint.R_ELBOW_ROLL: result.x[3],
                 }
-                
+
                 logger.info(f"逆运动学求解成功，误差: {result.fun:.6f}")
                 return optimal_angles
             else:
                 logger.warning(f"逆运动学求解失败: {result.message}")
                 return initial_angles
-                
+
         except Exception as e:
             logger.error(f"计算逆运动学失败: {e}")
             return initial_angles if initial_angles else {}
-    
-    def calculate_jacobian(self, joint_angles: Dict[RobotJoint, float], 
-                         end_effector: str = "right_hand") -> np.ndarray:
+
+    def calculate_jacobian(
+        self, joint_angles: Dict[RobotJoint, float], end_effector: str = "right_hand"
+    ) -> np.ndarray:
         """计算雅可比矩阵（位置部分）
-        
+
         参数:
             joint_angles: 关节角度字典（弧度）
             end_effector: 末端执行器名称
-            
+
         返回:
             雅可比矩阵 J (3×n)，其中 n 是关节数量
         """
         try:
             import numpy as np
-            
+
             # 完整的雅可比矩阵计算（数值微分法）
             epsilon = 1e-6  # 微分量
-            
+
             # 获取当前末端执行器位置
-            base_position = self.calculate_forward_kinematics(joint_angles, end_effector)
-            
+            base_position = self.calculate_forward_kinematics(
+                joint_angles, end_effector
+            )
+
             # 确定相关关节
             if end_effector == "right_hand":
                 relevant_joints = [
                     RobotJoint.R_SHOULDER_PITCH,
                     RobotJoint.R_SHOULDER_ROLL,
                     RobotJoint.R_ELBOW_YAW,
-                    RobotJoint.R_ELBOW_ROLL
+                    RobotJoint.R_ELBOW_ROLL,
                 ]
             else:
                 relevant_joints = list(joint_angles.keys())
-            
+
             n = len(relevant_joints)
             jacobian = np.zeros((3, n))
-            
+
             # 数值计算雅可比矩阵
             for i, joint in enumerate(relevant_joints):
                 # 创建扰动角度
                 angles_plus = joint_angles.copy()
                 angles_minus = joint_angles.copy()
-                
+
                 angles_plus[joint] = angles_plus.get(joint, 0.0) + epsilon
                 angles_minus[joint] = angles_minus.get(joint, 0.0) - epsilon
-                
+
                 # 计算扰动后的位置
                 pos_plus = self.calculate_forward_kinematics(angles_plus, end_effector)
-                pos_minus = self.calculate_forward_kinematics(angles_minus, end_effector)
-                
+                pos_minus = self.calculate_forward_kinematics(
+                    angles_minus, end_effector
+                )
+
                 # 数值微分
                 jacobian[:, i] = (pos_plus - pos_minus) / (2 * epsilon)
-            
+
             return jacobian
-            
+
         except Exception as e:
             logger.error(f"计算雅可比矩阵失败: {e}")
             return np.zeros((3, 1))
-    
-    def calculate_dynamics(self, joint_angles: Dict[RobotJoint, float],
-                         joint_velocities: Dict[RobotJoint, float],
-                         joint_accelerations: Dict[RobotJoint, float]) -> Dict[RobotJoint, float]:
+
+    def calculate_dynamics(
+        self,
+        joint_angles: Dict[RobotJoint, float],
+        joint_velocities: Dict[RobotJoint, float],
+        joint_accelerations: Dict[RobotJoint, float],
+    ) -> Dict[RobotJoint, float]:
         """计算动力学（关节扭矩）
-        
+
         参数:
             joint_angles: 关节角度（弧度）
             joint_velocities: 关节速度（弧度/秒）
             joint_accelerations: 关节加速度（弧度/秒²）
-            
+
         返回:
             关节所需扭矩字典（Nm）
         """
         try:
             import numpy as np
-            
+
             # 完整的人形机器人动力学模型
             # 实际实现应使用拉格朗日动力学或牛顿-欧拉算法
-            
+
             torques = {}
-            
+
             for joint in joint_angles.keys():
                 # 完整的模型：惯性 + 阻尼 + 重力补偿
                 inertia = 0.1  # 关节惯性（kg·m²），完整值
                 damping = 0.05  # 阻尼系数（Nm·s/rad）
-                
+
                 # 重力补偿（完整）
                 gravity_torque = 0.0
-                if joint in [RobotJoint.R_SHOULDER_PITCH, RobotJoint.L_SHOULDER_PITCH,
-                           RobotJoint.R_HIP_PITCH, RobotJoint.L_HIP_PITCH]:
+                if joint in [
+                    RobotJoint.R_SHOULDER_PITCH,
+                    RobotJoint.L_SHOULDER_PITCH,
+                    RobotJoint.R_HIP_PITCH,
+                    RobotJoint.L_HIP_PITCH,
+                ]:
                     # 这些关节受重力影响较大
                     angle = joint_angles[joint]
                     gravity_torque = 0.5 * np.sin(angle)  # 完整重力模型
-                
+
                 # 计算总扭矩
-                torque = (inertia * joint_accelerations.get(joint, 0.0) +
-                         damping * joint_velocities.get(joint, 0.0) +
-                         gravity_torque)
-                
+                torque = (
+                    inertia * joint_accelerations.get(joint, 0.0)
+                    + damping * joint_velocities.get(joint, 0.0)
+                    + gravity_torque
+                )
+
                 torques[joint] = torque
-            
+
             return torques
-            
+
         except Exception as e:
             logger.error(f"计算动力学失败: {e}")
             return {}  # 返回空字典
@@ -972,80 +1050,87 @@ class AdvancedRobotController:
 
 class BalanceController:
     """平衡控制器 - 实现零力矩点（ZMP）和PD平衡控制
-    
+
     功能：
     - 零力矩点（ZMP）计算和跟踪
     - 姿态稳定控制
     - 抗干扰恢复
     - 步行模式平衡
-    
+
     算法：
     1. ZMP = (∑ m_i * (g * z_i + a_i * z_i) - ∑ m_i * x_i * (g + a_z)) / (∑ m_i * (g + a_z))
     2. PD控制：扭矩 = Kp * 角度误差 + Kd * 角速度误差
     """
-    
+
     def __init__(self, robot_config: Any = None):
         """初始化平衡控制器
-        
+
         参数:
             robot_config: 机器人配置对象（可选），预期类型为 models.physics.robot_dynamics.RobotConfig
         """
         self.robot_config = robot_config
-        
+
         # 控制参数
-        self.kp_roll = 1.5   # 滚转比例增益
-        self.kd_roll = 0.2   # 滚转微分增益
+        self.kp_roll = 1.5  # 滚转比例增益
+        self.kd_roll = 0.2  # 滚转微分增益
         self.kp_pitch = 1.5  # 俯仰比例增益
         self.kd_pitch = 0.2  # 俯仰微分增益
-        
+
         # ZMP参数
         self.zmp_reference = np.array([0.0, 0.0])  # 参考ZMP位置
         self.zmp_margin = 0.02  # ZMP安全边界（米）
-        
+
         # 状态
         self.prev_roll_error = 0.0
         self.prev_pitch_error = 0.0
-        
+
         # 支持多边形（脚底接触点）
-        self.support_polygon = np.array([
-            [-0.1, -0.05],   # 左脚后跟
-            [0.1, -0.05],    # 右脚后跟
-            [0.1, 0.05],     # 右脚前掌
-            [-0.1, 0.05]     # 左脚前掌
-        ])
-        
-    def calculate_zmp(self, com_position: np.ndarray, com_acceleration: np.ndarray,
-                     foot_positions: List[np.ndarray], foot_forces: List[np.ndarray]) -> np.ndarray:
+        self.support_polygon = np.array(
+            [
+                [-0.1, -0.05],  # 左脚后跟
+                [0.1, -0.05],  # 右脚后跟
+                [0.1, 0.05],  # 右脚前掌
+                [-0.1, 0.05],  # 左脚前掌
+            ]
+        )
+
+    def calculate_zmp(
+        self,
+        com_position: np.ndarray,
+        com_acceleration: np.ndarray,
+        foot_positions: List[np.ndarray],
+        foot_forces: List[np.ndarray],
+    ) -> np.ndarray:
         """计算零力矩点（ZMP）
-        
+
         参数:
             com_position: 质心位置 [x, y, z] (米)
             com_acceleration: 质心加速度 [ax, ay, az] (m/s²)
             foot_positions: 脚底位置列表 [x, y, z]
             foot_forces: 脚底力列表 [fx, fy, fz]
-            
+
         返回:
             zmp: 零力矩点位置 [x, y] (米)
         """
         try:
             # 简单ZMP计算（假设所有质量集中在质心）
             g = 9.81  # 重力加速度
-            
+
             # 总力
             total_force_z = 0.0
             total_moment_x = 0.0
             total_moment_y = 0.0
-            
+
             for pos, force in zip(foot_positions, foot_forces):
                 total_force_z += force[2]
                 total_moment_x += force[2] * pos[0] - force[0] * pos[2]
                 total_moment_y += force[2] * pos[1] - force[1] * pos[2]
-            
+
             # 添加质心动力学贡献
             total_mass = 50.0  # 机器人总质量（kg），实际值应从配置获取
             com_x, com_y, com_z = com_position
             ax, ay, az = com_acceleration
-            
+
             # 完整ZMP公式
             if total_force_z != 0:
                 zmp_x = total_moment_y / total_force_z
@@ -1053,166 +1138,174 @@ class BalanceController:
             else:
                 zmp_x = com_x - com_z * ax / (g + az)
                 zmp_y = com_y - com_z * ay / (g + az)
-            
+
             return np.array([zmp_x, zmp_y])
-            
+
         except Exception as e:
             logger.error(f"计算ZMP失败: {e}")
             return np.array([0.0, 0.0])
-    
+
     def is_balance_stable(self, zmp: np.ndarray) -> bool:
         """检查平衡是否稳定（ZMP是否在支持多边形内）
-        
+
         参数:
             zmp: 零力矩点位置 [x, y]
-            
+
         返回:
             stable: 如果ZMP在支持多边形内返回True，否则返回False
         """
         # 简单凸多边形包含测试
         from scipy.spatial import ConvexHull
-        
+
         try:
             # 检查ZMP是否在支持多边形内
             points = np.vstack([self.support_polygon, zmp])
             hull = ConvexHull(points)
-            
+
             # 如果ZMP是凸包的顶点，则不稳定
             is_vertex = any(np.allclose(zmp, points[idx]) for idx in hull.vertices)
-            
+
             # 安全检查：ZMP到多边形边界的距离
             if is_vertex:
                 return False
-            
+
             # 计算到边界的最近距离
-            min_distance = float('inf')
+            min_distance = float("inf")
             n = len(self.support_polygon)
             for i in range(n):
                 p1 = self.support_polygon[i]
                 p2 = self.support_polygon[(i + 1) % n]
-                
+
                 # 线段到点的距离
                 distance = self._point_to_line_distance(zmp, p1, p2)
                 min_distance = min(min_distance, distance)
-            
+
             # 如果距离小于安全边界，则不稳定
             return min_distance > self.zmp_margin
-            
+
         except Exception as e:
             # 根据项目要求"不采用任何降级处理，直接报错"
             # 凸包计算失败时抛出RuntimeError，不执行降级处理
             raise RuntimeError(f"平衡稳定性检查失败（凸包计算错误）: {e}")
-    
-    def _point_to_line_distance(self, point: np.ndarray, line_p1: np.ndarray, line_p2: np.ndarray) -> float:
+
+    def _point_to_line_distance(
+        self, point: np.ndarray, line_p1: np.ndarray, line_p2: np.ndarray
+    ) -> float:
         """计算点到线段的距离"""
         # 向量计算
         line_vec = line_p2 - line_p1
         point_vec = point - line_p1
-        
+
         line_len_squared = np.dot(line_vec, line_vec)
-        
+
         if line_len_squared == 0:
             return np.linalg.norm(point_vec)
-        
+
         # 投影参数
         t = max(0, min(1, np.dot(point_vec, line_vec) / line_len_squared))
-        
+
         # 最近点
         projection = line_p1 + t * line_vec
-        
+
         # 距离
         return np.linalg.norm(point - projection)
-    
-    def compute_balance_correction(self, 
-                                  roll_angle: float, 
-                                  roll_velocity: float,
-                                  pitch_angle: float,
-                                  pitch_velocity: float,
-                                  zmp: np.ndarray) -> Dict[str, float]:
+
+    def compute_balance_correction(
+        self,
+        roll_angle: float,
+        roll_velocity: float,
+        pitch_angle: float,
+        pitch_velocity: float,
+        zmp: np.ndarray,
+    ) -> Dict[str, float]:
         """计算平衡校正扭矩
-        
+
         参数:
             roll_angle: 滚转角（弧度）
             roll_velocity: 滚转角速度（弧度/秒）
             pitch_angle: 俯仰角（弧度）
             pitch_velocity: 俯仰角速度（弧度/秒）
             zmp: 零力矩点位置 [x, y]
-            
+
         返回:
             correction_torques: 校正扭矩字典（滚转，俯仰）
         """
         # 姿态误差
         roll_error = -roll_angle  # 负号用于稳定
         pitch_error = -pitch_angle
-        
+
         # 微分误差
         roll_error_diff = roll_velocity
         pitch_error_diff = pitch_velocity
-        
+
         # PD控制
         roll_torque = self.kp_roll * roll_error + self.kd_roll * roll_error_diff
         pitch_torque = self.kp_pitch * pitch_error + self.kd_pitch * pitch_error_diff
-        
+
         # ZMP校正（如果ZMP接近边界，增加恢复扭矩）
         zmp_distance = self._distance_to_support_boundary(zmp)
         if zmp_distance < 0.05:  # 接近边界
             scale_factor = 1.0 + (0.05 - zmp_distance) * 2.0
             roll_torque *= scale_factor
             pitch_torque *= scale_factor
-        
+
         # 限制最大扭矩
         max_torque = 10.0
         roll_torque = np.clip(roll_torque, -max_torque, max_torque)
         pitch_torque = np.clip(pitch_torque, -max_torque, max_torque)
-        
+
         return {
-            'roll_torque': roll_torque,
-            'pitch_torque': pitch_torque,
-            'zmp_x': zmp[0],
-            'zmp_y': zmp[1],
-            'stable': self.is_balance_stable(zmp)
+            "roll_torque": roll_torque,
+            "pitch_torque": pitch_torque,
+            "zmp_x": zmp[0],
+            "zmp_y": zmp[1],
+            "stable": self.is_balance_stable(zmp),
         }
-    
+
     def _distance_to_support_boundary(self, point: np.ndarray) -> float:
         """计算点到支持多边形边界的最短距离"""
-        min_distance = float('inf')
+        min_distance = float("inf")
         n = len(self.support_polygon)
-        
+
         for i in range(n):
             p1 = self.support_polygon[i]
             p2 = self.support_polygon[(i + 1) % n]
-            
+
             distance = self._point_to_line_distance(point, p1, p2)
             min_distance = min(min_distance, distance)
-        
+
         return min_distance
-    
-    def update_support_polygon(self, left_foot_pos: np.ndarray, right_foot_pos: np.ndarray):
+
+    def update_support_polygon(
+        self, left_foot_pos: np.ndarray, right_foot_pos: np.ndarray
+    ):
         """更新支持多边形（基于脚底位置）
-        
+
         参数:
             left_foot_pos: 左脚位置 [x, y, z] (相对躯干)
             right_foot_pos: 右脚位置 [x, y, z] (相对躯干)
         """
         # 脚底尺寸
         foot_length = 0.2  # 脚长（米）
-        foot_width = 0.1   # 脚宽（米）
-        
+        foot_width = 0.1  # 脚宽（米）
+
         # 计算四个角点（相对脚中心）
-        corners = np.array([
-            [-foot_length/2, -foot_width/2],  # 后跟外侧
-            [foot_length/2, -foot_width/2],   # 前掌外侧
-            [foot_length/2, foot_width/2],    # 前掌内侧
-            [-foot_length/2, foot_width/2]    # 后跟内侧
-        ])
-        
+        corners = np.array(
+            [
+                [-foot_length / 2, -foot_width / 2],  # 后跟外侧
+                [foot_length / 2, -foot_width / 2],  # 前掌外侧
+                [foot_length / 2, foot_width / 2],  # 前掌内侧
+                [-foot_length / 2, foot_width / 2],  # 后跟内侧
+            ]
+        )
+
         # 转换到全局坐标系
         left_corners = corners + left_foot_pos[:2]
         right_corners = corners + right_foot_pos[:2]
-        
+
         # 合并多边形
         self.support_polygon = np.vstack([left_corners, right_corners])
-        
+
     def reset(self):
         """重置控制器状态"""
         self.prev_roll_error = 0.0

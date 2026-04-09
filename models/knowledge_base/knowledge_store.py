@@ -11,7 +11,7 @@ import sqlite3
 import threading
 import time
 import contextlib
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 import os
 from collections import deque
@@ -20,24 +20,24 @@ import numpy as np
 
 class ConnectionPool:
     """SQLite连接池 - 工业级并发处理
-    
+
     特征：
     1. 管理数据库连接池，减少连接开销
     2. 线程安全，支持高并发访问
     3. 连接健康检查，自动恢复
     4. 性能监控和统计
     """
-    
+
     def __init__(self, db_path: str, max_connections: int = 10, timeout: float = 5.0):
         self.db_path = db_path
         self.max_connections = max_connections
         self.timeout = timeout
-        
+
         # 连接池
         self.connections = deque()
         self.in_use = set()
         self.lock = threading.Lock()
-        
+
         # 统计信息
         self.stats = {
             "total_connections_created": 0,
@@ -46,10 +46,10 @@ class ConnectionPool:
             "connection_errors": 0,
             "avg_wait_time": 0.0,
         }
-        
+
         # 初始化连接池
         self._initialize_pool()
-    
+
     def _initialize_pool(self):
         """初始化连接池"""
         initial_connections = min(3, self.max_connections)
@@ -58,7 +58,7 @@ class ConnectionPool:
             if conn:
                 self.connections.append(conn)
                 self.stats["total_connections_created"] += 1
-    
+
     def _create_connection(self):
         """创建新的数据库连接"""
         try:
@@ -69,11 +69,11 @@ class ConnectionPool:
             logging.getLogger(__name__).warning(f"创建数据库连接失败: {e}")
             self.stats["connection_errors"] += 1
             return None  # 返回None
-    
+
     def get_connection(self) -> Optional[sqlite3.Connection]:
         """从连接池获取连接"""
         start_time = time.time()
-        
+
         with self.lock:
             # 尝试从池中获取可用连接
             while self.connections:
@@ -82,13 +82,13 @@ class ConnectionPool:
                     self.in_use.add(conn)
                     self.stats["connections_in_use"] = len(self.in_use)
                     self.stats["connections_available"] = len(self.connections)
-                    
+
                     # 更新平均等待时间
                     wait_time = time.time() - start_time
                     self.stats["avg_wait_time"] = (
                         self.stats["avg_wait_time"] * 0.9 + wait_time * 0.1
                     )
-                    
+
                     return conn
                 else:
                     # 关闭不健康的连接
@@ -96,9 +96,11 @@ class ConnectionPool:
                         conn.close()
                     except (sqlite3.Error, AttributeError, ValueError) as e:
                         # 连接可能已经关闭或处于无效状态，记录调试信息但不抛出异常
-                        logging.getLogger(__name__).debug(f"关闭不健康的连接时出现异常（正常情况）: {e}")
+                        logging.getLogger(__name__).debug(
+                            f"关闭不健康的连接时出现异常（正常情况）: {e}"
+                        )
                         pass  # 已实现
-            
+
             # 没有可用连接，创建新的连接
             if len(self.in_use) < self.max_connections:
                 conn = self._create_connection()
@@ -107,24 +109,24 @@ class ConnectionPool:
                     self.stats["total_connections_created"] += 1
                     self.stats["connections_in_use"] = len(self.in_use)
                     self.stats["connections_available"] = len(self.connections)
-                    
+
                     wait_time = time.time() - start_time
                     self.stats["avg_wait_time"] = (
                         self.stats["avg_wait_time"] * 0.9 + wait_time * 0.1
                     )
-                    
+
                     return conn
-        
+
         # 无法获取连接
         logging.getLogger(__name__).warning("连接池已满，无法获取连接")
         return None  # 返回None
-    
+
     def release_connection(self, conn: sqlite3.Connection):
         """释放连接回连接池"""
         with self.lock:
             if conn in self.in_use:
                 self.in_use.remove(conn)
-                
+
                 if self._is_connection_healthy(conn):
                     self.connections.append(conn)
                 else:
@@ -138,10 +140,10 @@ class ConnectionPool:
                     if new_conn:
                         self.connections.append(new_conn)
                         self.stats["total_connections_created"] += 1
-                
+
                 self.stats["connections_in_use"] = len(self.in_use)
                 self.stats["connections_available"] = len(self.connections)
-    
+
     def _is_connection_healthy(self, conn: sqlite3.Connection) -> bool:
         """检查连接是否健康"""
         try:
@@ -151,12 +153,12 @@ class ConnectionPool:
             return True
         except Exception:
             return False
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """获取连接池统计信息"""
         with self.lock:
             return self.stats.copy()
-    
+
     def close_all(self):
         """关闭所有连接"""
         with self.lock:
@@ -165,14 +167,14 @@ class ConnectionPool:
                     conn.close()
                 except Exception:
                     pass  # 已修复: 实现函数功能
-            
+
             for conn in self.in_use.copy():
                 try:
                     conn.close()
                 except Exception:
                     pass  # 已实现
                 self.in_use.remove(conn)
-            
+
             self.connections.clear()
             self.in_use.clear()
 
@@ -210,7 +212,7 @@ class KnowledgeStore:
         db_dir = os.path.dirname(self.db_path)
         if db_dir:  # 只有目录非空时才创建
             os.makedirs(db_dir, exist_ok=True)
-        
+
         vector_dir = os.path.dirname(self.vector_store_path)
         if vector_dir:  # 只有目录非空时才创建
             os.makedirs(vector_dir, exist_ok=True)
@@ -219,7 +221,7 @@ class KnowledgeStore:
         self.connection_pool = ConnectionPool(
             db_path=self.db_path,
             max_connections=self.max_connections,
-            timeout=self.connection_timeout
+            timeout=self.connection_timeout,
         )
 
         # 初始化数据库
@@ -228,7 +230,7 @@ class KnowledgeStore:
         # 向量存储
         self.vector_store = {}
         self._load_vector_store()
-        
+
         # 初始化嵌入缓存
         self._embedding_cache = {}
 
@@ -253,9 +255,11 @@ class KnowledgeStore:
         }
 
         self.logger.info(f"知识存储器初始化完成，数据库: {self.db_path}")
-        self.logger.info(f"工业级特性: 连接池({self.max_connections}连接), "
-                        f"缓存({'启用' if self.enable_cache else '禁用'})")
-    
+        self.logger.info(
+            f"工业级特性: 连接池({self.max_connections}连接), "
+            f"缓存({'启用' if self.enable_cache else '禁用'})"
+        )
+
     @contextlib.contextmanager
     def _with_connection(self):
         """连接上下文管理器，确保连接正确获取和释放"""
@@ -268,30 +272,31 @@ class KnowledgeStore:
         finally:
             if conn:
                 self.connection_pool.release_connection(conn)
-    
+
     def _update_performance_stats(self, operation_type: str, execution_time: float):
         """更新性能统计"""
         self.performance_stats[f"{operation_type}_operations"] += 1
-        
+
         # 更新平均时间（指数移动平均）
         avg_key = f"avg_{operation_type}_time"
         if avg_key in self.performance_stats:
             current_avg = self.performance_stats[avg_key]
             self.performance_stats[avg_key] = current_avg * 0.9 + execution_time * 0.1
-        
+
         self.performance_stats["last_updated"] = datetime.now().isoformat()
-    
+
     def _get_cache_key(self, operation: str, *args, **kwargs) -> str:
         """生成缓存键"""
         import hashlib
+
         key_str = f"{operation}:{str(args)}:{str(kwargs)}"
         return hashlib.md5(key_str.encode()).hexdigest()
-    
+
     def _check_cache(self, cache_key: str) -> Optional[Any]:
         """检查缓存"""
         if not self.enable_cache:
             return None  # 返回None
-        
+
         with self.cache_lock:
             if cache_key in self.query_cache:
                 entry = self.query_cache[cache_key]
@@ -302,27 +307,26 @@ class KnowledgeStore:
                     # 缓存过期
                     del self.query_cache[cache_key]
                     self.cache_stats["evictions"] += 1
-        
+
         self.cache_stats["misses"] += 1
         return None  # 返回None
-    
+
     def _set_cache(self, cache_key: str, data: Any):
         """设置缓存"""
         if not self.enable_cache or not data:
             return
-        
+
         with self.cache_lock:
             # 如果缓存已满，移除最旧的条目
             if len(self.query_cache) >= self.cache_max_size:
-                oldest_key = min(self.query_cache.keys(), 
-                               key=lambda k: self.query_cache[k]["timestamp"])
+                oldest_key = min(
+                    self.query_cache.keys(),
+                    key=lambda k: self.query_cache[k]["timestamp"],
+                )
                 del self.query_cache[oldest_key]
                 self.cache_stats["evictions"] += 1
-            
-            self.query_cache[cache_key] = {
-                "data": data,
-                "timestamp": time.time()
-            }
+
+            self.query_cache[cache_key] = {"data": data, "timestamp": time.time()}
 
     def _init_database(self):
         """初始化SQLite数据库"""
@@ -347,7 +351,9 @@ class KnowledgeStore:
                 """)
 
                 # 创建索引
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_type ON knowledge (type)")
+                cursor.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_type ON knowledge (type)"
+                )
                 cursor.execute(
                     "CREATE INDEX IF NOT EXISTS idx_created_at ON knowledge (created_at)"
                 )
@@ -387,7 +393,7 @@ class KnowledgeStore:
             添加结果
         """
         start_time = time.time()
-        
+
         try:
             with self._with_connection() as conn:
                 cursor = conn.cursor()
@@ -409,7 +415,9 @@ class KnowledgeStore:
                 embedding_blob = None
                 if embedding is not None:
                     embedding_blob = pickle.dumps(
-                        embedding.cpu().numpy() if hasattr(embedding, "cpu") else embedding
+                        embedding.cpu().numpy()
+                        if hasattr(embedding, "cpu")
+                        else embedding
                     )
                     # 存储到向量存储
                     self.vector_store[knowledge_id] = embedding
@@ -440,7 +448,7 @@ class KnowledgeStore:
 
             # 保存向量存储
             self._save_vector_store()
-            
+
             # 更新性能统计
             execution_time = time.time() - start_time
             self._update_performance_stats("add", execution_time)
@@ -789,76 +797,72 @@ class KnowledgeStore:
 
         return knowledge_item
 
-    def search(self, query_text: str, knowledge_type: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
+    def search(
+        self, query_text: str, knowledge_type: Optional[str] = None, limit: int = 10
+    ) -> List[Dict[str, Any]]:
         """
         搜索知识（search_by_content的别名）
-        
+
         参数:
             query_text: 查询文本
             knowledge_type: 知识类型过滤
             limit: 限制数量
-            
+
         返回:
             知识条目列表
         """
         return self.search_by_content(query_text, knowledge_type, limit)
-    
+
     def build_knowledge_graph(self) -> Dict[str, Any]:
         """
         构建知识图谱（简化版）
-        
+
         返回:
             知识图谱结构
         """
         try:
             # 获取所有知识
             all_knowledge = self.get_all()
-            
+
             # 构建简单的图谱结构
             graph = {
                 "nodes": [],
                 "edges": [],
-                "stats": {
-                    "total_nodes": 0,
-                    "total_edges": 0,
-                    "knowledge_types": set()
-                }
+                "stats": {"total_nodes": 0, "total_edges": 0, "knowledge_types": set()},
             }
-            
+
             for item in all_knowledge:
                 # 添加节点
                 node_id = item["id"]
-                graph["nodes"].append({
-                    "id": node_id,
-                    "type": item["type"],
-                    "label": item["type"],
-                    "content": item["content"],
-                    "properties": {
-                        "source": item.get("source", "unknown"),
-                        "confidence": item.get("confidence", 1.0),
-                        "created_at": item.get("created_at", "")
+                graph["nodes"].append(
+                    {
+                        "id": node_id,
+                        "type": item["type"],
+                        "label": item["type"],
+                        "content": item["content"],
+                        "properties": {
+                            "source": item.get("source", "unknown"),
+                            "confidence": item.get("confidence", 1.0),
+                            "created_at": item.get("created_at", ""),
+                        },
                     }
-                })
+                )
                 graph["stats"]["knowledge_types"].add(item["type"])
-            
+
             graph["stats"]["total_nodes"] = len(graph["nodes"])
             graph["stats"]["total_edges"] = len(graph["edges"])
             graph["stats"]["knowledge_types"] = list(graph["stats"]["knowledge_types"])
-            
+
             return graph
-            
+
         except Exception as e:
             self.logger.error(f"构建知识图谱失败: {e}")
             return {
                 "nodes": [],
                 "edges": [],
-                "stats": {
-                    "total_nodes": 0,
-                    "total_edges": 0,
-                    "knowledge_types": []
-                }
+                "stats": {"total_nodes": 0, "total_edges": 0, "knowledge_types": []},
             }
-    
+
     def close(self):
         """关闭存储连接"""
         # SQLite会在连接关闭时自动提交

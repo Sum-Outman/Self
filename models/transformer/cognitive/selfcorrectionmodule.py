@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Optional
+
 
 class SelfCorrectionModule(nn.Module):
     """自我改正模块 - 真实错误改正系统
@@ -552,6 +552,3 @@ class SelfCorrectionModule(nn.Module):
             "selected_strategies": selected_strategies,
             "knowledge_features": knowledge_features,
         }
-
-
-

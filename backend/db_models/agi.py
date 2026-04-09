@@ -34,9 +34,11 @@ class AGIModel(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # 关系
-    training_results = relationship("TrainingResult", back_populates="model", cascade="all, delete-orphan")
+    training_results = relationship(
+        "TrainingResult", back_populates="model", cascade="all, delete-orphan"
+    )
 
 
 class TrainingJob(Base):
@@ -75,7 +77,9 @@ class ProfessionalCapability(Base):
     tests_failed = Column(Integer, default=0)
     tests_total = Column(Integer, default=0)
     capabilities_list = Column(Text)  # JSON列表存储能力项
-    type = Column(String(50), default="general")  # programming, mathematics, physics, medical, financial, chemistry, general
+    type = Column(
+        String(50), default="general"
+    )  # programming, mathematics, physics, medical, financial, chemistry, general
     level = Column(Integer, default=1)  # 能力级别
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -6,13 +6,15 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from datetime import datetime, timezone
 
 from backend.dependencies import get_db, get_current_user
 from backend.db_models.user import User
 from backend.schemas.response import SuccessResponse
-from backend.services.professional_capabilities_service import get_professional_capabilities_service
+from backend.services.professional_capabilities_service import (
+    get_professional_capabilities_service,
+)
 
 # 创建日志记录器
 logger = logging.getLogger(__name__)
@@ -103,7 +105,8 @@ PROFESSIONAL_CAPABILITIES = [
     },
 ]
 
-@router.get("", response_model=SuccessResponse[List[Dict[str, Any]]])
+
+@router.get("", response_model=SuccessResponse)
 async def get_capabilities(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -111,26 +114,26 @@ async def get_capabilities(
     """获取专业领域能力列表"""
     try:
         logger.info(f"用户 {user.id} 获取专业领域能力列表")
-        
+
         # 获取专业领域能力服务实例
         service = get_professional_capabilities_service()
-        
+
         # 从服务获取能力列表
         capabilities = service.get_capabilities()
-        
+
         return SuccessResponse.create(
-            data=capabilities,
-            message="专业领域能力列表获取成功"
+            data=capabilities, message="专业领域能力列表获取成功"
         )
-        
+
     except Exception as e:
         logger.error(f"获取专业领域能力列表失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取专业领域能力列表失败: {str(e)}"
+            detail=f"获取专业领域能力列表失败: {str(e)}",
         )
 
-@router.get("/{capability_id}", response_model=SuccessResponse[Dict[str, Any]])
+
+@router.get("/{capability_id}", response_model=SuccessResponse)
 async def get_capability(
     capability_id: str,
     db: Session = Depends(get_db),
@@ -139,34 +142,34 @@ async def get_capability(
     """获取特定专业领域能力详情"""
     try:
         logger.info(f"用户 {user.id} 获取专业领域能力详情: {capability_id}")
-        
+
         # 获取专业领域能力服务实例
         service = get_professional_capabilities_service()
-        
+
         # 从服务获取能力详情
         capability = service.get_capability(capability_id)
-        
+
         if not capability:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"未找到ID为 {capability_id} 的专业领域能力"
+                detail=f"未找到ID为 {capability_id} 的专业领域能力",
             )
-        
+
         return SuccessResponse.create(
-            data=capability,
-            message="专业领域能力详情获取成功"
+            data=capability, message="专业领域能力详情获取成功"
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"获取专业领域能力详情失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取专业领域能力详情失败: {str(e)}"
+            detail=f"获取专业领域能力详情失败: {str(e)}",
         )
 
-@router.post("/{capability_id}/test", response_model=SuccessResponse[Dict[str, Any]])
+
+@router.post("/{capability_id}/test", response_model=SuccessResponse)
 async def test_capability(
     capability_id: str,
     db: Session = Depends(get_db),
@@ -175,28 +178,28 @@ async def test_capability(
     """测试特定专业领域能力"""
     try:
         logger.info(f"用户 {user.id} 测试专业领域能力: {capability_id}")
-        
+
         # 获取专业领域能力服务实例
         service = get_professional_capabilities_service()
-        
+
         # 通过服务执行测试
         test_result = service.test_capability(capability_id)
-        
+
         return SuccessResponse.create(
-            data=test_result,
-            message="专业领域能力测试请求已处理"
+            data=test_result, message="专业领域能力测试请求已处理"
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"测试专业领域能力失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"测试专业领域能力失败: {str(e)}"
+            detail=f"测试专业领域能力失败: {str(e)}",
         )
 
-@router.get("/overall/status", response_model=SuccessResponse[Dict[str, Any]])
+
+@router.get("/overall/status", response_model=SuccessResponse)
 async def get_overall_status(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -204,34 +207,35 @@ async def get_overall_status(
     """获取专业领域能力整体状态"""
     try:
         logger.info(f"用户 {user.id} 获取专业领域能力整体状态")
-        
+
         # 获取专业领域能力服务实例
         service = get_professional_capabilities_service()
-        
+
         # 从服务获取能力列表
         capabilities = service.get_capabilities()
-        
+
         # 计算整体状态
         enabled_capabilities = len([c for c in capabilities if c.get("enabled", False)])
         average_performance = 0
         if capabilities:
-            average_performance = sum(c.get("performance", 0) for c in capabilities) / len(capabilities)
-        
+            average_performance = sum(
+                c.get("performance", 0) for c in capabilities
+            ) / len(capabilities)
+
         overall_status = {
             "total_capabilities": len(capabilities),
             "enabled_capabilities": enabled_capabilities,
             "average_performance": round(average_performance, 2),
             "last_updated": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         return SuccessResponse.create(
-            data=overall_status,
-            message="专业领域能力整体状态获取成功"
+            data=overall_status, message="专业领域能力整体状态获取成功"
         )
-        
+
     except Exception as e:
         logger.error(f"获取专业领域能力整体状态失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取专业领域能力整体状态失败: {str(e)}"
+            detail=f"获取专业领域能力整体状态失败: {str(e)}",
         )

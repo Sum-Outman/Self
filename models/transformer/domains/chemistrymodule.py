@@ -3,9 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Dict, Optional
+
 
 class ChemistryModule(nn.Module):
     """化学专业领域能力模块 - 真实化学算法实现
@@ -116,6 +115,3 @@ class ChemistryModule(nn.Module):
             output_dict["professional_chemistry_result"] = chemistry_result
 
         return output_dict
-
-
-

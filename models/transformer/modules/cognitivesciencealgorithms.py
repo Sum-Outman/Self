@@ -2,7 +2,6 @@
 """CognitiveScienceAlgorithms模块"""
 
 
-
 class CognitiveScienceAlgorithms:
     """认知科学真实算法库
 
@@ -107,9 +106,15 @@ class CognitiveScienceAlgorithms:
         learning_cycle["forethought"] = {
             "goal_setting": normalized_goals,
             "planning": self._create_learning_plan(normalized_goals, current_state),
-            "self_efficacy": self._assess_self_efficacy(normalized_goals, current_state),
-            "task_analysis": self._analyze_learning_task(normalized_goals, current_state),
-            "motivation": self._assess_learning_motivation(normalized_goals, current_state),
+            "self_efficacy": self._assess_self_efficacy(
+                normalized_goals, current_state
+            ),
+            "task_analysis": self._analyze_learning_task(
+                normalized_goals, current_state
+            ),
+            "motivation": self._assess_learning_motivation(
+                normalized_goals, current_state
+            ),
         }
 
         # 第二阶段：表现控制
@@ -118,9 +123,15 @@ class CognitiveScienceAlgorithms:
             "strategy_implementation": self._implement_learning_strategies(
                 learning_cycle["forethought"]["planning"]
             ),
-            "self_monitoring": self._monitor_learning_progress(current_state, normalized_goals),
-            "self_instruction": self._generate_self_instructions(current_state, normalized_goals),
-            "time_management": self._manage_learning_time(current_state, normalized_goals),
+            "self_monitoring": self._monitor_learning_progress(
+                current_state, normalized_goals
+            ),
+            "self_instruction": self._generate_self_instructions(
+                current_state, normalized_goals
+            ),
+            "time_management": self._manage_learning_time(
+                current_state, normalized_goals
+            ),
         }
 
         # 第三阶段：自我反思
@@ -524,13 +535,13 @@ class CognitiveScienceAlgorithms:
             "prerequisites": [],
             "estimated_time": 1.0,  # 小时
             "required_resources": ["study_materials", "practice_exercises"],
-            "difficulty_level": "intermediate"
+            "difficulty_level": "intermediate",
         }
-        
+
         if goals:
             # 根据目标数量调整复杂性
             task_analysis["complexity"] = min(0.3 + len(goals) * 0.1, 0.9)
-            
+
             # 检查是否需要特定先决条件
             for goal_name, goal_info in goals.items():
                 # 处理两种格式：原始目标值（数值）或规范化目标字典
@@ -539,12 +550,12 @@ class CognitiveScienceAlgorithms:
                 else:
                     # 数值目标：估计难度（基于目标值大小）
                     difficulty = min(abs(float(goal_info)) * 0.5, 1.0)
-                
+
                 if difficulty > 0.7:
                     task_analysis["prerequisites"].append(f"basic_{goal_name}")
                     task_analysis["difficulty_level"] = "advanced"
                     task_analysis["estimated_time"] = 2.0  # 小时
-        
+
         return task_analysis
 
     def _assess_learning_motivation(self, goals, current_state):
@@ -555,9 +566,9 @@ class CognitiveScienceAlgorithms:
             "extrinsic": 0.4,
             "self_determination": 0.7,
             "goal_commitment": 0.8,
-            "persistence": 0.75
+            "persistence": 0.75,
         }
-        
+
         if goals:
             # 根据目标数量和可达成性调整动机
             achievable_goals = 0
@@ -568,14 +579,18 @@ class CognitiveScienceAlgorithms:
                 else:
                     # 数值目标：假定为可达成
                     achievable_goals += 1
-            
+
             total_goals = len(goals)
-            
+
             if total_goals > 0:
                 success_expectation = achievable_goals / total_goals
-                motivation["self_determination"] = min(0.3 + success_expectation * 0.7, 1.0)
-                motivation["goal_commitment"] = min(0.4 + success_expectation * 0.6, 1.0)
-        
+                motivation["self_determination"] = min(
+                    0.3 + success_expectation * 0.7, 1.0
+                )
+                motivation["goal_commitment"] = min(
+                    0.4 + success_expectation * 0.6, 1.0
+                )
+
         return motivation
 
     def _calculate_confidence(self, process_data, performance):
@@ -600,7 +615,7 @@ class CognitiveScienceAlgorithms:
             # 展平嵌套字典结构
             flattened_goals = {}
             flattened_current_state = {}
-            
+
             # 展平external_goals
             for key, value in external_goals.items():
                 if isinstance(value, dict):
@@ -608,7 +623,7 @@ class CognitiveScienceAlgorithms:
                         flattened_goals[f"{key}.{subkey}"] = subvalue
                 else:
                     flattened_goals[key] = value
-            
+
             # 展平current_state
             for key, value in current_state.items():
                 if isinstance(value, dict):
@@ -616,13 +631,15 @@ class CognitiveScienceAlgorithms:
                         flattened_current_state[f"{key}.{subkey}"] = subvalue
                 else:
                     flattened_current_state[key] = value
-            
+
             # 调整目标难度
             for goal_name, target_value in flattened_goals.items():
                 current_value = flattened_current_state.get(goal_name, 0.0)
-                
+
                 # 确保目标值是数值类型
-                if isinstance(target_value, (int, float)) and isinstance(current_value, (int, float)):
+                if isinstance(target_value, (int, float)) and isinstance(
+                    current_value, (int, float)
+                ):
                     gap = target_value - current_value
 
                     # SMART目标原则：具体、可衡量、可实现、相关、时限
@@ -679,48 +696,54 @@ class CognitiveScienceAlgorithms:
 
     def _create_milestones(self, target, gap):
         """创建学习里程碑
-        
+
         参数:
             target: 目标值
             gap: 当前值与目标值的差距
-            
+
         返回:
             里程碑列表，每个里程碑包含目标值和描述
         """
         milestones = []
-        
+
         # 根据差距大小创建里程碑
         if gap > 0.5:
             # 大差距：创建3个里程碑
             step = gap / 3
             for i in range(1, 4):
                 milestone_value = target - gap + step * i
-                milestones.append({
-                    "value": milestone_value,
-                    "description": f"里程碑 {i}: 达到{milestone_value:.2f}",
-                    "required_progress": step * i,
-                    "time_estimate": i * 7  # 天
-                })
+                milestones.append(
+                    {
+                        "value": milestone_value,
+                        "description": f"里程碑 {i}: 达到{milestone_value:.2f}",
+                        "required_progress": step * i,
+                        "time_estimate": i * 7,  # 天
+                    }
+                )
         elif gap > 0.2:
             # 中等差距：创建2个里程碑
             step = gap / 2
             for i in range(1, 3):
                 milestone_value = target - gap + step * i
-                milestones.append({
-                    "value": milestone_value,
-                    "description": f"里程碑 {i}: 达到{milestone_value:.2f}",
-                    "required_progress": step * i,
-                    "time_estimate": i * 5  # 天
-                })
+                milestones.append(
+                    {
+                        "value": milestone_value,
+                        "description": f"里程碑 {i}: 达到{milestone_value:.2f}",
+                        "required_progress": step * i,
+                        "time_estimate": i * 5,  # 天
+                    }
+                )
         else:
             # 小差距：创建1个里程碑
-            milestones.append({
-                "value": target,
-                "description": f"最终目标: 达到{target:.2f}",
-                "required_progress": gap,
-                "time_estimate": 3  # 天
-            })
-        
+            milestones.append(
+                {
+                    "value": target,
+                    "description": f"最终目标: 达到{target:.2f}",
+                    "required_progress": gap,
+                    "time_estimate": 3,  # 天
+                }
+            )
+
         return milestones
 
     def _assess_self_efficacy(self, goals, current_state):
@@ -765,23 +788,25 @@ class CognitiveScienceAlgorithms:
         implementation = {
             "strategies_applied": [],
             "effectiveness": 0.7,
-            "adjustments_made": []
+            "adjustments_made": [],
         }
-        
+
         if plan:
             for goal_name, goal_plan in plan.items():
-                implementation["strategies_applied"].append({
-                    "goal": goal_name,
-                    "actions": goal_plan.get("actions", []),
-                    "status": "planned"
-                })
-        
+                implementation["strategies_applied"].append(
+                    {
+                        "goal": goal_name,
+                        "actions": goal_plan.get("actions", []),
+                        "status": "planned",
+                    }
+                )
+
         return implementation
 
     def _monitor_learning_progress(self, current_state, goals):
         """监控学习进度"""
         progress = {}
-        
+
         for goal_name, goal_info in goals.items():
             if isinstance(goal_info, dict):
                 target = goal_info.get("target", 0)
@@ -793,42 +818,45 @@ class CognitiveScienceAlgorithms:
                 "current": current,
                 "target": target,
                 "gap": gap,
-                "progress_rate": max(0, 1 - abs(gap)/max(abs(target), 0.001)),
-                "on_track": gap > -0.1  # 允许小幅落后
+                "progress_rate": max(0, 1 - abs(gap) / max(abs(target), 0.001)),
+                "on_track": gap > -0.1,  # 允许小幅落后
             }
-        
+
         return progress
 
     def _generate_self_instructions(self, current_state, goals):
         """生成自我指导"""
         instructions = []
-        
+
         for goal_name, goal_info in goals.items():
             if isinstance(goal_info, dict):
                 target = goal_info.get("target", 0)
-                difficulty = goal_info.get("difficulty", 0.5)
+                goal_info.get("difficulty", 0.5)
             else:
                 target = goal_info
-                difficulty = 0.5
-            
+
             current = current_state.get(goal_name, 0)
             gap = target - current
-            
+
             if gap > 0.1:
-                instructions.append(f"专注于提高{goal_name}，当前值{current:.2f}，目标{target:.2f}")
-                instructions.append(f"使用刻意练习，每次练习30分钟")
+                instructions.append(
+                    f"专注于提高{goal_name}，当前值{current:.2f}，目标{target:.2f}"
+                )
+                instructions.append("使用刻意练习，每次练习30分钟")
             elif gap > -0.05:
                 instructions.append(f"保持{goal_name}的当前水平{current:.2f}")
             else:
-                instructions.append(f"检查{goal_name}是否设置合理，当前值{current:.2f}高于目标{target:.2f}")
-        
+                instructions.append(
+                    f"检查{goal_name}是否设置合理，当前值{current:.2f}高于目标{target:.2f}"
+                )
+
         return instructions
 
     def _manage_learning_time(self, current_state, goals):
         """管理学习时间"""
         time_allocation = {}
         total_attention = 0
-        
+
         # 计算每个目标所需的注意力
         for goal_name, goal_info in goals.items():
             if isinstance(goal_info, dict):
@@ -840,54 +868,64 @@ class CognitiveScienceAlgorithms:
             attention = min(abs(gap) * 2, 1.0)
             time_allocation[goal_name] = attention
             total_attention += attention
-        
+
         # 标准化时间分配
         if total_attention > 0:
             for goal_name in time_allocation:
-                time_allocation[goal_name] = time_allocation[goal_name] / total_attention * 100  # 百分比
-        
+                time_allocation[goal_name] = (
+                    time_allocation[goal_name] / total_attention * 100
+                )  # 百分比
+
         return time_allocation
 
     def _evaluate_learning_outcomes(self, current_state, goals, feedback):
         """评估学习成果"""
         evaluation = {}
-        
+
         for goal_name, goal_info in goals.items():
             if isinstance(goal_info, dict):
                 target = goal_info.get("target", 0)
             else:
                 target = goal_info
             current = current_state.get(goal_name, 0)
-            previous = feedback.get("previous_performance", current * 0.9) if feedback else current * 0.9
-            
+            previous = (
+                feedback.get("previous_performance", current * 0.9)
+                if feedback
+                else current * 0.9
+            )
+
             improvement = current - previous
             gap_to_target = target - current
-            
+
             evaluation[goal_name] = {
                 "current_performance": current,
                 "previous_performance": previous,
                 "improvement": improvement,
                 "gap_to_target": gap_to_target,
                 "success_rate": min(1.0, current / max(target, 0.001)),
-                "meets_expectations": improvement > 0 or gap_to_target < 0.1
+                "meets_expectations": improvement > 0 or gap_to_target < 0.1,
             }
-        
+
         return evaluation
 
     def _attribute_causes(self, current_state, goals, feedback):
         """归因分析"""
         attributions = {}
-        
+
         for goal_name, goal_info in goals.items():
             if isinstance(goal_info, dict):
-                target = goal_info.get("target", 0)
+                goal_info.get("target", 0)
             else:
-                target = goal_info
+                pass
             current = current_state.get(goal_name, 0)
-            previous = feedback.get("previous_performance", current * 0.9) if feedback else current * 0.9
-            
+            previous = (
+                feedback.get("previous_performance", current * 0.9)
+                if feedback
+                else current * 0.9
+            )
+
             improvement = current - previous
-            
+
             # 归因分析
             if improvement > 0.1:
                 attributions[goal_name] = {
@@ -895,7 +933,7 @@ class CognitiveScienceAlgorithms:
                     "effort": 0.8,
                     "task_difficulty": 0.3,
                     "luck": 0.2,
-                    "primary_cause": "effort_and_ability"
+                    "primary_cause": "effort_and_ability",
                 }
             elif improvement > 0:
                 attributions[goal_name] = {
@@ -903,7 +941,7 @@ class CognitiveScienceAlgorithms:
                     "effort": 0.6,
                     "task_difficulty": 0.5,
                     "luck": 0.4,
-                    "primary_cause": "balanced_factors"
+                    "primary_cause": "balanced_factors",
                 }
             else:
                 attributions[goal_name] = {
@@ -911,62 +949,75 @@ class CognitiveScienceAlgorithms:
                     "effort": 0.4,
                     "task_difficulty": 0.7,
                     "luck": 0.5,
-                    "primary_cause": "task_difficulty"
+                    "primary_cause": "task_difficulty",
                 }
-        
+
         return attributions
 
     def _generate_self_reactions(self, current_state, goals, feedback):
         """生成自我反应"""
         reactions = []
-        
+
         for goal_name, goal_info in goals.items():
             if isinstance(goal_info, dict):
-                target = goal_info.get("target", 0)
+                goal_info.get("target", 0)
             else:
-                target = goal_info
+                pass
             current = current_state.get(goal_name, 0)
-            previous = feedback.get("previous_performance", current * 0.9) if feedback else current * 0.9
-            
+            previous = (
+                feedback.get("previous_performance", current * 0.9)
+                if feedback
+                else current * 0.9
+            )
+
             improvement = current - previous
-            
+
             if improvement > 0.1:
-                reactions.append(f"对{goal_name}的进步感到满意！从{previous:.2f}提高到{current:.2f}")
-                reactions.append(f"继续保持当前的学习策略")
+                reactions.append(
+                    f"对{goal_name}的进步感到满意！从{previous:.2f}提高到{current:.2f}"
+                )
+                reactions.append("继续保持当前的学习策略")
             elif improvement > 0:
-                reactions.append(f"在{goal_name}上取得了一些进步，从{previous:.2f}到{current:.2f}")
-                reactions.append(f"考虑调整学习方法以提高效率")
+                reactions.append(
+                    f"在{goal_name}上取得了一些进步，从{previous:.2f}到{current:.2f}"
+                )
+                reactions.append("考虑调整学习方法以提高效率")
             else:
-                reactions.append(f"{goal_name}没有明显进步，当前{current:.2f}，之前{previous:.2f}")
-                reactions.append(f"需要重新评估学习方法和目标设定")
-        
+                reactions.append(
+                    f"{goal_name}没有明显进步，当前{current:.2f}，之前{previous:.2f}"
+                )
+                reactions.append("需要重新评估学习方法和目标设定")
+
         return reactions
 
     def _adapt_learning_strategies(self, current_state, goals, feedback):
         """调整学习策略"""
         adaptations = {}
-        
+
         for goal_name, goal_info in goals.items():
             if isinstance(goal_info, dict):
                 target = goal_info.get("target", 0)
-                difficulty = goal_info.get("difficulty", 0.5)
+                goal_info.get("difficulty", 0.5)
             else:
                 target = goal_info
-                difficulty = 0.5
-            
+
             current = current_state.get(goal_name, 0)
-            previous = feedback.get("previous_performance", current * 0.9) if feedback else current * 0.9
-            
+            previous = (
+                feedback.get("previous_performance", current * 0.9)
+                if feedback
+                else current * 0.9
+            )
+
             improvement = current - previous
             gap = target - current
-            
+
             if improvement < 0.05 and gap > 0.2:
                 # 低进步，大差距：需要大幅调整
                 adaptations[goal_name] = {
                     "action": "increase_intensity",
                     "recommendation": "增加练习时间和频率",
                     "new_strategy": "刻意练习+间隔重复",
-                    "confidence": 0.8
+                    "confidence": 0.8,
                 }
             elif improvement < 0.1 and gap > 0.1:
                 # 中等进步，中等差距：微调
@@ -974,7 +1025,7 @@ class CognitiveScienceAlgorithms:
                     "action": "adjust_method",
                     "recommendation": "尝试不同的学习方法",
                     "new_strategy": "多样化学习资源",
-                    "confidence": 0.6
+                    "confidence": 0.6,
                 }
             else:
                 # 良好进步或接近目标：保持
@@ -982,10 +1033,7 @@ class CognitiveScienceAlgorithms:
                     "action": "maintain",
                     "recommendation": "继续当前策略",
                     "new_strategy": "无变化",
-                    "confidence": 0.9
+                    "confidence": 0.9,
                 }
-        
+
         return adaptations
-
-
-

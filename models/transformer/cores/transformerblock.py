@@ -4,13 +4,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Optional, Callable
+
 
 class TransformerBlock(nn.Module):
     """Transformer块"""
 
-    def __init__(self, config: 'AGIModelConfig'):
+    def __init__(self, config: "AGIModelConfig"):
         super().__init__()
         self.config = config
 
@@ -21,7 +21,7 @@ class TransformerBlock(nn.Module):
             num_heads = max(1, config.hidden_size // 64)
             if config.hidden_size % num_heads != 0:
                 num_heads = 1  # 最终回退
-        
+
         self.attention = nn.MultiheadAttention(
             embed_dim=config.hidden_size,
             num_heads=num_heads,
@@ -68,7 +68,7 @@ class TransformerBlock(nn.Module):
             # 调试：记录裁剪情况
             if torch.abs(hidden_states).max() > clip_value:
                 logger.debug(
-                    f"TransformerBlock输入被裁剪，最大绝对值: {torch.abs(hidden_states).max().item():.2f}"
+                    f"TransformerBlock输入被裁剪，最大绝对值: {                         torch.abs(hidden_states).max().item():.2f}"
                 )
 
         # 自注意力
@@ -155,6 +155,3 @@ class TransformerBlock(nn.Module):
             return torch.tanh
         else:
             raise ValueError(f"未知激活函数: {activation}")
-
-
-

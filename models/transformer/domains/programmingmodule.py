@@ -3,9 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Dict, Optional
+
 
 class ProgrammingModule(nn.Module):
     """编程专业领域能力模块 - 真实编程算法实现
@@ -96,7 +95,10 @@ def calculate_sum(numbers):
         total += num
     return total
 """
-                from training.professional_domain_capabilities import ProgrammingLanguage
+                from training.professional_domain_capabilities import (
+                    ProgrammingLanguage,
+                )
+
                 analysis_result = (
                     self.professional_manager.programming_manager.analyze_code(
                         test_code, ProgrammingLanguage.PYTHON
@@ -130,6 +132,3 @@ def calculate_sum(numbers):
             output_dict["professional_programming_result"] = programming_result
 
         return output_dict
-
-
-

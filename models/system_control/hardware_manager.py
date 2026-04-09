@@ -500,7 +500,7 @@ class HardwareManager:
 
                 # 统计新设备数量
                 new_device_count = 0
-                
+
                 # 处理发现的设备
                 for device in discovered_devices:
                     if device.device_id not in self.devices:
@@ -517,7 +517,9 @@ class HardwareManager:
                     self.logger.info(f"发现 {new_device_count} 个新设备，已注册")
                 elif discovered_devices:
                     # 有设备但都是已注册的，调试级别记录
-                    self.logger.debug(f"发现 {len(discovered_devices)} 个设备，均为已注册设备")
+                    self.logger.debug(
+                        f"发现 {len(discovered_devices)} 个设备，均为已注册设备"
+                    )
                 else:
                     # 没有发现任何设备，调试级别记录
                     self.logger.debug("未发现任何设备")

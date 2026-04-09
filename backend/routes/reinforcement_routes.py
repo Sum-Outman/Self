@@ -13,20 +13,18 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from sqlalchemy.orm import Session
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from datetime import datetime, timezone
-import json
 import logging
 
 from backend.dependencies import get_db, get_current_user
 from backend.db_models.user import User
-from backend.db_models.robot import Robot, RobotStatus
 from backend.services.robot_reinforcement_service import (
     RobotReinforcementTrainingService,
     RobotTrainingConfig,
     TrainingTaskStatus,
     TrainingAlgorithm,
-    RobotTaskType
+    RobotTaskType,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,7 +44,7 @@ def get_training_service(db: Session = Depends(get_db)):
 
 @router.get("/dependencies", response_model=Dict[str, Any])
 async def check_dependencies(
-    service: RobotReinforcementTrainingService = Depends(get_training_service)
+    service: RobotReinforcementTrainingService = Depends(get_training_service),
 ):
     """检查强化学习依赖库是否可用"""
     try:
@@ -54,13 +52,13 @@ async def check_dependencies(
         return {
             "success": True,
             "dependencies_available": dependencies_available,
-            "message": "强化学习依赖库已检查"
+            "message": "强化学习依赖库已检查",
         }
     except Exception as e:
         logger.error(f"检查依赖库失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"检查依赖库失败: {str(e)}"
+            detail=f"检查依赖库失败: {str(e)}",
         )
 
 
@@ -93,30 +91,29 @@ async def create_training_task(
             robot_model=robot_model,
             gui_enabled=gui_enabled,
         )
-        
+
         # 创建训练任务
         result = service.create_training_task(config, user)
-        
+
         if not result["success"]:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["error"]
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result["error"]
             )
-        
+
         return {
             "success": True,
             "task_id": result["task_id"],
             "message": result["message"],
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"创建训练任务失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"创建训练任务失败: {str(e)}"
+            detail=f"创建训练任务失败: {str(e)}",
         )
 
 
@@ -130,30 +127,29 @@ async def start_training_task(
     try:
         # 验证任务所有权
         # 注意：服务内部会验证，这里也可以添加额外验证
-        
+
         # 启动训练
         result = service.start_training(task_id)
-        
+
         if not result["success"]:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["error"]
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result["error"]
             )
-        
+
         return {
             "success": True,
             "message": result["message"],
             "task_id": task_id,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"启动训练任务失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"启动训练任务失败: {str(e)}"
+            detail=f"启动训练任务失败: {str(e)}",
         )
 
 
@@ -167,27 +163,26 @@ async def stop_training_task(
     try:
         # 停止训练
         result = service.stop_training(task_id)
-        
+
         if not result["success"]:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["error"]
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result["error"]
             )
-        
+
         return {
             "success": True,
             "message": result["message"],
             "task_id": task_id,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"停止训练任务失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"停止训练任务失败: {str(e)}"
+            detail=f"停止训练任务失败: {str(e)}",
         )
 
 
@@ -201,22 +196,21 @@ async def get_training_status(
     try:
         # 获取任务状态
         result = service.get_task_status(task_id)
-        
+
         if not result["success"]:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=result["error"]
+                status_code=status.HTTP_404_NOT_FOUND, detail=result["error"]
             )
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"获取训练状态失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取训练状态失败: {str(e)}"
+            detail=f"获取训练状态失败: {str(e)}",
         )
 
 
@@ -233,32 +227,32 @@ async def list_training_tasks(
     try:
         # 获取任务列表（按用户过滤）
         result = service.list_tasks(user.id)
-        
+
         if not result["success"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result.get("error", "获取任务列表失败")
+                detail=result.get("error", "获取任务列表失败"),
             )
-        
+
         tasks = result["tasks"]
-        
+
         # 应用过滤器
         filtered_tasks = []
         for task in tasks:
             # 机器人ID过滤
             if robot_id is not None and task["robot_id"] != robot_id:
                 continue
-            
+
             # 状态过滤
             if status_filter is not None and task["status"] != status_filter.value:
                 continue
-            
+
             filtered_tasks.append(task)
-        
+
         # 分页
         total_count = len(filtered_tasks)
-        paginated_tasks = filtered_tasks[skip:skip + limit]
-        
+        paginated_tasks = filtered_tasks[skip: skip + limit]
+
         return {
             "success": True,
             "tasks": paginated_tasks,
@@ -266,18 +260,18 @@ async def list_training_tasks(
                 "total": total_count,
                 "skip": skip,
                 "limit": limit,
-                "has_more": skip + limit < total_count
+                "has_more": skip + limit < total_count,
             },
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"列出训练任务失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"列出训练任务失败: {str(e)}"
+            detail=f"列出训练任务失败: {str(e)}",
         )
 
 
@@ -292,27 +286,26 @@ async def evaluate_training_model(
     try:
         # 评估模型
         result = service.evaluate_model(task_id, num_episodes)
-        
+
         if not result["success"]:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["error"]
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result["error"]
             )
-        
+
         return {
             "success": True,
             "evaluation": result["evaluation"],
             "task_id": task_id,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"评估模型失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"评估模型失败: {str(e)}"
+            detail=f"评估模型失败: {str(e)}",
         )
 
 
@@ -326,27 +319,26 @@ async def delete_training_task(
     try:
         # 删除任务
         result = service.delete_task(task_id)
-        
+
         if not result["success"]:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["error"]
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result["error"]
             )
-        
+
         return {
             "success": True,
             "message": result["message"],
             "task_id": task_id,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"删除训练任务失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"删除训练任务失败: {str(e)}"
+            detail=f"删除训练任务失败: {str(e)}",
         )
 
 
@@ -362,7 +354,7 @@ async def list_available_environments():
                 "task_type": RobotTaskType.STAND_UP.value,
                 "observation_space": "关节位置 + 速度 + IMU",
                 "action_space": "25维关节控制",
-                "reward_function": "高度奖励 + 稳定性奖励 + 能量惩罚"
+                "reward_function": "高度奖励 + 稳定性奖励 + 能量惩罚",
             },
             {
                 "id": "Gazebo-HumanoidWalk-v0",
@@ -371,7 +363,7 @@ async def list_available_environments():
                 "task_type": RobotTaskType.WALK.value,
                 "observation_space": "关节位置 + 速度 + IMU",
                 "action_space": "25维关节控制",
-                "reward_function": "前进距离奖励 + 稳定性奖励 + 能量惩罚"
+                "reward_function": "前进距离奖励 + 稳定性奖励 + 能量惩罚",
             },
             {
                 "id": "Gazebo-HumanoidBalance-v0",
@@ -380,7 +372,7 @@ async def list_available_environments():
                 "task_type": RobotTaskType.BALANCE.value,
                 "observation_space": "关节位置 + 速度 + IMU",
                 "action_space": "25维关节控制",
-                "reward_function": "稳定性奖励 + 姿态惩罚"
+                "reward_function": "稳定性奖励 + 姿态惩罚",
             },
             {
                 "id": "Gazebo-HumanoidReach-v0",
@@ -389,22 +381,22 @@ async def list_available_environments():
                 "task_type": RobotTaskType.REACH_TARGET.value,
                 "observation_space": "关节位置 + 速度 + IMU + 目标位置",
                 "action_space": "25维关节控制",
-                "reward_function": "接近目标奖励 + 能量惩罚"
-            }
+                "reward_function": "接近目标奖励 + 能量惩罚",
+            },
         ]
-        
+
         return {
             "success": True,
             "environments": environments,
             "count": len(environments),
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except Exception as e:
         logger.error(f"获取环境列表失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取环境列表失败: {str(e)}"
+            detail=f"获取环境列表失败: {str(e)}",
         )
 
 
@@ -419,7 +411,7 @@ async def list_available_algorithms():
                 "description": "稳定高效的策略梯度算法，适合连续控制任务",
                 "suitable_for": ["连续控制", "机器人控制", "高维动作空间"],
                 "advantages": ["稳定", "样本效率高", "易于调参"],
-                "disadvantages": ["计算量较大", "需要并行环境"]
+                "disadvantages": ["计算量较大", "需要并行环境"],
             },
             {
                 "id": TrainingAlgorithm.A2C.value,
@@ -427,7 +419,7 @@ async def list_available_algorithms():
                 "description": "同步版本的A3C算法，适合并行训练",
                 "suitable_for": ["连续/离散控制", "并行训练"],
                 "advantages": ["简单", "易于实现", "可并行"],
-                "disadvantages": ["样本效率较低", "需要调参"]
+                "disadvantages": ["样本效率较低", "需要调参"],
             },
             {
                 "id": TrainingAlgorithm.DQN.value,
@@ -435,7 +427,7 @@ async def list_available_algorithms():
                 "description": "基于值函数的深度强化学习算法",
                 "suitable_for": ["离散动作空间", "游戏", "决策任务"],
                 "advantages": ["稳定", "理论成熟", "易于理解"],
-                "disadvantages": ["仅限离散动作", "样本效率低"]
+                "disadvantages": ["仅限离散动作", "样本效率低"],
             },
             {
                 "id": TrainingAlgorithm.SAC.value,
@@ -443,7 +435,7 @@ async def list_available_algorithms():
                 "description": "基于最大熵的强化学习算法，探索能力强",
                 "suitable_for": ["连续控制", "需要探索的任务", "机器人控制"],
                 "advantages": ["探索能力强", "稳定", "自动调参"],
-                "disadvantages": ["计算复杂", "需要调参"]
+                "disadvantages": ["计算复杂", "需要调参"],
             },
             {
                 "id": TrainingAlgorithm.TD3.value,
@@ -451,20 +443,20 @@ async def list_available_algorithms():
                 "description": "DDPG的改进版本，更稳定",
                 "suitable_for": ["连续控制", "需要精确控制的任务"],
                 "advantages": ["稳定", "避免过估计", "高效"],
-                "disadvantages": ["调参复杂", "需要大量样本"]
-            }
+                "disadvantages": ["调参复杂", "需要大量样本"],
+            },
         ]
-        
+
         return {
             "success": True,
             "algorithms": algorithms,
             "count": len(algorithms),
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except Exception as e:
         logger.error(f"获取算法列表失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取算法列表失败: {str(e)}"
+            detail=f"获取算法列表失败: {str(e)}",
         )

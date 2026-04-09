@@ -1,6 +1,12 @@
 # Self AGI 核心Transformer模型
+from dataclasses import dataclass
+import time
+import logging
+from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+import torch.nn.functional as F
+import torch.nn as nn
+import torch
 import sys
-import os
 from pathlib import Path
 
 # 添加项目根目录到Python路径，确保可以导入training模块
@@ -8,13 +14,6 @@ project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
-import time
-from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,6 @@ logger = logging.getLogger(__name__)
 # 专业领域能力导入
 try:
     from training.professional_domain_capabilities import (
-        ProfessionalDomainCapabilityManager,
         get_global_professional_domain_manager,
     )
 
@@ -54,6 +52,7 @@ try:
     from .modules.planningmodule import PlanningModule
     from .modules.reasoningmodule import ReasoningModule
     from .modules.cognitivesciencealgorithms import CognitiveScienceAlgorithms
+
     MODULES_AVAILABLE = True
     logger.info("核心模块导入成功")
 except ImportError as e:
@@ -63,6 +62,7 @@ except ImportError as e:
 # 分词器导入
 try:
     from models.multimodal.tokenizer import IndustrialTokenizer
+
     TOKENIZER_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"分词器模块不可用: {e}")
@@ -71,11 +71,9 @@ except ImportError as e:
 # 自主学习管理器导入
 try:
     from training.self_learning_manager import (
-        SelfLearningManager,
         get_global_self_learning_manager,
-        LearningState,
-        LearningGoalPriority
     )
+
     SELF_LEARNING_MANAGER_AVAILABLE = True
     logger.info("自主学习管理器模块可用")
 except ImportError as e:
@@ -87,10 +85,8 @@ except ImportError as e:
 try:
     from models.transformer.cores.quaternionlayer import (
         QuaternionTransformerBlock,
-        QuaternionLinear,
-        QuaternionAttention,
-        QuaternionLayerNorm
     )
+
     QUATERNION_LAYERS_AVAILABLE = True
 except ImportError as e:
     QUATERNION_LAYERS_AVAILABLE = False
@@ -136,7 +132,8 @@ class AGIModelConfig:
 
     # Mamba-2增强配置 - 基于Mamba-2和StripedHyena最新研究
     # 参考论文: "Mamba: Linear-Time Sequence Modeling with Selective State Spaces" (Gu & Dao, 2023)
-    # 参考论文: "StripedHyena: Moving Beyond Transformers with Hybrid Signal Processing Models" (Poli et al., 2024)
+    # 参考论文: "StripedHyena: Moving Beyond Transformers with Hybrid Signal
+    # Processing Models" (Poli et al., 2024)
     mamba2_enabled: bool = True  # 是否启用Mamba-2架构
     selective_scanning_enabled: bool = True  # 选择性扫描机制
     parallel_scan_enabled: bool = False  # 并行扫描（实验性）
@@ -151,13 +148,15 @@ class AGIModelConfig:
     stripedhyena_pattern: str = "alternating"  # 交替模式: alternating, grouped
 
     # Switch Transformers配置 - 基于Switch Transformers论文
-    # 参考论文: "Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity" (Fedus et al., 2021)
+    # 参考论文: "Switch Transformers: Scaling to Trillion Parameter Models with
+    # Simple and Efficient Sparsity" (Fedus et al., 2021)
     switch_transformer_enabled: bool = True  # 是否启用Switch Transformers
     switch_capacity_factor: float = 1.25  # Switch容量因子
     switch_jitter_epsilon: float = 0.01  # Switch抖动epsilon
 
     # FlashAttention-2配置 - 高效注意力实现
-    # 参考论文: "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness" (Dao et al., 2022)
+    # 参考论文: "FlashAttention: Fast and Memory-Efficient Exact Attention with
+    # IO-Awareness" (Dao et al., 2022)
     flash_attention2_enabled: bool = True  # 是否启用FlashAttention-2
     flash_attention_causal: bool = True  # 是否因果注意力
     flash_attention_dropout: float = 0.1  # FlashAttention dropout率
@@ -371,14 +370,14 @@ class MultiModalEncoder(nn.Module):
         sensor_embeddings: Optional[torch.Tensor] = None,
     ) -> Tuple[List[torch.Tensor], List[str], Dict[str, Any]]:
         """编码所有输入模态
-        
+
         参数:
             text_embeddings: 文本嵌入 [batch_size, seq_len, text_embedding_dim]
             image_embeddings: 图像嵌入 [batch_size, seq_len, image_embedding_dim]
             audio_embeddings: 音频嵌入 [batch_size, seq_len, audio_embedding_dim]
             video_embeddings: 视频嵌入 [batch_size, seq_len, video_embedding_dim]
             sensor_embeddings: 传感器嵌入 [batch_size, seq_len, sensor_embedding_dim]
-        
+
         返回:
             encoded_features: 编码后的特征列表
             modality_list: 模态类型列表
@@ -432,11 +431,11 @@ class MultiModalEncoder(nn.Module):
         alignment_info: Dict[str, Any],
     ) -> Tuple[torch.Tensor, Dict[str, Any]]:
         """执行跨模态对齐和特征融合
-        
+
         参数:
             encoded_features: 编码后的特征列表
             alignment_info: 对齐信息字典（将被更新）
-            
+
         返回:
             combined: 融合后的特征张量 [batch_size, seq_len, hidden_size]
             alignment_info: 更新后的对齐信息字典
@@ -445,15 +444,19 @@ class MultiModalEncoder(nn.Module):
         if self.config.multimodal_enabled and len(encoded_features) > 1:
             # 1. 跨模态注意力对齐
             all_features = torch.cat(encoded_features, dim=1)  # 拼接所有模态特征
-            
+
             # 创建注意力掩码（假设所有位置都有效）
             batch_size, seq_len, _ = all_features.shape
             # 创建key_padding_mask：False表示有效位置，True表示需要mask的位置
-            key_padding_mask = torch.zeros(batch_size, seq_len, dtype=torch.bool, device=all_features.device)
-            
+            key_padding_mask = torch.zeros(
+                batch_size, seq_len, dtype=torch.bool, device=all_features.device
+            )
+
             aligned_features, attention_weights = self.cross_modal_attention(
-                all_features, all_features, all_features,
-                key_padding_mask=key_padding_mask
+                all_features,
+                all_features,
+                all_features,
+                key_padding_mask=key_padding_mask,
             )
             alignment_info["cross_modal_attention_weights"] = attention_weights
 
@@ -529,7 +532,7 @@ class MultiModalEncoder(nn.Module):
 
         # 加权平均（最终融合）
         combined = torch.stack(encoded_features, dim=0).mean(dim=0)
-        
+
         return combined, alignment_info
 
     def _add_modality_embeddings(
@@ -538,11 +541,11 @@ class MultiModalEncoder(nn.Module):
         modality_types: Optional[List[int]] = None,
     ) -> torch.Tensor:
         """添加模态类型嵌入
-        
+
         参数:
             combined: 融合后的特征张量 [batch_size, seq_len, hidden_size]
             modality_types: 模态类型列表
-            
+
         返回:
             添加模态嵌入后的特征张量
         """
@@ -559,7 +562,7 @@ class MultiModalEncoder(nn.Module):
                     batch_size, -1, -1
                 )
             combined = combined + modality_embeds
-        
+
         return combined
 
     def _apply_post_processing(
@@ -569,12 +572,12 @@ class MultiModalEncoder(nn.Module):
         modality_list: List[str],
     ) -> Tuple[torch.Tensor, Dict[str, Any]]:
         """应用后处理：层归一化和dropout，并更新对齐信息
-        
+
         参数:
             combined: 融合后的特征张量
             alignment_info: 对齐信息字典
             modality_list: 模态类型列表
-            
+
         返回:
             processed: 处理后特征张量
             alignment_info: 更新后的对齐信息字典
@@ -586,7 +589,7 @@ class MultiModalEncoder(nn.Module):
         # 更新对齐信息
         alignment_info["encoded_embeddings"] = processed
         alignment_info["modality_list"] = modality_list
-        
+
         return processed, alignment_info
 
     def forward(
@@ -647,15 +650,15 @@ class MultiModalEncoder(nn.Module):
         combined, alignment_info = self._perform_cross_modal_alignment(
             encoded_features, alignment_info
         )
-        
+
         # 添加模态类型嵌入
         combined = self._add_modality_embeddings(combined, modality_types)
-        
+
         # 应用后处理
         processed, alignment_info = self._apply_post_processing(
             combined, alignment_info, modality_list
         )
-        
+
         # 根据标志返回结果
         if return_alignment_info:
             return alignment_info
@@ -1517,7 +1520,7 @@ class HierarchicalAttentionBlock(nn.Module):
         medium_importance_mask = (
             importance_scores > self.importance_threshold * 0.5
         ) & ~high_importance_mask
-        low_importance_mask = ~(high_importance_mask | medium_importance_mask)
+        ~(high_importance_mask | medium_importance_mask)
 
         # 3. 准备不同层次的输入
         # 文档级输入 (对所有token)
@@ -1583,7 +1586,7 @@ class HierarchicalAttentionBlock(nn.Module):
             end = min(start + paragraph_size, seq_len)
             para_len = end - start
             # 重复段落表示到每个token
-            para_token = para_output[:, i : i + 1, :].expand(
+            para_token = para_output[:, i: i + 1, :].expand(
                 batch_size, para_len, self.hidden_size
             )
             para_output_expanded.append(para_token)
@@ -1687,9 +1690,7 @@ class TransformerBlock(nn.Module):
             hidden_states = torch.clamp(hidden_states, min=-clip_value, max=clip_value)
             # 调试：记录裁剪情况
             if torch.abs(hidden_states).max() > clip_value:
-                logger.debug(
-                    f"TransformerBlock输入被裁剪，最大绝对值: {torch.abs(hidden_states).max().item():.2f}"
-                )
+                logger.debug(f"TransformerBlock输入被裁剪，最大绝对值: {torch.abs(hidden_states).max().item():.2f}")
 
         # 自注意力
         attention_output, _ = self.attention(
@@ -1783,39 +1784,47 @@ class QuaternionEnhancedBlock(nn.Module):
     def __init__(self, config: AGIModelConfig):
         super().__init__()
         self.config = config
-        
+
         # 检查四元数层是否可用
         if not QUATERNION_LAYERS_AVAILABLE:
-            raise ImportError("四元数神经网络层模块不可用。请确保models.transformer.cores.quaternionlayer可以导入。")
-        
+            raise ImportError(
+                "四元数神经网络层模块不可用。请确保models.transformer.cores.quaternionlayer可以导入。"
+            )
+
         # 四元数Transformer块
         self.quaternion_block = QuaternionTransformerBlock(
             embed_dim=config.hidden_size,
             num_heads=config.num_attention_heads,
             ff_dim=config.intermediate_size,
             dropout=config.hidden_dropout_prob,
-            activation=config.hidden_act
+            activation=config.hidden_act,
         )
-        
-    def forward(self, hidden_states: torch.Tensor, attention_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+
+    def forward(
+        self, hidden_states: torch.Tensor, attention_mask: Optional[torch.Tensor] = None
+    ) -> torch.Tensor:
         """前向传播"""
         # 将实数张量转换为四元数表示（添加第四维）
         # 形状: [batch, seq_len, hidden_size] -> [batch, seq_len, hidden_size, 4]
         # 假设实部为原始值，虚部为零
         batch_size, seq_len, hidden_dim = hidden_states.shape
-        quaternion_input = torch.zeros(batch_size, seq_len, hidden_dim, 4, device=hidden_states.device)
+        quaternion_input = torch.zeros(
+            batch_size, seq_len, hidden_dim, 4, device=hidden_states.device
+        )
         quaternion_input[..., 0] = hidden_states  # 实部
-        
+
         # 转换为 [seq_len, batch, hidden_dim, 4] 以适应QuaternionTransformerBlock
         quaternion_input = quaternion_input.permute(1, 0, 2, 3)
-        
+
         # 通过四元数块
         quaternion_output = self.quaternion_block(quaternion_input)
-        
+
         # 转换回实数表示（取实部）
-        quaternion_output = quaternion_output.permute(1, 0, 2, 3)  # [batch, seq_len, hidden_dim, 4]
+        quaternion_output = quaternion_output.permute(
+            1, 0, 2, 3
+        )  # [batch, seq_len, hidden_dim, 4]
         real_output = quaternion_output[..., 0]  # 实部
-        
+
         return real_output
 
 
@@ -2002,7 +2011,6 @@ class AttnResAttentionBlock(nn.Module):
             输出张量 [batch_size, seq_len, hidden_size]
         """
         # 保存原始输入用于动态聚合
-        residual_input = hidden_states
 
         # 数值稳定性检查
         if torch.isnan(hidden_states).any():
@@ -2047,7 +2055,8 @@ class AttnResAttentionBlock(nn.Module):
         # ============ AttnRes动态聚合 ============
         # 应用动态深度聚合代替传统的残差连接
         # 传统：hidden_states = hidden_states + attention_output
-        # AttnRes：hidden_states = α(hidden_states) * hidden_states + β(hidden_states) * attention_output
+        # AttnRes：hidden_states = α(hidden_states) * hidden_states +
+        # β(hidden_states) * attention_output
         aggregated_attention = self._apply_dynamic_aggregation(
             residual=hidden_states, attention_out=attention_output, x=hidden_states
         )
@@ -2579,7 +2588,7 @@ class PlanningModule(nn.Module):
 
         基于启发式搜索的最优路径规划，适合离散状态空间
         """
-        batch_size = start_state.shape[0]
+        start_state.shape[0]
         device = start_state.device
 
         # 默认启发式函数：欧几里得距离
@@ -2602,7 +2611,7 @@ class PlanningModule(nn.Module):
             "parent": None,
             "action": None,
         }
-        start_node["f"] = (
+        start_node[""] = (
             start_node["g"] + self.astar_heuristic_weight * start_node["h"]
         )
 
@@ -2611,7 +2620,7 @@ class PlanningModule(nn.Module):
         # A*主循环
         while open_set:
             # 选择f值最小的节点（使用平均值处理批次）
-            current_node = min(open_set, key=lambda node: node["f"].mean().item())
+            current_node = min(open_set, key=lambda node: node[""].mean().item())
 
             # 检查是否达到目标
             distance_to_goal = torch.norm(current_node["state"] - goal_state, dim=-1)
@@ -2675,7 +2684,7 @@ class PlanningModule(nn.Module):
                         "state": neighbor_state,
                         "g": g_cost,
                         "h": h_cost,
-                        "f": f_cost,
+                        "": f_cost,
                         "parent": current_node,
                         "action": action,
                     }
@@ -2684,7 +2693,7 @@ class PlanningModule(nn.Module):
                     # 找到更好路径
                     existing_node["g"] = g_cost
                     existing_node["h"] = h_cost
-                    existing_node["f"] = f_cost
+                    existing_node[""] = f_cost
                     existing_node["parent"] = current_node
                     existing_node["action"] = action
 
@@ -2710,8 +2719,8 @@ class PlanningModule(nn.Module):
         if max_iterations is None:
             max_iterations = self.rrt_max_iterations
 
-        batch_size = start_state.shape[0]
-        device = start_state.device
+        start_state.shape[0]
+        start_state.device
 
         # 初始化树
         tree = {
@@ -2806,8 +2815,8 @@ class PlanningModule(nn.Module):
         if horizon is None:
             horizon = self.mpc_horizon
 
-        batch_size = current_state.shape[0]
-        device = current_state.device
+        current_state.shape[0]
+        current_state.device
 
         # 初始化优化变量
         state_sequence = [current_state]
@@ -2866,7 +2875,7 @@ class PlanningModule(nn.Module):
         self, state: torch.Tensor, constraints: Optional[torch.Tensor] = None
     ) -> List[Tuple[torch.Tensor, torch.Tensor]]:
         """生成邻居状态和对应动作"""
-        batch_size = state.shape[0]
+        state.shape[0]
         state_dim = state.shape[1]  # 状态维度（例如768）
         device = state.device
 
@@ -2875,7 +2884,9 @@ class PlanningModule(nn.Module):
         # 生成随机单位向量作为动作方向
         action_vectors = torch.randn(num_actions, state_dim, device=device)
         # 归一化为单位向量
-        action_vectors = action_vectors / torch.norm(action_vectors, dim=1, keepdim=True).clamp(min=1e-8)
+        action_vectors = action_vectors / torch.norm(
+            action_vectors, dim=1, keepdim=True
+        ).clamp(min=1e-8)
 
         # 生成邻居状态
         neighbors = []
@@ -2927,7 +2938,7 @@ class PlanningModule(nn.Module):
         result = torch.where(
             mask.unsqueeze(-1).expand_as(from_state),
             to_state,
-            from_state + direction / distance.clamp(min=1e-8) * step_size
+            from_state + direction / distance.clamp(min=1e-8) * step_size,
         )
         return result
 
@@ -3018,10 +3029,13 @@ class PlanningModule(nn.Module):
                     [current_state.unsqueeze(1), action.unsqueeze(1)], dim=-1
                 )
                 # 确保输入数据类型与PINN模型参数匹配
-                if hasattr(self.pinn_model, 'parameters') and next(iter(self.pinn_model.parameters()), None) is not None:
+                if (
+                    hasattr(self.pinn_model, "parameters")
+                    and next(iter(self.pinn_model.parameters()), None) is not None
+                ):
                     model_dtype = next(iter(self.pinn_model.parameters())).dtype
                     pinn_input = pinn_input.to(model_dtype)
-                
+
                 next_state_pinn = self.pinn_model(pinn_input)
                 if next_state_pinn is not None:
                     next_state_pinn = next_state_pinn.squeeze(1)
@@ -3040,7 +3054,7 @@ class PlanningModule(nn.Module):
                 next_state_physics = self.physics_transition_network(combined)
 
                 # 应用物理约束
-                physics_constraint = self.physics_constraint_network(next_state_physics)
+                self.physics_constraint_network(next_state_physics)
                 physics_consistency = self.physics_loss_network(
                     torch.cat([current_state, next_state_physics], dim=-1)
                 )
@@ -3357,9 +3371,7 @@ class PlanningModule(nn.Module):
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.debug(
-            f"PlanningModule输入: hidden_states形状={hidden_states.shape}, hidden_dim={hidden_dim}, config.hidden_size={self.config.hidden_size}"
-        )
+        logger.debug(f"PlanningModule输入: hidden_states形状={hidden_states.shape}, hidden_dim={hidden_dim}, config.hidden_size={self.config.hidden_size}")
 
         # 1. 编码当前状态
         encoded_state = self.encode_state(hidden_states)
@@ -3485,7 +3497,7 @@ class PlanningModule(nn.Module):
                     plan_result = None
             except Exception as e:
                 raise RuntimeError(
-                    f"MPC规划失败，系统要求直接报错。\n"
+                    "MPC规划失败，系统要求直接报错。\n"
                     f"错误详情: {e}\n"
                     "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
                     "解决方案：检查MPC规划器配置，确保模型预测控制算法正确实现"
@@ -3572,7 +3584,8 @@ class PlanningModule(nn.Module):
 
         output_dict = {
             "plans": plan_features,  # 计划特征 [batch_size, seq_len, hidden_size]
-            "actions": adjusted_action_embeddings,  # 动作嵌入 [batch_size, seq_len, hidden_size]
+            # 动作嵌入 [batch_size, seq_len, hidden_size]
+            "actions": adjusted_action_embeddings,
             "action_sequence": [plan_result["action_sequence"]]
             * batch_size,  # 动作序列
             "optimized_path": [plan_result["action_sequence"]]
@@ -3729,7 +3742,7 @@ class PlanningModule(nn.Module):
                         if traj_point.dim() == 1:
                             traj_point_expanded = traj_point.unsqueeze(0)
                         else:
-                            traj_point_expanded = traj_point[i : i + 1]
+                            traj_point_expanded = traj_point[i: i + 1]
                     else:
                         # 尝试转换为张量
                         try:
@@ -3737,12 +3750,12 @@ class PlanningModule(nn.Module):
                             if traj_point_tensor.dim() == 1:
                                 traj_point_expanded = traj_point_tensor.unsqueeze(0)
                             else:
-                                traj_point_expanded = traj_point_tensor[i : i + 1]
+                                traj_point_expanded = traj_point_tensor[i: i + 1]
                         except Exception:
                             # 如果无法转换，跳过此轨迹点
                             continue
                     dist = torch.norm(
-                        current_state[i : i + 1, :2] - traj_point_expanded[:, :2]
+                        current_state[i: i + 1, :2] - traj_point_expanded[:, :2]
                     )
                     distances.append(dist)
                 if distances:
@@ -3981,8 +3994,8 @@ class PlanningModule(nn.Module):
             - replan_events: 重规划事件列表
             - execution_trace: 执行轨迹
         """
-        batch_size = initial_state.shape[0]
-        device = initial_state.device
+        initial_state.shape[0]
+        initial_state.device
 
         # 初始规划
         current_state = initial_state.clone()
@@ -4132,7 +4145,7 @@ class PlanningModule(nn.Module):
             and current_plan["action_embeddings"].shape[1] > step_in_plan
         ):
             action_embedding = current_plan["action_embeddings"][
-                :, step_in_plan : step_in_plan + 1, :
+                :, step_in_plan: step_in_plan + 1, :
             ]
         else:
             # 随机探索动作
@@ -4312,7 +4325,9 @@ class ReasoningModule(nn.Module):
         self.spatial_topology = nn.Sequential(
             nn.Linear(config.hidden_size, config.hidden_size // 2),
             nn.GELU(),
-            nn.Linear(config.hidden_size // 2, config.hidden_size // 2),  # 修改为384以匹配2304总和
+            nn.Linear(
+                config.hidden_size // 2, config.hidden_size // 2
+            ),  # 修改为384以匹配2304总和
             nn.LayerNorm(config.hidden_size // 2, eps=config.layer_norm_eps),
         )
 
@@ -4333,7 +4348,7 @@ class ReasoningModule(nn.Module):
                 num_layers=2,
                 conv_type="spatial",  # 改为spatial避免拉普拉斯矩阵需求
                 pooling_ratio=1.0,  # 禁用池化，保持节点数量不变
-                use_gpu=getattr(config, 'use_gpu', False),
+                use_gpu=getattr(config, "use_gpu", False),
             )
             self.gnn_model = GraphNeuralNetwork(gnn_config)
             self.gnn_enabled = True
@@ -4509,7 +4524,9 @@ class ReasoningModule(nn.Module):
                     nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps),
                 ),
                 "spatial": nn.Sequential(
-                    nn.LazyLinear(config.hidden_size * 2),  # 动态适应输入维度，解决1792 vs 1664不匹配问题
+                    nn.LazyLinear(
+                        config.hidden_size * 2
+                    ),  # 动态适应输入维度，解决1792 vs 1664不匹配问题
                     nn.GELU(),
                     nn.Linear(config.hidden_size * 2, config.hidden_size),
                     nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps),
@@ -4851,10 +4868,10 @@ class ReasoningModule(nn.Module):
         # 真实推理引擎可用性检查
         if self.real_reasoning_available:
             logger.debug(
-                f"真实推理引擎可用，但forward方法使用神经网络推理。使用reason_with_real_engine进行文本推理。"
+                "真实推理引擎可用，但forward方法使用神经网络推理。使用reason_with_real_engine进行文本推理。"
             )
         else:
-            logger.debug(f"真实推理引擎不可用，使用神经网络推理")
+            logger.debug("真实推理引擎不可用，使用神经网络推理")
 
         # 1. 上下文整合
         if context is not None:
@@ -4959,13 +4976,15 @@ class ReasoningModule(nn.Module):
                 # 将序列视为图，每个token是节点
                 # 创建邻接矩阵（完全连接）
                 num_nodes = batch_size * seq_len
-                
+
                 # 创建全连接的邻接矩阵（对角线为0）
                 # 使用稀疏矩阵以提高效率
-                adjacency_matrix = torch.ones(num_nodes, num_nodes, device=reasoning_features.device)
+                adjacency_matrix = torch.ones(
+                    num_nodes, num_nodes, device=reasoning_features.device
+                )
                 # 将对角线设置为0（节点不连接到自身）
                 adjacency_matrix.fill_diagonal_(0)
-                
+
                 # 为了简单起见，使用GNN处理展平的特征
                 # 完整处理
                 gnn_input = reasoning_features.reshape(batch_size * seq_len, hidden_dim)
@@ -4994,10 +5013,14 @@ class ReasoningModule(nn.Module):
         else:
             # 创建零张量以保持维度一致
             batch_size, seq_len, _ = spatial_relation.shape
-            zero_gnn = torch.zeros(batch_size, seq_len, gnn_expected_dim, 
-                                  device=spatial_relation.device, dtype=spatial_relation.dtype)
+            zero_gnn = torch.zeros(
+                batch_size,
+                seq_len,
+                gnn_expected_dim,
+                device=spatial_relation.device,
+                dtype=spatial_relation.dtype,
+            )
             fusion_components.append(zero_gnn)
-        
 
         spatial_fusion_input = torch.cat(fusion_components, dim=-1)
         spatial_output = self.domain_fusion["spatial"](spatial_fusion_input)
@@ -5248,9 +5271,7 @@ class ReasoningModule(nn.Module):
                 )
             else:
                 # 尝试调整维度：投影到期望维度
-                logger.warning(
-                    f"维度不匹配: fused_reasoning={fused_reasoning.shape}, symbolic_concat={symbolic_concat.shape}, 总和={total_input_dim}, 期望={expected_dim}"
-                )
+                logger.warning(f"维度不匹配: fused_reasoning={fused_reasoning.shape}, symbolic_concat={symbolic_concat.shape}, 总和={total_input_dim}, 期望={expected_dim}")
                 logger.warning(f"尝试维度调整: 通过线性层投影到{expected_dim}")
                 if (
                     not hasattr(self, "_dim_adjustment_layer")
@@ -5394,13 +5415,12 @@ class ReasoningModule(nn.Module):
         if not self.real_reasoning_available or not self.real_reasoning_engine:
             # 根据项目要求，禁止回退机制
             raise RuntimeError(
-                "真实推理引擎不可用，系统要求直接报错。\n"
+                f"真实推理引擎不可用，系统要求直接报错。\n"
                 f"真实推理引擎可用: {self.real_reasoning_available}, 引擎实例: {self.real_reasoning_engine}\n"
-                "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
-                "推理必须使用真实推理引擎，禁止回退到神经网络推理。\n"
-                "解决方案：1.初始化真实推理引擎 2.确保reasoning_type配置正确 3.实现完整的推理引擎功能"
+                f"根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
+                f"推理必须使用真实推理引擎，禁止回退到神经网络推理。\n"
+                f"解决方案：1.初始化真实推理引擎 2.确保reasoning_type配置正确 3.实现完整的推理引擎功能"
             )
-
 
         try:
             # 使用真实推理引擎
@@ -5417,7 +5437,7 @@ class ReasoningModule(nn.Module):
         except Exception as e:
             # 根据项目要求，禁止回退机制
             raise RuntimeError(
-                f"真实推理引擎执行失败，系统要求直接报错。\n"
+                "真实推理引擎执行失败，系统要求直接报错。\n"
                 f"错误详情: {e}\n"
                 f"查询: {query}, 推理类型: {reasoning_type}\n"
                 "根据项目要求'不使用任何回退机制，失败报错即可'，禁止使用降级或回退机制。\n"
@@ -6232,7 +6252,7 @@ class CognitiveScienceAlgorithms:
             # 展平嵌套字典结构
             flattened_goals = {}
             flattened_current_state = {}
-            
+
             # 展平external_goals
             for key, value in external_goals.items():
                 if isinstance(value, dict):
@@ -6240,7 +6260,7 @@ class CognitiveScienceAlgorithms:
                         flattened_goals[f"{key}.{subkey}"] = subvalue
                 else:
                     flattened_goals[key] = value
-            
+
             # 展平current_state
             for key, value in current_state.items():
                 if isinstance(value, dict):
@@ -6248,13 +6268,15 @@ class CognitiveScienceAlgorithms:
                         flattened_current_state[f"{key}.{subkey}"] = subvalue
                 else:
                     flattened_current_state[key] = value
-            
+
             # 调整目标难度
             for goal_name, target_value in flattened_goals.items():
                 current_value = flattened_current_state.get(goal_name, 0.0)
-                
+
                 # 确保目标值是数值类型
-                if isinstance(target_value, (int, float)) and isinstance(current_value, (int, float)):
+                if isinstance(target_value, (int, float)) and isinstance(
+                    current_value, (int, float)
+                ):
                     gap = target_value - current_value
 
                     # SMART目标原则：具体、可衡量、可实现、相关、时限
@@ -6398,7 +6420,7 @@ class MathematicsModule(nn.Module):
                 hidden_dim=64,
                 num_layers=3,
                 activation="tanh",
-                use_gpu=getattr(config, 'use_gpu', False),
+                use_gpu=getattr(config, "use_gpu", False),
                 dtype=torch.float32,
             )
             self.pinn_model = PINNModel(pinn_config)
@@ -6542,7 +6564,7 @@ class PhysicsModule(nn.Module):
                 hidden_dim=64,
                 num_layers=3,
                 activation="tanh",
-                use_gpu=getattr(config, 'use_gpu', False),  # 安全地获取属性
+                use_gpu=getattr(config, "use_gpu", False),  # 安全地获取属性
                 dtype=torch.float32,
             )
             self.pinn_model = PINNModel(pinn_config)
@@ -7087,7 +7109,10 @@ def calculate_sum(numbers):
         total += num
     return total
 """
-                from training.professional_domain_capabilities import ProgrammingLanguage
+                from training.professional_domain_capabilities import (
+                    ProgrammingLanguage,
+                )
+
                 analysis_result = (
                     self.professional_manager.programming_manager.analyze_code(
                         test_code, ProgrammingLanguage.PYTHON
@@ -7602,7 +7627,7 @@ class SelfCognitionModule(nn.Module):
 
             # 2. 自我调节学习循环算法
             # 展平当前状态和目标状态，以便认知科学算法处理
-            def flatten_dict(d, parent_key='', sep='.'):
+            def flatten_dict(d, parent_key="", sep="."):
                 items = {}
                 for k, v in d.items():
                     new_key = f"{parent_key}{sep}{k}" if parent_key else k
@@ -7611,10 +7636,10 @@ class SelfCognitionModule(nn.Module):
                     else:
                         items[new_key] = v
                 return items
-            
+
             flat_current_state = flatten_dict(current_state)
             flat_goal_state = flatten_dict(goal_state)
-            
+
             self_regulated_learning = (
                 self.cognitive_science_algorithms.self_regulated_learning_cycle(
                     flat_current_state, flat_goal_state, feedback
@@ -8074,8 +8099,8 @@ class SelfCognitionModule(nn.Module):
         self_evaluation = self_cognition_outputs["self_evaluation"]
 
         # 维度对齐：确保可以计算相似度
-        batch_size = self_representation.shape[0]
-        seq_len = self_representation.shape[1]
+        self_representation.shape[0]
+        self_representation.shape[1]
 
         # 平均池化自我表示以获得与self_evaluation相同的维度
         self_rep_pooled = self_representation.mean(dim=1)  # [batch_size, hidden_size]
@@ -8241,7 +8266,7 @@ class SelfCognitionModule(nn.Module):
         """
         batch_size = new_experience.shape[0]
         memory_size = self.experience_memory.shape[0]
-        hidden_dim = self.experience_memory.shape[1]
+        self.experience_memory.shape[1]
 
         # 如果没有提供重要性分数，默认为1.0
         if experience_importance is None:
@@ -8404,8 +8429,8 @@ class SelfCognitionModule(nn.Module):
         返回:
             learning_loss: 经验学习损失值
         """
-        batch_size = current_experience.shape[0]
-        top_k = retrieved_experience.shape[1]
+        current_experience.shape[0]
+        retrieved_experience.shape[1]
 
         # 加权平均检索到的经验
         weighted_retrieved = torch.sum(
@@ -9209,7 +9234,6 @@ class SpatialPerceptionModule(nn.Module):
             ).expand(-1, seq_len, -1)
 
         # 3. 3D形状特征处理
-        shape_3d_output = None
         if shape_3d_features is not None:
             # 处理3D形状特征
             shape_3d_encoded = self.shape_3d_encoder(shape_3d_features)
@@ -9675,14 +9699,12 @@ class AutonomousEvolutionModule(nn.Module):
                                 add_success = self._add_transformer_layer(model)
                                 if add_success:
                                     result["actual_modifications"].append(
-                                        f"added_transformer_layer_{i+1}"
+                                        f"added_transformer_layer_{i + 1}"
                                     )
 
                             new_layer_count = len(model.transformer_layers)
                             if new_layer_count > old_layer_count:
-                                result["changes"].append(
-                                    f"添加了 {new_layer_count - old_layer_count} 个Transformer层"
-                                )
+                                result["changes"].append(f"添加了 {new_layer_count - old_layer_count} 个Transformer层")
                                 result["mutation_applied"] = True
 
             elif mutation_type == "parameter_optimization":
@@ -10573,7 +10595,7 @@ class SystemControlModule(nn.Module):
         for i in range(3):
             # 为每个子系统生成不同的特征（通过不同的线性变换）
             subsystem_feature = system_features[
-                :, :, i * (hidden_dim // 3) : (i + 1) * (hidden_dim // 3)
+                :, :, i * (hidden_dim // 3): (i + 1) * (hidden_dim // 3)
             ]
             if subsystem_feature.size(-1) < hidden_dim // 3:
                 subsystem_feature = F.pad(
@@ -10722,9 +10744,11 @@ class HardwareInterfaceModule(nn.Module):
         else:
             # 如果特征维度不足，使用线性投影（临时实现）
             # 注意：在真实系统中应使用训练好的投影层
-            projection_weight = torch.eye(command_features.size(-1), 128, device=command_features.device)
+            projection_weight = torch.eye(
+                command_features.size(-1), 128, device=command_features.device
+            )
             projected_status = torch.matmul(command_features, projection_weight)
-        
+
         hardware_status = self.status_decoder(projected_status)
 
         # 预测硬件响应
@@ -10904,11 +10928,11 @@ class SelfAGIModel(nn.Module):
         # 根据块类型记录日志
         if block_class == StripedHyenaBlock:
             logger.info(
-                f"使用StripedHyena混合块: Hyena阶数={self.config.hyena_order}, 注意力层数={self.config.num_attention_layers}"
+                f"使用StripedHyena混合块: Hyena阶数={                     self.config.hyena_order}, 注意力层数={                     self.config.num_attention_layers}"
             )
         elif block_class == StateSpaceBlock:
             logger.info(
-                f"使用状态空间块: 状态维度={self.config.state_space_dim}, 扩展因子={self.config.state_space_expand}"
+                f"使用状态空间块: 状态维度={                     self.config.state_space_dim}, 扩展因子={                     self.config.state_space_expand}"
             )
         elif block_class == MixtureOfExpertsLayer:
             logger.info(
@@ -10916,7 +10940,7 @@ class SelfAGIModel(nn.Module):
             )
         elif block_class == HierarchicalAttentionBlock:
             logger.info(
-                f"使用层次化注意力块: 层次数={self.config.hierarchical_levels}, 重要性阈值={self.config.importance_threshold}"
+                f"使用层次化注意力块: 层次数={                     self.config.hierarchical_levels}, 重要性阈值={                     self.config.importance_threshold}"
             )
         elif block_class == EfficientAttentionBlock:
             logger.info(f"使用高效注意力块: 类型={self.config.attention_type}")
@@ -11105,14 +11129,18 @@ class SelfAGIModel(nn.Module):
                     )
                 else:
                     # 默认正态分布初始化
-                    module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+                    module.weight.data.normal_(
+                        mean=0.0, std=self.config.initializer_range
+                    )
 
                 if module.bias is not None:
                     module.bias.data.zero_()
             except RuntimeError as e:
                 # LazyLinear未初始化权重，跳过初始化，让它在第一次前向传播时自动初始化
                 # 根据项目要求"不采用任何降级处理，直接报错"，记录警告而不是静默忽略
-                logger.warning(f"LazyLinear权重初始化跳过，等待第一次前向传播自动初始化: {e}")
+                logger.warning(
+                    f"LazyLinear权重初始化跳过，等待第一次前向传播自动初始化: {e}"
+                )
         elif isinstance(module, nn.Embedding):
             # 嵌入层使用正态分布初始化，标准差适当缩小
             module.weight.data.normal_(
@@ -11180,18 +11208,19 @@ class SelfAGIModel(nn.Module):
 
     def _initialize_tokenizer(self) -> bool:
         """初始化分词器 - 修复版
-        
+
         修复内容：
         1. 确保分词器正确初始化
         2. 添加更好的错误处理
         3. 支持中英文分词
-        
+
         返回:
             初始化是否成功
         """
         try:
             if TOKENIZER_AVAILABLE:
                 from models.multimodal.tokenizer import IndustrialTokenizer
+
                 self.tokenizer = IndustrialTokenizer(vocab_size=self.config.vocab_size)
                 logger.info(f"分词器初始化成功，词汇表大小: {self.config.vocab_size}")
                 return True
@@ -11373,14 +11402,14 @@ class SelfAGIModel(nn.Module):
         # 最大位置嵌入不能缩小
         if new_config.max_position_embeddings < old_config.max_position_embeddings:
             logger.warning(
-                f"最大位置嵌入从 {old_config.max_position_embeddings} 减小到 {new_config.max_position_embeddings}，可能导致位置索引越界"
+                f"最大位置嵌入从 {                     old_config.max_position_embeddings} 减小到 {                     new_config.max_position_embeddings}，可能导致位置索引越界"
             )
 
         # 检查架构模式变更
         architecture_changes = []
         if old_config.stripedhyena_enabled != new_config.stripedhyena_enabled:
             architecture_changes.append(
-                f"StripedHyena混合架构: {old_config.stripedhyena_enabled} -> {new_config.stripedhyena_enabled}"
+                f"StripedHyena混合架构: {                     old_config.stripedhyena_enabled} -> {                     new_config.stripedhyena_enabled}"
             )
         if old_config.state_space_enabled != new_config.state_space_enabled:
             architecture_changes.append(
@@ -11391,14 +11420,14 @@ class SelfAGIModel(nn.Module):
             != new_config.mixture_of_experts_enabled
         ):
             architecture_changes.append(
-                f"混合专家系统: {old_config.mixture_of_experts_enabled} -> {new_config.mixture_of_experts_enabled}"
+                f"混合专家系统: {                     old_config.mixture_of_experts_enabled} -> {                     new_config.mixture_of_experts_enabled}"
             )
         if (
             old_config.efficient_attention_enabled
             != new_config.efficient_attention_enabled
         ):
             architecture_changes.append(
-                f"高效注意力: {old_config.efficient_attention_enabled} -> {new_config.efficient_attention_enabled}"
+                f"高效注意力: {                     old_config.efficient_attention_enabled} -> {                     new_config.efficient_attention_enabled}"
             )
 
         if architecture_changes:
@@ -11430,7 +11459,7 @@ class SelfAGIModel(nn.Module):
                 old_config.num_hidden_layers, new_config.num_hidden_layers
             )
             changes_applied.append(
-                f"Transformer层数: {old_config.num_hidden_layers} -> {new_config.num_hidden_layers}"
+                f"Transformer层数: {                     old_config.num_hidden_layers} -> {                     new_config.num_hidden_layers}"
             )
 
         # 3. 检查注意力头数变更
@@ -11705,7 +11734,7 @@ class SelfAGIModel(nn.Module):
             adjustment_type = "decrease_layers"
             new_num_layers = max(2, self.config.num_hidden_layers - 2)
             adjustment_params = {"num_hidden_layers": new_num_layers}
-            reason = f"高准确率({current_accuracy:.2f})但推理慢({inference_time:.1f}ms)，减少层数到{new_num_layers}"
+            reason = f"高准确率({                 current_accuracy:.2f})但推理慢({                 inference_time:.1f}ms)，减少层数到{new_num_layers}"
 
         # 规则3：如果准确率低但模型小，增加层数
         elif current_accuracy < 0.5 and self.config.num_hidden_layers < 12:
@@ -12456,10 +12485,15 @@ class SelfAGIModel(nn.Module):
                     next_token_logits = outputs["logits"][:, -1, :] / temperature
 
                 # 检查并修复logits中的NaN或inf值
-                if torch.isnan(next_token_logits).any() or torch.isinf(next_token_logits).any():
+                if (
+                    torch.isnan(next_token_logits).any()
+                    or torch.isinf(next_token_logits).any()
+                ):
                     logger.warning("检测到logits中包含NaN或inf，进行修复")
-                    next_token_logits = torch.nan_to_num(next_token_logits, nan=0.0, posinf=1e6, neginf=-1e6)
-                
+                    next_token_logits = torch.nan_to_num(
+                        next_token_logits, nan=0.0, posinf=1e6, neginf=-1e6
+                    )
+
                 # 采样
                 next_token = torch.multinomial(
                     F.softmax(next_token_logits, dim=-1), num_samples=1
@@ -12603,23 +12637,23 @@ class SelfAGIModel(nn.Module):
 
     def _get_learning_statistics(self) -> Dict[str, Any]:
         """获取真实的学习统计信息
-        
+
         从学习模块（如果可用）或内部统计中收集学习统计信息
         """
         try:
             # 首先尝试从学习模块获取统计信息
-            if hasattr(self, 'learning_module') and self.learning_module is not None:
+            if hasattr(self, "learning_module") and self.learning_module is not None:
                 try:
                     # 假设学习模块有get_statistics方法
-                    if hasattr(self.learning_module, 'get_statistics'):
+                    if hasattr(self.learning_module, "get_statistics"):
                         return self.learning_module.get_statistics()
                 except Exception as e:
                     logger.warning(f"从学习模块获取统计信息失败: {e}")
-            
+
             # 如果学习模块不可用或失败，使用内部统计
-            if hasattr(self, 'learning_statistics'):
+            if hasattr(self, "learning_statistics"):
                 stats = self.learning_statistics.copy()
-                
+
                 # 计算成功率
                 total_sessions = stats.get("learning_sessions", 0)
                 successful_sessions = stats.get("successful_sessions", 0)
@@ -12627,7 +12661,7 @@ class SelfAGIModel(nn.Module):
                     success_rate = successful_sessions / total_sessions
                 else:
                     success_rate = 0.0
-                
+
                 # 返回完整统计信息
                 return {
                     "learning_sessions": total_sessions,
@@ -12638,7 +12672,7 @@ class SelfAGIModel(nn.Module):
                     "last_learning_time": stats.get("last_learning_time", None),
                     "total_learning_time": stats.get("total_learning_time", 0.0),
                     "knowledge_metrics": stats.get("knowledge_metrics", {}),
-                    "data_source": "internal_statistics"
+                    "data_source": "internal_statistics",
                 }
             else:
                 # 如果没有内部统计，返回默认值
@@ -12647,9 +12681,9 @@ class SelfAGIModel(nn.Module):
                     "success_rate": 0.0,
                     "knowledge_growth": 0.0,
                     "last_learning_time": None,
-                    "data_source": "default_values"
+                    "data_source": "default_values",
                 }
-                
+
         except Exception as e:
             logger.error(f"获取学习统计信息失败: {e}")
             # 返回错误信息但继续运行
@@ -12659,7 +12693,7 @@ class SelfAGIModel(nn.Module):
                 "knowledge_growth": 0.0,
                 "last_learning_time": None,
                 "error": str(e),
-                "data_source": "error_fallback"
+                "data_source": "error_fallback",
             }
 
     def process_question(
@@ -12691,18 +12725,22 @@ class SelfAGIModel(nn.Module):
             if self.tokenizer is None:
                 logger.info("初始化分词器...")
                 self._initialize_tokenizer()
-            
+
             # 使用分词器处理输入文本
             tokenized = self.tokenizer(
-                question, 
-                max_length=128, 
-                padding=True, 
+                question,
+                max_length=128,
+                padding=True,
                 truncation=True,
-                return_tensors="pt"
+                return_tensors="pt",
             )
             input_ids = tokenized["input_ids"].to(self.device)
-            attention_mask = tokenized["attention_mask"].to(self.device) if "attention_mask" in tokenized else None
-            
+            attention_mask = (
+                tokenized["attention_mask"].to(self.device)
+                if "attention_mask" in tokenized
+                else None
+            )
+
             # 生成响应
             with torch.no_grad():
                 output_ids = self.generate(
@@ -12711,16 +12749,18 @@ class SelfAGIModel(nn.Module):
                     max_length=min(input_ids.shape[1] + max_length, 256),
                     temperature=temperature,
                 )
-            
+
             # 解码生成的token IDs
             response = self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
-            
+
             # 清理响应
             response = response.strip()
             if not response:
                 response = "我收到了您的问题，但还在学习中，暂时无法给出完整回答。"
-            
-            logger.debug(f"生成响应成功，输入长度: {input_ids.shape[1]}, 输出长度: {len(response)}")
+
+            logger.debug(
+                f"生成响应成功，输入长度: {input_ids.shape[1]}, 输出长度: {len(response)}"
+            )
 
             # 如果memory_system不为None，可以记录交互（完整）
             if memory_system is not None:
@@ -12891,7 +12931,7 @@ class Mamba2Block(nn.Module):
         self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
         logger.info(
-            f"初始化Mamba2Block: 隐藏大小={config.hidden_size}, 状态维度={config.state_space_dim}, "
+            f"初始化Mamba2Block: 隐藏大小={                 config.hidden_size}, 状态维度={                 config.state_space_dim}, "
             f"Hyena卷积={config.hyena_conv_enabled}"
         )
 
@@ -12962,14 +13002,20 @@ class Mamba2Block(nn.Module):
 
         # 维度验证
         assert A.dim() == 2, f"A应该是二维矩阵，实际维度: {A.dim()}"
-        assert A.shape == (state_dim, state_dim), f"A形状应为({state_dim}, {state_dim})，实际: {A.shape}"
-        assert B.shape == (batch_size, seq_len, state_dim), f"B形状应为({batch_size}, {seq_len}, {state_dim})，实际: {B.shape}"
-        
+        assert A.shape == (
+            state_dim,
+            state_dim,
+        ), f"A形状应为({state_dim}, {state_dim})，实际: {A.shape}"
+        assert B.shape == (
+            batch_size,
+            seq_len,
+            state_dim,
+        ), f"B形状应为({batch_size}, {seq_len}, {state_dim})，实际: {B.shape}"
+
         # 将门控信号拆分为两个部分 (用于调制)
         if gate.shape[-1] == hidden_size * 2:
             gate1, gate2 = torch.split(gate, hidden_size, dim=-1)
         else:
-            gate1 = gate
             gate2 = torch.ones_like(gate)
 
         # 初始化状态
@@ -14114,7 +14160,7 @@ class MultimodalConceptUnderstandingModule(nn.Module):
         ):
             # 获取对应模态的权重（7个权重中选择对应模态的权重）
             modality_idx = min(i, 6)  # 确保索引在0-6范围内
-            weight = importance[:, modality_idx : modality_idx + 1].unsqueeze(
+            weight = importance[:, modality_idx: modality_idx + 1].unsqueeze(
                 -1
             )  # [batch_size, 1, 1]
             weight_expanded = weight.expand_as(feature)
@@ -14255,7 +14301,7 @@ class MotorControlModule(nn.Module):
         返回:
             控制信号和运动规划结果
         """
-        batch_size = target_state.size(0)
+        target_state.size(0)
 
         # 如果未提供当前状态，使用零状态
         if current_state is None:
@@ -14426,7 +14472,7 @@ class ComputerOperationModule(nn.Module):
             "operation_confidence": 0.0,
         }
 
-        batch_size = user_intent.shape[0]
+        user_intent.shape[0]
 
         # 1. 操作决策
         if screen_state is not None:
@@ -14688,7 +14734,7 @@ class EquipmentOperationLearningModule(nn.Module):
             "learning_confidence": 0.0,
         }
 
-        batch_size = operation_intent.shape[0]
+        operation_intent.shape[0]
         learning_features = []
 
         # 1. 说明书学习（如果提供说明书）

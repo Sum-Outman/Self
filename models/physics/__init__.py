@@ -18,38 +18,92 @@
 """
 
 # 导入所有模块
-from .pinn_framework import PINNConfig, PINNModel, PhysicsConstraint, PDEResidualConstraint, \
-    BoundaryConditionConstraint, InitialConditionConstraint, DataConstraint, \
-    burgers_equation, heat_equation, wave_equation
+from .pinn_framework import (
+    PINNConfig,
+    PINNModel,
+    PhysicsConstraint,
+    PDEResidualConstraint,
+    BoundaryConditionConstraint,
+    InitialConditionConstraint,
+    DataConstraint,
+    burgers_equation,
+    heat_equation,
+    wave_equation,
+)
 
-from .robot_dynamics import RobotConfig, LagrangianDynamics, HamiltonianDynamics, RobotPINN
+from .robot_dynamics import (
+    RobotConfig,
+    LagrangianDynamics,
+    HamiltonianDynamics,
+    RobotPINN,
+)
 
-from .sensor_physics import SensorConfig, IMUModel, ForceTorqueSensor, CameraModel, SensorFusionPINN
+from .sensor_physics import (
+    SensorConfig,
+    IMUModel,
+    ForceTorqueSensor,
+    CameraModel,
+    SensorFusionPINN,
+)
 
-from .environment_simulation import EnvironmentConfig, RigidBody, CollisionDetector, \
-    ContactSolver, PhysicsSimulator, FluidSimulator
+from .environment_simulation import (
+    EnvironmentConfig,
+    RigidBody,
+    CollisionDetector,
+    ContactSolver,
+    PhysicsSimulator,
+    FluidSimulator,
+)
 
-from .multiphysics_coupling import MultiPhysicsConfig, PhysicsField, StructuralField, \
-    ThermalField, FluidField, MonolithicCoupling, PartitionedCoupling, MultiPhysicsPINN
+from .multiphysics_coupling import (
+    MultiPhysicsConfig,
+    PhysicsField,
+    StructuralField,
+    ThermalField,
+    FluidField,
+    MonolithicCoupling,
+    PartitionedCoupling,
+    MultiPhysicsPINN,
+)
 
 # 导出所有类
 __all__ = [
     # pinn_framework
-    "PINNConfig", "PINNModel", "PhysicsConstraint", "PDEResidualConstraint",
-    "BoundaryConditionConstraint", "InitialConditionConstraint", "DataConstraint",
-    "burgers_equation", "heat_equation", "wave_equation",
-    
+    "PINNConfig",
+    "PINNModel",
+    "PhysicsConstraint",
+    "PDEResidualConstraint",
+    "BoundaryConditionConstraint",
+    "InitialConditionConstraint",
+    "DataConstraint",
+    "burgers_equation",
+    "heat_equation",
+    "wave_equation",
     # robot_dynamics
-    "RobotConfig", "LagrangianDynamics", "HamiltonianDynamics", "RobotPINN",
-    
+    "RobotConfig",
+    "LagrangianDynamics",
+    "HamiltonianDynamics",
+    "RobotPINN",
     # sensor_physics
-    "SensorConfig", "IMUModel", "ForceTorqueSensor", "CameraModel", "SensorFusionPINN",
-    
+    "SensorConfig",
+    "IMUModel",
+    "ForceTorqueSensor",
+    "CameraModel",
+    "SensorFusionPINN",
     # environment_simulation
-    "EnvironmentConfig", "RigidBody", "CollisionDetector", "ContactSolver",
-    "PhysicsSimulator", "FluidSimulator",
-    
+    "EnvironmentConfig",
+    "RigidBody",
+    "CollisionDetector",
+    "ContactSolver",
+    "PhysicsSimulator",
+    "FluidSimulator",
     # multiphysics_coupling
-    "MultiPhysicsConfig", "PhysicsField", "StructuralField", "ThermalField",
-    "FluidField", "MonolithicCoupling", "PartitionedCoupling", "MultiPhysicsPINN"
+    "MultiPhysicsConfig",
+    "PhysicsField",
+    "StructuralField",
+    "ThermalField",
+    "FluidField",
+    "MonolithicCoupling",
+    "PartitionedCoupling",
+    "MultiPhysicsPINN",
 ]

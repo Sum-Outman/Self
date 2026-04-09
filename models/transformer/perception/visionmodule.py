@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
+
 
 class VisionModule(nn.Module):
     """视觉模块 - 处理图像识别和生成，支持红外线图像识别和温度识别"""
@@ -105,6 +105,3 @@ class VisionModule(nn.Module):
             "infrared_probability": infrared_prob,
             "is_infrared": infrared_flag if image_inputs is not None else None,
         }
-
-
-

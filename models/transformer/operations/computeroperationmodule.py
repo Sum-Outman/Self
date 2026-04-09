@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, List, Optional
+
 
 class ComputerOperationModule(nn.Module):
     """计算机操作模块 - 控制机器人操作电脑
@@ -136,7 +136,7 @@ class ComputerOperationModule(nn.Module):
             "operation_confidence": 0.0,
         }
 
-        batch_size = user_intent.shape[0]
+        user_intent.shape[0]
 
         # 1. 操作决策
         if screen_state is not None:
@@ -239,4 +239,3 @@ class ComputerOperationModule(nn.Module):
 
 
 # 设备操作学习模块
-

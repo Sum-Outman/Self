@@ -3,7 +3,6 @@
 包含密码哈希、JWT令牌生成、API密钥生成等安全功能
 """
 
-import hashlib
 import uuid
 from jose import jwt
 from datetime import datetime, timedelta, timezone
@@ -54,7 +53,7 @@ def generate_api_key() -> str:
 
 def verify_token(token: str) -> Optional[dict]:
     """验证JWT令牌
-    
+
     验证JWT令牌的有效性，返回解码后的payload。
     如果令牌无效或过期，返回None。
     """

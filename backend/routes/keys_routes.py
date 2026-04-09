@@ -9,7 +9,7 @@ from typing import Dict, Any, List
 
 from backend.dependencies import get_db, get_current_user
 
-from backend.schemas.keys import APIKeyCreate, APIKeyCreateResponse, APIKeyResponse
+from backend.schemas.keys import APIKeyCreate
 
 from backend.db_models.user import APIKey, User
 
@@ -58,7 +58,11 @@ async def list_api_keys(
             "id": key.id,
             "name": key.name,
             "key": key.key[:10] + "..." if key.key else None,
-            "prefix": key.key[:3] if key.key and key.key.startswith(Config.API_KEY_PREFIX) else Config.API_KEY_PREFIX,
+            "prefix": (
+                key.key[:3]
+                if key.key and key.key.startswith(Config.API_KEY_PREFIX)
+                else Config.API_KEY_PREFIX
+            ),
             "is_active": key.is_active,
             "rate_limit": key.rate_limit,
             "created_at": key.created_at.isoformat(),
@@ -91,10 +95,10 @@ async def delete_api_key(
 
 @router.put("/{key_id}")
 async def update_api_key(
-    key_id: int, 
-    update_data: Dict[str, Any], 
-    db: Session = Depends(get_db), 
-    user: User = Depends(get_current_user)
+    key_id: int,
+    update_data: Dict[str, Any],
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """更新API密钥"""
     api_key = (
@@ -127,13 +131,19 @@ async def update_api_key(
             "id": api_key.id,
             "name": api_key.name,
             "key": api_key.key[:10] + "..." if api_key.key else None,
-            "prefix": api_key.key[:3] if api_key.key and api_key.key.startswith(Config.API_KEY_PREFIX) else Config.API_KEY_PREFIX,
+            "prefix": (
+                api_key.key[:3]
+                if api_key.key and api_key.key.startswith(Config.API_KEY_PREFIX)
+                else Config.API_KEY_PREFIX
+            ),
             "is_active": api_key.is_active,
             "rate_limit": api_key.rate_limit,
             "created_at": api_key.created_at.isoformat(),
-            "expires_at": api_key.expires_at.isoformat() if api_key.expires_at else None,
+            "expires_at": (
+                api_key.expires_at.isoformat() if api_key.expires_at else None
+            ),
             "last_used": api_key.last_used.isoformat() if api_key.last_used else None,
-        }
+        },
     }
 
 

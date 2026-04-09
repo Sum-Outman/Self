@@ -3,19 +3,26 @@ AGI模型管理路由模块
 处理AGI模型的管理、部署、评估等API请求
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    UploadFile,
+    File,
+    Form,
+    Query,
+)
 from sqlalchemy.orm import Session
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from datetime import datetime, timezone
-import uuid
 import json
 import os
-import psutil
 import torch
 
 from backend.dependencies import get_db, get_current_user, get_current_admin
 from backend.db_models.user import User
-from backend.db_models.agi import AGIModel, TrainingJob
+from backend.db_models.agi import AGIModel
 from backend.services.model_service import ModelService
 from backend.schemas.model import ModelCreate, ModelDeploy, ModelEvaluate, ModelInfer
 
@@ -33,36 +40,47 @@ async def list_models(
     """获取AGI模型列表"""
     try:
         query = db.query(AGIModel).filter(AGIModel.is_active == True)
-        
+
         if model_type:
             query = query.filter(AGIModel.model_type == model_type)
-        
+
         # 计算总数
         total = query.count()
-        
+
         # 分页查询
-        models = query.order_by(AGIModel.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
-        
+        models = (
+            query.order_by(AGIModel.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+
         model_list = []
         for model in models:
             try:
                 config_data = json.loads(model.config) if model.config else {}
             except json.JSONDecodeError:
                 config_data = {}
-            
-            model_list.append({
-                "id": model.id,
-                "name": model.name,
-                "description": model.description,
-                "model_type": model.model_type,
-                "model_path": model.model_path,
-                "version": model.version,
-                "config": config_data,
-                "is_active": model.is_active,
-                "created_at": model.created_at.isoformat() if model.created_at else None,
-                "updated_at": model.updated_at.isoformat() if model.updated_at else None,
-            })
-        
+
+            model_list.append(
+                {
+                    "id": model.id,
+                    "name": model.name,
+                    "description": model.description,
+                    "model_type": model.model_type,
+                    "model_path": model.model_path,
+                    "version": model.version,
+                    "config": config_data,
+                    "is_active": model.is_active,
+                    "created_at": (
+                        model.created_at.isoformat() if model.created_at else None
+                    ),
+                    "updated_at": (
+                        model.updated_at.isoformat() if model.updated_at else None
+                    ),
+                }
+            )
+
         return {
             "success": True,
             "data": {
@@ -79,7 +97,7 @@ async def list_models(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取模型列表失败: {str(e)}"
+            detail=f"获取模型列表失败: {str(e)}",
         )
 
 
@@ -91,19 +109,23 @@ async def get_model(
 ):
     """获取单个模型详情"""
     try:
-        model = db.query(AGIModel).filter(AGIModel.id == model_id, AGIModel.is_active == True).first()
-        
+        model = (
+            db.query(AGIModel)
+            .filter(AGIModel.id == model_id, AGIModel.is_active == True)
+            .first()
+        )
+
         if not model:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"模型ID {model_id} 不存在"
+                detail=f"模型ID {model_id} 不存在",
             )
-        
+
         try:
             config_data = json.loads(model.config) if model.config else {}
         except json.JSONDecodeError:
             config_data = {}
-        
+
         return {
             "success": True,
             "data": {
@@ -115,8 +137,12 @@ async def get_model(
                 "version": model.version,
                 "config": config_data,
                 "is_active": model.is_active,
-                "created_at": model.created_at.isoformat() if model.created_at else None,
-                "updated_at": model.updated_at.isoformat() if model.updated_at else None,
+                "created_at": (
+                    model.created_at.isoformat() if model.created_at else None
+                ),
+                "updated_at": (
+                    model.updated_at.isoformat() if model.updated_at else None
+                ),
             },
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
@@ -125,7 +151,7 @@ async def get_model(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取模型详情失败: {str(e)}"
+            detail=f"获取模型详情失败: {str(e)}",
         )
 
 
@@ -149,37 +175,39 @@ async def create_model(
                 description=description,
                 model_type=model_type,
                 version=version,
-                config=config
+                config=config,
             )
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"输入数据验证失败: {str(e)}"
+                detail=f"输入数据验证失败: {str(e)}",
             )
-        
+
         # 检查名称是否已存在
-        existing_model = db.query(AGIModel).filter(AGIModel.name == model_data.name).first()
+        existing_model = (
+            db.query(AGIModel).filter(AGIModel.name == model_data.name).first()
+        )
         if existing_model:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"模型名称 '{model_data.name}' 已存在"
+                detail=f"模型名称 '{model_data.name}' 已存在",
             )
-        
+
         # 处理模型文件上传（如果有）
         model_path = None
         if model_file:
             # 创建模型目录
             model_dir = f"./models/{model_data.name}_{model_data.version}"
             os.makedirs(model_dir, exist_ok=True)
-            
+
             # 保存模型文件
             file_path = os.path.join(model_dir, model_file.filename)
             with open(file_path, "wb") as f:
                 content = await model_file.read()
                 f.write(content)
-            
+
             model_path = file_path
-        
+
         # 创建模型记录
         new_model = AGIModel(
             name=model_data.name,
@@ -192,11 +220,11 @@ async def create_model(
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc),
         )
-        
+
         db.add(new_model)
         db.commit()
         db.refresh(new_model)
-        
+
         return {
             "success": True,
             "data": {
@@ -213,7 +241,7 @@ async def create_model(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"创建模型失败: {str(e)}"
+            detail=f"创建模型失败: {str(e)}",
         )
 
 
@@ -231,23 +259,23 @@ async def update_model(
     """更新模型信息（仅管理员）"""
     try:
         model = db.query(AGIModel).filter(AGIModel.id == model_id).first()
-        
+
         if not model:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"模型ID {model_id} 不存在"
+                detail=f"模型ID {model_id} 不存在",
             )
-        
+
         # 检查名称是否冲突（如果提供了新名称）
         if name and name != model.name:
             existing_model = db.query(AGIModel).filter(AGIModel.name == name).first()
             if existing_model:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"模型名称 '{name}' 已存在"
+                    detail=f"模型名称 '{name}' 已存在",
                 )
             model.name = name
-        
+
         # 更新其他字段
         if description is not None:
             model.description = description
@@ -260,16 +288,16 @@ async def update_model(
             except json.JSONDecodeError:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="模型配置必须是有效的JSON格式"
+                    detail="模型配置必须是有效的JSON格式",
                 )
         if is_active is not None:
             model.is_active = is_active
-        
+
         model.updated_at = datetime.now(timezone.utc)
-        
+
         db.commit()
         db.refresh(model)
-        
+
         return {
             "success": True,
             "data": {
@@ -285,7 +313,7 @@ async def update_model(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"更新模型失败: {str(e)}"
+            detail=f"更新模型失败: {str(e)}",
         )
 
 
@@ -298,19 +326,19 @@ async def delete_model(
     """删除模型（仅管理员）"""
     try:
         model = db.query(AGIModel).filter(AGIModel.id == model_id).first()
-        
+
         if not model:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"模型ID {model_id} 不存在"
+                detail=f"模型ID {model_id} 不存在",
             )
-        
+
         # 软删除：设置为非激活状态
         model.is_active = False
         model.updated_at = datetime.now(timezone.utc)
-        
+
         db.commit()
-        
+
         return {
             "success": True,
             "message": f"模型 '{model.name}' 已删除",
@@ -322,7 +350,7 @@ async def delete_model(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"删除模型失败: {str(e)}"
+            detail=f"删除模型失败: {str(e)}",
         )
 
 
@@ -335,22 +363,26 @@ async def deploy_model(
 ):
     """部署模型（仅管理员）"""
     try:
-        model = db.query(AGIModel).filter(AGIModel.id == model_id, AGIModel.is_active == True).first()
-        
+        model = (
+            db.query(AGIModel)
+            .filter(AGIModel.id == model_id, AGIModel.is_active == True)
+            .first()
+        )
+
         if not model:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"模型ID {model_id} 不存在或未激活"
+                detail=f"模型ID {model_id} 不存在或未激活",
             )
-        
+
         # 真实部署过程：检查模型文件是否存在
         model_path = model.model_path
         if not model_path or not os.path.exists(model_path):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"模型文件不存在: {model_path}"
+                detail=f"模型文件不存在: {model_path}",
             )
-        
+
         # 创建部署信息
         deployment_info = {
             "model_id": model_id,
@@ -361,9 +393,11 @@ async def deploy_model(
             "replicas": deployment_data.replicas,
             "deployed_at": datetime.now(timezone.utc).isoformat(),
             "model_file_exists": True,
-            "model_file_size": os.path.getsize(model_path) if os.path.exists(model_path) else 0,
+            "model_file_size": (
+                os.path.getsize(model_path) if os.path.exists(model_path) else 0
+            ),
         }
-        
+
         return {
             "success": True,
             "data": {
@@ -377,7 +411,7 @@ async def deploy_model(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"部署模型失败: {str(e)}"
+            detail=f"部署模型失败: {str(e)}",
         )
 
 
@@ -390,40 +424,46 @@ async def evaluate_model(
 ):
     """评估模型性能"""
     try:
-        model = db.query(AGIModel).filter(AGIModel.id == model_id, AGIModel.is_active == True).first()
-        
+        model = (
+            db.query(AGIModel)
+            .filter(AGIModel.id == model_id, AGIModel.is_active == True)
+            .first()
+        )
+
         if not model:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"模型ID {model_id} 不存在或未激活"
+                detail=f"模型ID {model_id} 不存在或未激活",
             )
-        
+
         # 真实评估过程：使用模型服务获取真实状态
         model_service = ModelService()
         health_status = model_service._health_status
-        
+
         # 检查模型是否已加载
         if not health_status.get("model_loaded", False):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="模型未加载，无法进行评估"
+                detail="模型未加载，无法进行评估",
             )
-        
+
         # 获取真实模型统计信息
         response_stats = model_service._response_stats
         total_requests = response_stats.get("total_requests", 0)
         successful_responses = response_stats.get("successful_responses", 0)
         avg_processing_time = response_stats.get("avg_processing_time", 0.0)
-        
+
         # 计算基于真实数据的指标
         accuracy = successful_responses / total_requests if total_requests > 0 else 0.0
         inference_time_ms = avg_processing_time * 1000  # 转换为毫秒
-        
+
         # 获取模型文件信息
         model_path = model.model_path
         model_file_exists = os.path.exists(model_path) if model_path else False
-        model_file_size = os.path.getsize(model_path) if model_path and model_file_exists else 0
-        
+        model_file_size = (
+            os.path.getsize(model_path) if model_path and model_file_exists else 0
+        )
+
         evaluation_results = {
             "model_id": model_id,
             "model_name": model.name,
@@ -431,10 +471,14 @@ async def evaluate_model(
             "metrics": {
                 "accuracy": round(accuracy, 3),
                 "precision": 0.0,  # 需要真实数据，暂时置零
-                "recall": 0.0,     # 需要真实数据，暂时置零
-                "f1_score": 0.0,   # 需要真实数据，暂时置零
+                "recall": 0.0,  # 需要真实数据，暂时置零
+                "f1_score": 0.0,  # 需要真实数据，暂时置零
                 "inference_time_ms": round(inference_time_ms, 1),
-                "memory_usage_mb": round(model_file_size / (1024 * 1024), 1) if model_file_size > 0 else 0.0,
+                "memory_usage_mb": (
+                    round(model_file_size / (1024 * 1024), 1)
+                    if model_file_size > 0
+                    else 0.0
+                ),
             },
             "dataset_info": {
                 "path": evaluation_data.dataset_path or "未提供数据集路径",
@@ -446,7 +490,7 @@ async def evaluate_model(
             "total_requests": total_requests,
             "successful_responses": successful_responses,
         }
-        
+
         return {
             "success": True,
             "data": {
@@ -460,7 +504,7 @@ async def evaluate_model(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"评估模型失败: {str(e)}"
+            detail=f"评估模型失败: {str(e)}",
         )
 
 
@@ -473,32 +517,40 @@ async def model_inference(
 ):
     """模型推理接口"""
     try:
-        model = db.query(AGIModel).filter(AGIModel.id == model_id, AGIModel.is_active == True).first()
-        
+        model = (
+            db.query(AGIModel)
+            .filter(AGIModel.id == model_id, AGIModel.is_active == True)
+            .first()
+        )
+
         if not model:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"模型ID {model_id} 不存在或未激活"
+                detail=f"模型ID {model_id} 不存在或未激活",
             )
-        
+
         # 真实推理过程：使用模型服务进行推理
         model_service = ModelService()
-        
+
         # 检查模型是否已加载
         if not model_service._health_status.get("model_loaded", False):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="模型未加载，无法进行推理"
+                detail="模型未加载，无法进行推理",
             )
-        
+
         # 提取文本输入（假设输入数据包含text字段）
-        input_text = model_infer.input_data.get("text", "") if isinstance(model_infer.input_data, dict) else str(model_infer.input_data)
+        input_text = (
+            model_infer.input_data.get("text", "")
+            if isinstance(model_infer.input_data, dict)
+            else str(model_infer.input_data)
+        )
         if not input_text:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="输入数据必须包含'text'字段或为文本内容"
+                detail="输入数据必须包含'text'字段或为文本内容",
             )
-        
+
         # 生成响应
         try:
             session_id = model_infer.session_id
@@ -509,9 +561,9 @@ async def model_inference(
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"模型推理失败: {str(e)}"
+                detail=f"模型推理失败: {str(e)}",
             )
-        
+
         inference_result = {
             "model_id": model_id,
             "model_name": model.name,
@@ -525,7 +577,7 @@ async def model_inference(
             },
             "inferred_at": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         return {
             "success": True,
             "data": inference_result,
@@ -536,7 +588,7 @@ async def model_inference(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"模型推理失败: {str(e)}"
+            detail=f"模型推理失败: {str(e)}",
         )
 
 
@@ -549,56 +601,67 @@ async def get_model_status(
     """获取模型状态和统计信息"""
     try:
         model = db.query(AGIModel).filter(AGIModel.id == model_id).first()
-        
+
         if not model:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"模型ID {model_id} 不存在"
+                detail=f"模型ID {model_id} 不存在",
             )
-        
+
         # 真实状态信息：从模型服务获取真实统计
         model_service = ModelService()
         health_status = model_service._health_status
         response_stats = model_service._response_stats
-        
+
         # 计算真实统计信息
         total_requests = response_stats.get("total_requests", 0)
         successful_requests = response_stats.get("successful_responses", 0)
         failed_requests = total_requests - successful_requests
-        avg_response_time = response_stats.get("avg_processing_time", 0.0) * 1000  # 转换为毫秒
-        
+        avg_response_time = (
+            response_stats.get("avg_processing_time", 0.0) * 1000
+        )  # 转换为毫秒
+
         # 获取资源使用情况（使用真实系统信息）
         import psutil
+
         cpu_percent = psutil.cpu_percent()
         memory_info = psutil.virtual_memory()
         memory_mb = memory_info.used / (1024 * 1024)
-        
+
         # 尝试获取GPU内存信息（如果可用）
         gpu_memory_mb = 0
         try:
             if torch.cuda.is_available():
                 gpu_memory_mb = torch.cuda.memory_allocated() / (1024 * 1024)
-        except:
+        except BaseException:
             pass  # 已实现
-        
+
         # 获取模型文件大小
         model_file_size_mb = 0
         model_path = model.model_path
         if model_path and os.path.exists(model_path):
             model_file_size_mb = os.path.getsize(model_path) / (1024 * 1024)
-        
+
         status_info = {
             "model_id": model_id,
             "model_name": model.name,
             "status": "active" if model.is_active else "inactive",
-            "health": "healthy" if health_status.get("model_loaded", False) else "unhealthy",
-            "deployment_status": "deployed" if health_status.get("model_loaded", False) else "not_deployed",
+            "health": (
+                "healthy" if health_status.get("model_loaded", False) else "unhealthy"
+            ),
+            "deployment_status": (
+                "deployed"
+                if health_status.get("model_loaded", False)
+                else "not_deployed"
+            ),
             "inference_stats": {
                 "total_requests": total_requests,
                 "successful_requests": successful_requests,
                 "failed_requests": failed_requests,
                 "average_response_time_ms": round(avg_response_time, 1),
-                "requests_per_minute": round(total_requests / 1440.0, 1) if total_requests > 0 else 0.0,  # 假设24小时
+                "requests_per_minute": (
+                    round(total_requests / 1440.0, 1) if total_requests > 0 else 0.0
+                ),  # 假设24小时
             },
             "resource_usage": {
                 "cpu_percent": round(cpu_percent, 1),
@@ -611,7 +674,7 @@ async def get_model_status(
             "model_path": model_path,
             "model_file_exists": os.path.exists(model_path) if model_path else False,
         }
-        
+
         return {
             "success": True,
             "data": status_info,
@@ -622,7 +685,7 @@ async def get_model_status(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取模型状态失败: {str(e)}"
+            detail=f"获取模型状态失败: {str(e)}",
         )
 
 
@@ -675,7 +738,7 @@ async def get_available_model_types(
                 "resource_requirements": "中等",
             },
         ]
-        
+
         return {
             "success": True,
             "data": model_types,
@@ -684,5 +747,5 @@ async def get_available_model_types(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取模型类型失败: {str(e)}"
+            detail=f"获取模型类型失败: {str(e)}",
         )

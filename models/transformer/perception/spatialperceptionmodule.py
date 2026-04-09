@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
+
 
 class SpatialPerceptionModule(nn.Module):
     """空间感知模块 - 处理空间关系、几何推理和3D形状识别
@@ -176,7 +176,6 @@ class SpatialPerceptionModule(nn.Module):
             ).expand(-1, seq_len, -1)
 
         # 3. 3D形状特征处理
-        shape_3d_output = None
         if shape_3d_features is not None:
             # 处理3D形状特征
             shape_3d_encoded = self.shape_3d_encoder(shape_3d_features)
@@ -205,6 +204,3 @@ class SpatialPerceptionModule(nn.Module):
             results["geometric_features"] = geometric_features
 
         return results
-
-
-

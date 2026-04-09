@@ -3,9 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Optional
+
 
 class StripedHyenaBlock(nn.Module):
     """StripedHyena混合块 - 交替使用Hyena和注意力
@@ -81,6 +80,3 @@ class StripedHyenaBlock(nn.Module):
 # ============================================================================
 # Switch Transformers 实现
 # ============================================================================
-
-
-

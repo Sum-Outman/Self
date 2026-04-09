@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
+
 
 class MultimodalConceptUnderstandingModule(nn.Module):
     """多模态概念理解模块 - 处理如苹果例子的多模态认知
@@ -216,7 +216,7 @@ class MultimodalConceptUnderstandingModule(nn.Module):
         ):
             # 获取对应模态的权重（7个权重中选择对应模态的权重）
             modality_idx = min(i, 6)  # 确保索引在0-6范围内
-            weight = importance[:, modality_idx : modality_idx + 1].unsqueeze(
+            weight = importance[:, modality_idx: modality_idx + 1].unsqueeze(
                 -1
             )  # [batch_size, 1, 1]
             weight_expanded = weight.expand_as(feature)
@@ -291,4 +291,3 @@ class MultimodalConceptUnderstandingModule(nn.Module):
 
 
 # 电机控制模块
-

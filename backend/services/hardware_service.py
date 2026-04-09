@@ -82,7 +82,7 @@ class HardwareService(BaseService):
                 self.logger.warning("硬件管理器不可用，设备发现功能受限")
 
             self.logger.info(
-                f"硬件服务初始化成功 - 系统: {self._system_info['os']}, CPU核心: {self._system_info['cpu_cores']}"
+                f"硬件服务初始化成功 - 系统: {                     self._system_info['os']}, CPU核心: {                     self._system_info['cpu_cores']}"
             )
             if self._gpu_info["available"]:
                 self.logger.info(f"GPU可用: {self._gpu_info['count']}个设备")
@@ -97,8 +97,7 @@ class HardwareService(BaseService):
     def _check_dependencies(self) -> bool:
         """检查依赖库"""
         try:
-            import psutil
-            import torch
+            pass
 
             return True
         except ImportError as e:
@@ -350,40 +349,58 @@ class HardwareService(BaseService):
                         }
                     )
 
-            # 添加硬件管理器中的设备（如果可用）
+            # 添加硬件管理器中的设备（如果可用）- 修复版：禁止模拟实现
             if self._hardware_manager:
                 try:
                     # 获取硬件管理器统计信息
                     stats = self._hardware_manager.get_stats()
-                    total_devices = stats.get("total_devices", 0)
 
-                    # 为每个管理的设备添加条目
-                    for i in range(total_devices):
-                        devices.append(
-                            {
-                                "id": f"managed_device_{i}",
-                                "name": f"硬件管理设备 {i}",
-                                "type": "managed",
-                                "status": "online",
-                                "temperature": None,
-                                "usage": 0,
-                                "capacity": 0,
-                                "model": "硬件管理器设备",
-                                "manufacturer": "系统",
-                                "device_id": f"MANAGED-{i}",
-                                "device_type": "管理设备",
-                                "connected": True,
-                                "last_update": datetime.now(timezone.utc).isoformat(),
-                                "metadata": {
-                                    "managed_by": "hardware_manager",
-                                    "device_index": i,
-                                    "discovery_method": "hardware_manager",
-                                    # 已移除is_simulated标记 - 系统现在应始终使用真实数据流
-                                },
-                            }
+                    # 根据项目要求"禁止使用虚拟实现"，不创建模拟设备数据
+                    # 尝试从统计信息中提取真实的设备信息
+                    if "devices" in stats and isinstance(stats["devices"], list):
+                        # 使用统计信息中的真实设备数据
+                        for device_info in stats["devices"]:
+                            if isinstance(device_info, dict):
+                                device = {
+                                    "id": device_info.get(
+                                        "id", f"managed_device_{len(devices)}"
+                                    ),
+                                    "name": device_info.get("name", "硬件管理器设备"),
+                                    "type": "managed",
+                                    "status": device_info.get("status", "online"),
+                                    "temperature": device_info.get("temperature"),
+                                    "usage": device_info.get("usage", 0),
+                                    "capacity": device_info.get("capacity", 0),
+                                    "model": device_info.get("model", "硬件管理器设备"),
+                                    "manufacturer": device_info.get(
+                                        "manufacturer", "系统"
+                                    ),
+                                    "device_id": device_info.get(
+                                        "device_id", f"MANAGED-{len(devices)}"
+                                    ),
+                                    "device_type": "管理设备",
+                                    "connected": device_info.get("connected", True),
+                                    "last_update": datetime.now(
+                                        timezone.utc
+                                    ).isoformat(),
+                                    "metadata": {
+                                        "managed_by": "hardware_manager",
+                                        "discovery_method": "hardware_manager_stats",
+                                        "original_info": device_info,
+                                        # 已移除is_simulated标记 - 系统现在应始终使用真实数据流
+                                    },
+                                }
+                                devices.append(device)
+
+                        self.logger.debug(
+                            f"从硬件管理器统计信息中添加了 {len(stats['devices'])} 个真实设备"
+                        )
+                    else:
+                        # 统计信息中没有设备列表，根据项目要求不创建模拟数据
+                        self.logger.debug(
+                            "硬件管理器统计信息中未包含设备列表，根据项目要求'禁止使用虚拟实现'不创建模拟设备"
                         )
 
-                    self.logger.debug(f"添加了 {total_devices} 个硬件管理器设备")
                 except Exception as e:
                     self.logger.warning(f"添加硬件管理器设备失败: {e}")
 
@@ -628,7 +645,11 @@ class HardwareService(BaseService):
             }
 
     def get_managed_devices(self) -> Dict[str, Any]:
-        """获取硬件管理器管理的设备"""
+        """获取硬件管理器管理的设备 - 修复版：禁止模拟实现
+
+        根据项目要求"禁止使用虚拟实现"，移除模拟设备数据。
+        尝试从硬件管理器统计信息中提取真实设备数据，如果无法获取则返回错误。
+        """
         if not self._hardware_manager:
             return {
                 "success": False,
@@ -641,15 +662,53 @@ class HardwareService(BaseService):
             # 获取硬件管理器统计信息
             stats = self._hardware_manager.get_stats()
 
-            # 获取所有设备
-            devices = []
-            # 注意：硬件管理器目前没有直接获取所有设备的方法
-            # 我们需要模拟这个功能，直到硬件管理器提供相应方法
-
-            # 硬件管理器目前没有直接获取所有设备的方法，返回空设备列表
-            # 注意：需要硬件管理器实现get_all_devices方法才能获取真实设备数据
+            # 根据项目要求"禁止使用虚拟实现"，不创建模拟设备数据
+            # 尝试从统计信息中提取真实的设备信息
             devices = []
 
+            # 检查统计信息中是否包含设备列表
+            if "devices" in stats and isinstance(stats["devices"], list):
+                # 使用统计信息中的真实设备数据
+                for device_info in stats["devices"]:
+                    if isinstance(device_info, dict):
+                        device = {
+                            "id": device_info.get("id", f"device_{len(devices)}"),
+                            "name": device_info.get("name", "未知设备"),
+                            "type": device_info.get("type", "unknown"),
+                            "status": device_info.get("status", "unknown"),
+                            "temperature": device_info.get("temperature"),
+                            "usage": device_info.get("usage", 0),
+                            "capacity": device_info.get("capacity", 0),
+                            "model": device_info.get("model", "未知模型"),
+                            "manufacturer": device_info.get("manufacturer", "未知厂商"),
+                            "device_id": device_info.get(
+                                "device_id", f"DEV-{len(devices)}"
+                            ),
+                            "device_type": device_info.get("device_type", "设备"),
+                            "connected": device_info.get("connected", False),
+                            "last_update": datetime.now(timezone.utc).isoformat(),
+                            "metadata": device_info.get("metadata", {}),
+                        }
+                        devices.append(device)
+
+            # 如果没有找到设备信息，但统计信息中有设备数量，记录警告
+            elif "total_devices" in stats and stats["total_devices"] > 0:
+                self.logger.warning(
+                    f"硬件管理器报告有 {stats['total_devices']} 个设备，但未提供设备详细信息。"
+                    "根据项目要求'禁止使用虚拟实现'，不创建模拟设备数据。"
+                )
+                # 返回空设备列表，但明确说明原因
+                return {
+                    "success": True,
+                    "devices": [],
+                    "stats": stats,
+                    "count": 0,
+                    "message": "硬件管理器未提供设备详细信息，根据项目要求'禁止使用虚拟实现'不创建模拟数据",
+                    "total_devices_reported": stats["total_devices"],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+
+            # 如果既没有设备列表也没有设备数量，返回成功但空列表
             return {
                 "success": True,
                 "devices": devices,

@@ -26,5 +26,5 @@ __all__ = [
     "KnowledgeGraph",
     "RelationType",
     "KnowledgeRetriever",
-    "KnowledgeValidator"
+    "KnowledgeValidator",
 ]

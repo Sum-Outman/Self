@@ -3,12 +3,11 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Dict, Any, List, Optional, Tuple
 
 from ..self_agi_model import AGIModelConfig
 from ..cores.transformerblock import TransformerBlock
+
 
 class PlanningModule(nn.Module):
     """计划模块 - 真实规划算法实现
@@ -457,7 +456,7 @@ class PlanningModule(nn.Module):
 
         基于启发式搜索的最优路径规划，适合离散状态空间
         """
-        batch_size = start_state.shape[0]
+        start_state.shape[0]
         device = start_state.device
 
         # 默认启发式函数：欧几里得距离
@@ -480,7 +479,7 @@ class PlanningModule(nn.Module):
             "parent": None,
             "action": None,
         }
-        start_node["f"] = (
+        start_node[""] = (
             start_node["g"] + self.astar_heuristic_weight * start_node["h"]
         )
 
@@ -489,7 +488,7 @@ class PlanningModule(nn.Module):
         # A*主循环
         while open_set:
             # 选择f值最小的节点（使用平均值处理批次）
-            current_node = min(open_set, key=lambda node: node["f"].mean().item())
+            current_node = min(open_set, key=lambda node: node[""].mean().item())
 
             # 检查是否达到目标
             distance_to_goal = torch.norm(current_node["state"] - goal_state, dim=-1)
@@ -553,7 +552,7 @@ class PlanningModule(nn.Module):
                         "state": neighbor_state,
                         "g": g_cost,
                         "h": h_cost,
-                        "f": f_cost,
+                        "": f_cost,
                         "parent": current_node,
                         "action": action,
                     }
@@ -562,7 +561,7 @@ class PlanningModule(nn.Module):
                     # 找到更好路径
                     existing_node["g"] = g_cost
                     existing_node["h"] = h_cost
-                    existing_node["f"] = f_cost
+                    existing_node[""] = f_cost
                     existing_node["parent"] = current_node
                     existing_node["action"] = action
 
@@ -588,8 +587,8 @@ class PlanningModule(nn.Module):
         if max_iterations is None:
             max_iterations = self.rrt_max_iterations
 
-        batch_size = start_state.shape[0]
-        device = start_state.device
+        start_state.shape[0]
+        start_state.device
 
         # 初始化树
         tree = {
@@ -684,8 +683,8 @@ class PlanningModule(nn.Module):
         if horizon is None:
             horizon = self.mpc_horizon
 
-        batch_size = current_state.shape[0]
-        device = current_state.device
+        current_state.shape[0]
+        current_state.device
 
         # 初始化优化变量
         state_sequence = [current_state]
@@ -744,7 +743,7 @@ class PlanningModule(nn.Module):
         self, state: torch.Tensor, constraints: Optional[torch.Tensor] = None
     ) -> List[Tuple[torch.Tensor, torch.Tensor]]:
         """生成邻居状态和对应动作"""
-        batch_size = state.shape[0]
+        state.shape[0]
         state_dim = state.shape[1]  # 状态维度（例如768）
         device = state.device
 
@@ -753,7 +752,9 @@ class PlanningModule(nn.Module):
         # 生成随机单位向量作为动作方向
         action_vectors = torch.randn(num_actions, state_dim, device=device)
         # 归一化为单位向量
-        action_vectors = action_vectors / torch.norm(action_vectors, dim=1, keepdim=True).clamp(min=1e-8)
+        action_vectors = action_vectors / torch.norm(
+            action_vectors, dim=1, keepdim=True
+        ).clamp(min=1e-8)
 
         # 生成邻居状态
         neighbors = []
@@ -805,7 +806,7 @@ class PlanningModule(nn.Module):
         result = torch.where(
             mask.unsqueeze(-1).expand_as(from_state),
             to_state,
-            from_state + direction / distance.clamp(min=1e-8) * step_size
+            from_state + direction / distance.clamp(min=1e-8) * step_size,
         )
         return result
 
@@ -888,10 +889,13 @@ class PlanningModule(nn.Module):
                         [current_state.unsqueeze(1), action.unsqueeze(1)], dim=-1
                     )
                     # 确保输入数据类型与PINN模型参数匹配
-                    if hasattr(self.pinn_model, 'parameters') and next(iter(self.pinn_model.parameters()), None) is not None:
+                    if (
+                        hasattr(self.pinn_model, "parameters")
+                        and next(iter(self.pinn_model.parameters()), None) is not None
+                    ):
                         model_dtype = next(iter(self.pinn_model.parameters())).dtype
                         pinn_input = pinn_input.to(model_dtype)
-                    
+
                     next_state_pinn = self.pinn_model(pinn_input)
                     if next_state_pinn is not None:
                         next_state_pinn = next_state_pinn.squeeze(1)
@@ -900,7 +904,9 @@ class PlanningModule(nn.Module):
                             logger.debug("使用PINN物理模型进行状态转移预测")
                             # 如果需要，将输出转换回原始dtype
                             if next_state_pinn.dtype != current_state.dtype:
-                                next_state_pinn = next_state_pinn.to(current_state.dtype)
+                                next_state_pinn = next_state_pinn.to(
+                                    current_state.dtype
+                                )
                             return next_state_pinn
                 except Exception as e:
                     logger.warning(f"PINN物理模型预测失败，使用备用物理模型: {e}")
@@ -910,7 +916,7 @@ class PlanningModule(nn.Module):
                 next_state_physics = self.physics_transition_network(combined)
 
                 # 应用物理约束
-                physics_constraint = self.physics_constraint_network(next_state_physics)
+                self.physics_constraint_network(next_state_physics)
                 physics_consistency = self.physics_loss_network(
                     torch.cat([current_state, next_state_physics], dim=-1)
                 )
@@ -1238,7 +1244,7 @@ class PlanningModule(nn.Module):
 
         logger = logging.getLogger(__name__)
         logger.debug(
-            f"PlanningModule输入: hidden_states形状={hidden_states.shape}, hidden_dim={hidden_dim}, config.hidden_size={self.config.hidden_size}"
+            f"PlanningModule输入: hidden_states形状={                 hidden_states.shape}, hidden_dim={hidden_dim}, config.hidden_size={                 self.config.hidden_size}"
         )
 
         # 1. 编码当前状态
@@ -1449,7 +1455,8 @@ class PlanningModule(nn.Module):
 
         output_dict = {
             "plans": plan_features,  # 计划特征 [batch_size, seq_len, hidden_size]
-            "actions": adjusted_action_embeddings,  # 动作嵌入 [batch_size, seq_len, hidden_size]
+            # 动作嵌入 [batch_size, seq_len, hidden_size]
+            "actions": adjusted_action_embeddings,
             "action_sequence": [plan_result["action_sequence"]]
             * batch_size,  # 动作序列
             "optimized_path": [plan_result["action_sequence"]]
@@ -1606,7 +1613,7 @@ class PlanningModule(nn.Module):
                         if traj_point.dim() == 1:
                             traj_point_expanded = traj_point.unsqueeze(0)
                         else:
-                            traj_point_expanded = traj_point[i : i + 1]
+                            traj_point_expanded = traj_point[i: i + 1]
                     else:
                         # 尝试转换为张量
                         try:
@@ -1614,12 +1621,12 @@ class PlanningModule(nn.Module):
                             if traj_point_tensor.dim() == 1:
                                 traj_point_expanded = traj_point_tensor.unsqueeze(0)
                             else:
-                                traj_point_expanded = traj_point_tensor[i : i + 1]
+                                traj_point_expanded = traj_point_tensor[i: i + 1]
                         except Exception:
                             # 如果无法转换，跳过此轨迹点
                             continue
                     dist = torch.norm(
-                        current_state[i : i + 1, :2] - traj_point_expanded[:, :2]
+                        current_state[i: i + 1, :2] - traj_point_expanded[:, :2]
                     )
                     distances.append(dist)
                 if distances:
@@ -1854,8 +1861,8 @@ class PlanningModule(nn.Module):
             - replan_events: 重规划事件列表
             - execution_trace: 执行轨迹
         """
-        batch_size = initial_state.shape[0]
-        device = initial_state.device
+        initial_state.shape[0]
+        initial_state.device
 
         # 初始规划
         current_state = initial_state.clone()
@@ -2005,7 +2012,7 @@ class PlanningModule(nn.Module):
             and current_plan["action_embeddings"].shape[1] > step_in_plan
         ):
             action_embedding = current_plan["action_embeddings"][
-                :, step_in_plan : step_in_plan + 1, :
+                :, step_in_plan: step_in_plan + 1, :
             ]
         else:
             # 随机探索动作
@@ -2032,6 +2039,3 @@ class PlanningModule(nn.Module):
             "reward": reward,
             "step": step_in_plan,
         }
-
-
-

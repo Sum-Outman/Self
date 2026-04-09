@@ -14,7 +14,12 @@ from .hardware_manager import HardwareManager
 from .sensor_interface import SensorInterface
 from .motor_controller import MotorController
 from .system_monitor import SystemMonitor
-from .autonomous_mode_manager import AutonomousModeManager, get_autonomous_mode_manager, AutonomousState, GoalPriority
+from .autonomous_mode_manager import (
+    AutonomousModeManager,
+    get_autonomous_mode_manager,
+    AutonomousState,
+    GoalPriority,
+)
 
 __all__ = [
     "SerialController",

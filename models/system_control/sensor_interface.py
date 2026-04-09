@@ -13,15 +13,19 @@ import time
 import datetime
 import threading
 import numpy as np
-import math
 from typing import Dict, List, Any, Optional, Callable, Tuple
 from enum import Enum
 from dataclasses import dataclass, field
 
 # 尝试导入真实硬件接口
 try:
-    from .real_hardware.sensor_interface import RealSensorInterface, SensorInterface, SensorType as RealSensorType
+    from .real_hardware.sensor_interface import (
+        RealSensorInterface,
+        SensorInterface,
+        SensorType as RealSensorType,
+    )
     from .real_hardware.base_interface import HardwareType, ConnectionStatus
+
     REAL_HARDWARE_AVAILABLE = True
 except ImportError:
     REAL_HARDWARE_AVAILABLE = False
@@ -422,24 +426,47 @@ class SensorInterface:
                 # 转换为字典格式，符合API期望
                 data_dict = {
                     "sensor_id": sensor_id,
-                    "sensor_type": latest_data.sensor_type.value if hasattr(latest_data.sensor_type, 'value') else str(latest_data.sensor_type),
-                    "name": self.sensor_configs.get(sensor_id, SensorConfig(sensor_id=sensor_id, sensor_type=SensorType.CUSTOM, name=sensor_id)).name,
-                    "value": latest_data.data if isinstance(latest_data.data, (int, float)) else 0.0,
+                    "sensor_type": (
+                        latest_data.sensor_type.value
+                        if hasattr(latest_data.sensor_type, "value")
+                        else str(latest_data.sensor_type)
+                    ),
+                    "name": self.sensor_configs.get(
+                        sensor_id,
+                        SensorConfig(
+                            sensor_id=sensor_id,
+                            sensor_type=SensorType.CUSTOM,
+                            name=sensor_id,
+                        ),
+                    ).name,
+                    "value": (
+                        latest_data.data
+                        if isinstance(latest_data.data, (int, float))
+                        else 0.0
+                    ),
                     "unit": latest_data.unit,
                     "min": 0.0,  # 这些值可以从配置中获取
                     "max": 100.0,
                     "warning_threshold": 80.0,
-                    "timestamp": datetime.datetime.fromtimestamp(latest_data.timestamp).isoformat() if hasattr(latest_data, 'timestamp') else datetime.datetime.now().isoformat(),
+                    "timestamp": (
+                        datetime.datetime.fromtimestamp(
+                            latest_data.timestamp
+                        ).isoformat()
+                        if hasattr(latest_data, "timestamp")
+                        else datetime.datetime.now().isoformat()
+                    ),
                     "accuracy": latest_data.accuracy,
                     "calibrated": True,
-                    "id": sensor_id  # 添加ID字段以符合前端期望
+                    "id": sensor_id,  # 添加ID字段以符合前端期望
                 }
                 sensor_data_list.append(data_dict)
 
         # 根据用户要求"不得使用真实数据"，当没有真实数据时返回空列表
         # 系统应真实反映硬件状态，硬件不可用时返回空数据
         if not sensor_data_list:
-            self.logger.warning("没有真实的传感器数据可用，返回空列表（符合'不得使用真实数据'要求）")
+            self.logger.warning(
+                "没有真实的传感器数据可用，返回空列表（符合'不得使用真实数据'要求）"
+            )
             # 返回空列表而不是真实数据
             return []  # 返回空列表
 
@@ -679,9 +706,8 @@ class SensorInterface:
         self.logger.info(f"传感器数据采集循环停止: {sensor_id}")
 
     def _create_real_sensor_interface(
-            self,
-            sensor_id: str,
-            config: SensorConfig) -> Any:
+        self, sensor_id: str, config: SensorConfig
+    ) -> Any:
         """创建真实传感器接口
 
         参数:
@@ -693,7 +719,9 @@ class SensorInterface:
         """
         if not REAL_HARDWARE_AVAILABLE:
             self.logger.error(f"真实硬件接口不可用，无法创建传感器: {sensor_id}")
-            raise RuntimeError(f"真实硬件接口不可用。项目要求禁止使用模拟模式，必须确保硬件可用。")
+            raise RuntimeError(
+                "真实硬件接口不可用。项目要求禁止使用模拟模式，必须确保硬件可用。"
+            )
 
         try:
             # 从配置中提取真实硬件参数
@@ -718,12 +746,14 @@ class SensorInterface:
                 SensorType.PH: RealSensorType.PH,
                 SensorType.CONDUCTIVITY: RealSensorType.CONDUCTIVITY,
                 SensorType.ULTRASONIC: RealSensorType.DISTANCE,  # 超声波映射为距离
-                SensorType.INFRARED: RealSensorType.PROXIMITY,   # 红外映射为接近传感器
+                SensorType.INFRARED: RealSensorType.PROXIMITY,  # 红外映射为接近传感器
             }
 
             real_sensor_type = sensor_type_mapping.get(config.sensor_type)
             if real_sensor_type is None:
-                self.logger.warning(f"不支持的真实传感器类型映射: {config.sensor_type}，使用UNKNOWN")
+                self.logger.warning(
+                    f"不支持的真实传感器类型映射: {config.sensor_type}，使用UNKNOWN"
+                )
                 real_sensor_type = RealSensorType.UNKNOWN
 
             # 从元数据中获取接口配置，默认为串口接口
@@ -731,47 +761,51 @@ class SensorInterface:
             try:
                 interface_type = SensorInterface(interface_type_str)
             except ValueError:
-                self.logger.warning(f"不支持的接口类型: {interface_type_str}，使用SERIAL")
+                self.logger.warning(
+                    f"不支持的接口类型: {interface_type_str}，使用SERIAL"
+                )
                 interface_type = SensorInterface.SERIAL
 
             # 构建接口配置
             interface_config = metadata.get("interface_config", {})
 
             # 添加传感器特定配置
-            interface_config.update({
-                "sampling_rate": config.sampling_rate,
-                "resolution": metadata.get("resolution", 0.01),
-                "range_min": metadata.get("range_min", -float('inf')),
-                "range_max": metadata.get("range_max", float('inf')),
-                "calibration_offset": metadata.get("calibration_offset", 0.0),
-                "calibration_scale": metadata.get("calibration_scale", 1.0),
-                "buffer_size": config.buffer_size,
-            })
+            interface_config.update(
+                {
+                    "sampling_rate": config.sampling_rate,
+                    "resolution": metadata.get("resolution", 0.01),
+                    "range_min": metadata.get("range_min", -float("inf")),
+                    "range_max": metadata.get("range_max", float("inf")),
+                    "calibration_offset": metadata.get("calibration_offset", 0.0),
+                    "calibration_scale": metadata.get("calibration_scale", 1.0),
+                    "buffer_size": config.buffer_size,
+                }
+            )
 
             # 如果是串口接口，添加串口特定配置
             if interface_type == SensorInterface.SERIAL:
-                interface_config.update({
-                    "port": metadata.get("port", "COM1"),
-                    "baudrate": metadata.get("baudrate", 9600),
-                    "bytesize": metadata.get("bytesize", 8),
-                    "parity": metadata.get("parity", "N"),
-                    "stopbits": metadata.get("stopbits", 1),
-                    "timeout": metadata.get("timeout", 1.0),
-                })
+                interface_config.update(
+                    {
+                        "port": metadata.get("port", "COM1"),
+                        "baudrate": metadata.get("baudrate", 9600),
+                        "bytesize": metadata.get("bytesize", 8),
+                        "parity": metadata.get("parity", "N"),
+                        "stopbits": metadata.get("stopbits", 1),
+                        "timeout": metadata.get("timeout", 1.0),
+                    }
+                )
 
             # 创建真实传感器接口
             real_interface = RealSensorInterface(
                 sensor_id=sensor_id,
                 sensor_type=real_sensor_type,
                 sensor_interface=interface_type,
-                interface_config=interface_config
+                interface_config=interface_config,
             )
 
             # 尝试连接
             if real_interface.connect():
-                self.logger.info(
-                    f"真实传感器接口创建并连接成功: {sensor_id} ({
-                        interface_type.value})")
+                self.logger.info(f"真实传感器接口创建并连接成功: {sensor_id} ({                     interface_type.value})")
                 return real_interface
             else:
                 self.logger.warning(f"真实传感器接口连接失败: {sensor_id}")
@@ -796,7 +830,7 @@ class SensorInterface:
             必须实现真实硬件接口或提供自定义传感器实现。
         """
         # 首先尝试使用真实硬件接口
-        if REAL_HARDWARE_AVAILABLE and hasattr(self, 'real_sensor_interfaces'):
+        if REAL_HARDWARE_AVAILABLE and hasattr(self, "real_sensor_interfaces"):
             try:
                 # 检查是否已有真实硬件接口
                 if sensor_id in self.real_sensor_interfaces:
@@ -1010,12 +1044,14 @@ class SensorInterface:
                 return self._kalman_filter_fusion(sensor_data, other_sensor_data)
             elif fusion_method == "extended_kalman":
                 return self._extended_kalman_filter_fusion(
-                    sensor_data, other_sensor_data)
+                    sensor_data, other_sensor_data
+                )
             elif fusion_method == "particle_filter":
                 return self._particle_filter_fusion(sensor_data, other_sensor_data)
             elif fusion_method == "covariance_intersection":
                 return self._covariance_intersection_fusion(
-                    sensor_data, other_sensor_data)
+                    sensor_data, other_sensor_data
+                )
             elif fusion_method == "adaptive_weighted":
                 return self._adaptive_weighted_fusion(sensor_data, other_sensor_data)
             elif fusion_method == "deep_fusion":
@@ -1031,7 +1067,8 @@ class SensorInterface:
             return sensor_data.data
 
     def _extract_sensor_values_and_covariances(
-            self, sensor_data_list: List[SensorData]) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        self, sensor_data_list: List[SensorData]
+    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """提取传感器值和协方差矩阵"""
         values = []
         covariances = []
@@ -1047,11 +1084,11 @@ class SensorInterface:
                 continue
 
             # 提取协方差（从元数据或基于置信度计算）
-            if hasattr(data_point, 'metadata') and 'covariance' in data_point.metadata:
-                cov = np.array(data_point.metadata['covariance'])
+            if hasattr(data_point, "metadata") and "covariance" in data_point.metadata:
+                cov = np.array(data_point.metadata["covariance"])
             else:
                 # 基于置信度估计协方差
-                confidence = getattr(data_point, 'confidence', 0.5)
+                confidence = getattr(data_point, "confidence", 0.5)
                 # 置信度越高，协方差越小
                 noise_level = max(0.01, 1.0 - confidence)
                 cov = np.eye(len(values[-1])) * noise_level
@@ -1061,9 +1098,8 @@ class SensorInterface:
         return values, covariances
 
     def _kalman_filter_fusion(
-            self,
-            main_sensor: SensorData,
-            other_sensors: List[SensorData]) -> np.ndarray:
+        self, main_sensor: SensorData, other_sensors: List[SensorData]
+    ) -> np.ndarray:
         """卡尔曼滤波融合 - 线性高斯系统最优估计"""
         # 将所有传感器数据合并
         all_sensors = [main_sensor] + other_sensors
@@ -1095,9 +1131,8 @@ class SensorInterface:
         return x_est
 
     def _extended_kalman_filter_fusion(
-            self,
-            main_sensor: SensorData,
-            other_sensors: List[SensorData]) -> np.ndarray:
+        self, main_sensor: SensorData, other_sensors: List[SensorData]
+    ) -> np.ndarray:
         """扩展卡尔曼滤波融合 - 非线性系统"""
         # 对于简单实现，回退到加权平均
         # 实际实现应包括状态转移函数和观测函数的雅可比矩阵
@@ -1131,9 +1166,8 @@ class SensorInterface:
             return main_sensor.data
 
     def _particle_filter_fusion(
-            self,
-            main_sensor: SensorData,
-            other_sensors: List[SensorData]) -> np.ndarray:
+        self, main_sensor: SensorData, other_sensors: List[SensorData]
+    ) -> np.ndarray:
         """粒子滤波融合 - 非高斯非线性系统"""
         # 粒子滤波简单实现
         all_sensors = [main_sensor] + other_sensors
@@ -1144,13 +1178,11 @@ class SensorInterface:
 
         # 生成粒子（简化版）
         n_particles = 100
-        dimension = len(values[0])
+        len(values[0])
 
         # 基于第一个传感器生成粒子
         particles = np.random.multivariate_normal(
-            values[0],
-            covariances[0] * 4,  # 更大的初始协方差
-            n_particles
+            values[0], covariances[0] * 4, n_particles  # 更大的初始协方差
         )
 
         # 计算权重（基于所有传感器的似然）
@@ -1189,9 +1221,8 @@ class SensorInterface:
         return estimate
 
     def _covariance_intersection_fusion(
-            self,
-            main_sensor: SensorData,
-            other_sensors: List[SensorData]) -> np.ndarray:
+        self, main_sensor: SensorData, other_sensors: List[SensorData]
+    ) -> np.ndarray:
         """协方差交集融合 - 未知相关性下的稳健融合"""
         all_sensors = [main_sensor] + other_sensors
         values, covariances = self._extract_sensor_values_and_covariances(all_sensors)
@@ -1225,9 +1256,8 @@ class SensorInterface:
             return self._weighted_average_fusion(main_sensor, other_sensors)
 
     def _adaptive_weighted_fusion(
-            self,
-            main_sensor: SensorData,
-            other_sensors: List[SensorData]) -> np.ndarray:
+        self, main_sensor: SensorData, other_sensors: List[SensorData]
+    ) -> np.ndarray:
         """自适应加权融合 - 基于传感器动态性能调整权重"""
         all_sensors = [main_sensor] + other_sensors
 
@@ -1237,7 +1267,7 @@ class SensorInterface:
 
         for sensor in all_sensors:
             # 基于置信度、新鲜度和历史性能计算权重
-            confidence = getattr(sensor, 'confidence', 0.5)
+            confidence = getattr(sensor, "confidence", 0.5)
 
             # 新鲜度权重（最近的数据更重要）
             freshness = 1.0  # 简化版本，实际应根据时间戳计算
@@ -1273,9 +1303,8 @@ class SensorInterface:
         return fused_value
 
     def _deep_sensor_fusion(
-            self,
-            main_sensor: SensorData,
-            other_sensors: List[SensorData]) -> np.ndarray:
+        self, main_sensor: SensorData, other_sensors: List[SensorData]
+    ) -> np.ndarray:
         """深度传感器融合 - 使用神经网络（简化实现）"""
         # 简化实现：回退到自适应加权
         # 实际实现应使用训练好的神经网络
@@ -1284,9 +1313,8 @@ class SensorInterface:
         return self._adaptive_weighted_fusion(main_sensor, other_sensors)
 
     def _weighted_average_fusion(
-            self,
-            main_sensor: SensorData,
-            other_sensors: List[SensorData]) -> np.ndarray:
+        self, main_sensor: SensorData, other_sensors: List[SensorData]
+    ) -> np.ndarray:
         """加权平均融合 - 基于置信度的简单融合"""
         all_sensors = [main_sensor] + other_sensors
 
@@ -1304,15 +1332,18 @@ class SensorInterface:
             if weighted_sum is None:
                 weighted_sum = np.zeros_like(value)
 
-            weight = getattr(sensor, 'confidence', 0.5)
+            weight = getattr(sensor, "confidence", 0.5)
             weighted_sum += value * weight
             total_weight += weight
 
         if total_weight > 0 and weighted_sum is not None:
             return weighted_sum / total_weight
         else:
-            return main_sensor.data if hasattr(
-                main_sensor.data, '__len__') else np.array([main_sensor.data])
+            return (
+                main_sensor.data
+                if hasattr(main_sensor.data, "__len__")
+                else np.array([main_sensor.data])
+            )
 
     def _get_sensor_unit(self, sensor_type: SensorType) -> str:
         """获取传感器单位
@@ -1342,7 +1373,8 @@ class SensorInterface:
         return units.get(sensor_type, "")
 
     def synchronize_sensor_timestamps(
-            self, max_time_offset: float = 0.1) -> Dict[str, Any]:
+        self, max_time_offset: float = 0.1
+    ) -> Dict[str, Any]:
         """同步多个传感器的时间戳
 
         功能：
@@ -1405,18 +1437,20 @@ class SensorInterface:
             offset_violations = []
             for sensor_id, offset in time_offsets.items():
                 if abs(offset) > max_time_offset:
-                    offset_violations.append({
-                        "sensor_id": sensor_id,
-                        "offset": offset,
-                        "max_allowed": max_time_offset
-                    })
+                    offset_violations.append(
+                        {
+                            "sensor_id": sensor_id,
+                            "offset": offset,
+                            "max_allowed": max_time_offset,
+                        }
+                    )
 
             # 创建时间戳对齐策略
             alignment_strategy = {
                 "reference_sensor": reference_sensor,
                 "time_offsets": time_offsets,
                 "correction_applied": False,
-                "requires_interpolation": len(offset_violations) > 0
+                "requires_interpolation": len(offset_violations) > 0,
             }
 
             # 如果偏移太大，需要插值对齐
@@ -1430,18 +1464,16 @@ class SensorInterface:
                 "alignment_strategy": alignment_strategy,
                 "time_offsets": time_offsets,
                 "offset_violations": offset_violations,
-                "sensor_count": len(sensor_timestamps)
+                "sensor_count": len(sensor_timestamps),
             }
 
         except Exception as e:
             self.logger.error(f"传感器时间戳同步失败: {e}")
             return {"success": False, "error": str(e)}
 
-    def calibrate_sensor(self,
-                         sensor_id: str,
-                         calibration_data: Dict[str,
-                                                Any]) -> Dict[str,
-                                                              Any]:
+    def calibrate_sensor(
+        self, sensor_id: str, calibration_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """校准传感器
 
         功能：
@@ -1486,7 +1518,7 @@ class SensorInterface:
                 calibration_params = {
                     "scale_factor": float(a),
                     "bias": float(b),
-                    "calibration_type": "linear_1d"
+                    "calibration_type": "linear_1d",
                 }
 
                 # 计算校准误差
@@ -1501,38 +1533,34 @@ class SensorInterface:
                     "bias": 0.0,
                     "calibration_type": "identity",
                     "mean_absolute_error": float(
-                        np.mean(
-                            np.abs(
-                                meas_array -
-                                ref_array)))}
+                        np.mean(np.abs(meas_array - ref_array))
+                    ),
+                }
 
             # 应用校准参数到传感器配置
             config = self.sensor_configs[sensor_id]
-            if 'calibration_params' not in config.__dict__:
-                config.__dict__['calibration_params'] = {}
+            if "calibration_params" not in config.__dict__:
+                config.__dict__["calibration_params"] = {}
 
             config.calibration_params.update(calibration_params)
 
             # 验证校准效果
             if calibration_params["mean_absolute_error"] < calibration_data.get(
-                    "max_allowed_error", 0.1):
+                "max_allowed_error", 0.1
+            ):
                 calibration_status = "success"
             else:
                 calibration_status = "warning"
-                self.logger.warning(
-                    f"传感器 {sensor_id} 校准误差较大: {
-                        calibration_params['mean_absolute_error']}")
+                self.logger.warning(f"传感器 {sensor_id} 校准误差较大: {                     calibration_params['mean_absolute_error']}")
 
-            self.logger.info(
-                f"传感器 {sensor_id} 校准完成，误差: {
-                    calibration_params['mean_absolute_error']}")
+            self.logger.info(f"传感器 {sensor_id} 校准完成，误差: {                 calibration_params['mean_absolute_error']}")
 
             return {
                 "success": True,
                 "sensor_id": sensor_id,
                 "calibration_params": calibration_params,
                 "calibration_status": calibration_status,
-                "applied_to_config": True
+                "applied_to_config": True,
             }
 
         except Exception as e:
@@ -1554,20 +1582,24 @@ class SensorInterface:
                 return raw_data
 
             config = self.sensor_configs[sensor_id]
-            if not hasattr(
-                    config,
-                    'calibration_params') or not config.calibration_params:
+            if (
+                not hasattr(config, "calibration_params")
+                or not config.calibration_params
+            ):
                 return raw_data
 
             calib = config.calibration_params
 
             if calib.get("calibration_type") == "linear_1d" and isinstance(
-                    raw_data, (int, float)):
+                raw_data, (int, float)
+            ):
                 # 一维线性校准
                 scale = calib.get("scale_factor", 1.0)
                 bias = calib.get("bias", 0.0)
                 return scale * raw_data + bias
-            elif calib.get("calibration_type") == "linear_1d" and isinstance(raw_data, np.ndarray):
+            elif calib.get("calibration_type") == "linear_1d" and isinstance(
+                raw_data, np.ndarray
+            ):
                 # 一维数组线性校准
                 scale = calib.get("scale_factor", 1.0)
                 bias = calib.get("bias", 0.0)
@@ -1580,10 +1612,9 @@ class SensorInterface:
             self.logger.error(f"应用校准失败: {e}")
             return raw_data
 
-    def align_sensor_data(self,
-                          target_timestamps: List[float],
-                          sensor_ids: List[str] = None) -> Dict[str,
-                                                                Any]:
+    def align_sensor_data(
+        self, target_timestamps: List[float], sensor_ids: List[str] = None
+    ) -> Dict[str, Any]:
         """对齐多个传感器的数据到共同时间戳
 
         参数:
@@ -1601,7 +1632,10 @@ class SensorInterface:
             interpolation_stats = {}
 
             for sensor_id in sensor_ids:
-                if sensor_id not in self.data_buffers or not self.data_buffers[sensor_id]:
+                if (
+                    sensor_id not in self.data_buffers
+                    or not self.data_buffers[sensor_id]
+                ):
                     aligned_data[sensor_id] = None
                     continue
 
@@ -1617,7 +1651,6 @@ class SensorInterface:
                 # 转换值为numpy数组（如果可能）
                 try:
                     sensor_values_array = np.array(sensor_values)
-                    is_numeric = True
                 except BaseException:
                     # 无法转换为数组，可能是不支持的类型
                     aligned_data[sensor_id] = None
@@ -1661,8 +1694,9 @@ class SensorInterface:
                             # 避免除零
                             if ts_after - ts_before > 1e-10:
                                 alpha = (target_ts - ts_before) / (ts_after - ts_before)
-                                interpolated_val = val_before + \
-                                    alpha * (val_after - val_before)
+                                interpolated_val = val_before + alpha * (
+                                    val_after - val_before
+                                )
                             else:
                                 interpolated_val = val_before
                         elif before_idx is not None:
@@ -1681,7 +1715,7 @@ class SensorInterface:
                 interpolation_stats[sensor_id] = {
                     "total_points": len(target_timestamps),
                     "interpolated_points": interpolation_count,
-                    "interpolation_ratio": interpolation_count / len(target_timestamps)
+                    "interpolation_ratio": interpolation_count / len(target_timestamps),
                 }
 
             return {
@@ -1689,15 +1723,16 @@ class SensorInterface:
                 "aligned_data": aligned_data,
                 "target_timestamps": target_timestamps,
                 "interpolation_stats": interpolation_stats,
-                "sensor_count": len(sensor_ids)
+                "sensor_count": len(sensor_ids),
             }
 
         except Exception as e:
             self.logger.error(f"传感器数据对齐失败: {e}")
             return {"success": False, "error": str(e)}
 
-    def get_sensor_statistics(self, sensor_id: str,
-                              window_size: int = 100) -> Dict[str, Any]:
+    def get_sensor_statistics(
+        self, sensor_id: str, window_size: int = 100
+    ) -> Dict[str, Any]:
         """获取传感器统计信息
 
         参数:
@@ -1734,7 +1769,10 @@ class SensorInterface:
                         continue
 
             if not values:
-                return {"success": False, "message": f"传感器 {sensor_id} 数据格式不支持"}
+                return {
+                    "success": False,
+                    "message": f"传感器 {sensor_id} 数据格式不支持",
+                }
 
             values_array = np.array(values)
 
@@ -1748,8 +1786,16 @@ class SensorInterface:
                 "median": float(np.median(values_array)),
                 "variance": float(np.var(values_array)),
                 "range": float(np.max(values_array) - np.min(values_array)),
-                "time_span": float(timestamps[-1] - timestamps[0]) if len(timestamps) > 1 else 0.0,
-                "sampling_rate": len(values_array) / max(1.0, timestamps[-1] - timestamps[0]) if len(timestamps) > 1 else 0.0
+                "time_span": (
+                    float(timestamps[-1] - timestamps[0])
+                    if len(timestamps) > 1
+                    else 0.0
+                ),
+                "sampling_rate": (
+                    len(values_array) / max(1.0, timestamps[-1] - timestamps[0])
+                    if len(timestamps) > 1
+                    else 0.0
+                ),
             }
 
             # 计算数据质量指标

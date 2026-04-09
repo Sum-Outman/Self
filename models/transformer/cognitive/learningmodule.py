@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Optional
+
 
 class LearningModule(nn.Module):
     """学习模块"""
@@ -74,6 +74,3 @@ class LearningModule(nn.Module):
             "integrated_knowledge": integrated,
             "adapted_features": adapted,
         }
-
-
-

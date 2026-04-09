@@ -252,6 +252,51 @@ class TrainingApi {
       throw error;
     }
   }
+
+  // 拉普拉斯增强系统 - 获取状态
+  async getLaplacianStatus(): Promise<ApiResponse<Record<string, any>>> {
+    try {
+      const response = (await this.apiClient.get('/training/laplacian/status')) as ApiResponse<Record<string, any>>;
+      return response;
+    } catch (error) {
+      console.error('获取拉普拉斯增强系统状态失败:', error);
+      throw error;
+    }
+  }
+
+  // 拉普拉斯增强系统 - 配置
+  async configureLaplacianSystem(configuration: Record<string, any>): Promise<ApiResponse<Record<string, any>>> {
+    try {
+      const response = (await this.apiClient.post('/training/laplacian/configure', configuration)) as ApiResponse<Record<string, any>>;
+      return response;
+    } catch (error) {
+      console.error('配置拉普拉斯增强系统失败:', error);
+      throw error;
+    }
+  }
+
+  // 拉普拉斯增强系统 - 启用
+  async enableLaplacianSystem(enable: boolean = true): Promise<ApiResponse<Record<string, any>>> {
+    try {
+      const response = (await this.apiClient.post('/training/laplacian/enable', { enable })) as ApiResponse<Record<string, any>>;
+      return response;
+    } catch (error) {
+      console.error('启用/禁用拉普拉斯增强系统失败:', error);
+      throw error;
+    }
+  }
+
+  // 拉普拉斯增强系统 - 应用增强
+  async applyLaplacianEnhancement(jobId: string, enhancementParams: Record<string, any> = {}): Promise<ApiResponse<Record<string, any>>> {
+    try {
+      const payload = { job_id: jobId, ...enhancementParams };
+      const response = (await this.apiClient.post('/training/laplacian/apply', payload)) as ApiResponse<Record<string, any>>;
+      return response;
+    } catch (error) {
+      console.error('应用拉普拉斯增强失败:', error);
+      throw error;
+    }
+  }
 }
 
 // 创建单例实例

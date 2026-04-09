@@ -6,10 +6,9 @@
 
 import logging
 import time
-from typing import Dict, List, Any, Optional, Union, Tuple, Set
+from typing import Dict, List, Any, Optional, Union
 import networkx as nx
 from enum import Enum
-import random
 
 # 推理引擎导入 - 延迟导入以避免循环导入
 REASONING_ENGINES_AVAILABLE = True  # 将在__init__中重新评估
@@ -17,6 +16,7 @@ REASONING_ENGINES_AVAILABLE = True  # 将在__init__中重新评估
 # 规则引擎导入
 try:
     from models.rules.reasoning_rules import ReasoningRuleEngine  # type: ignore
+
     RULE_ENGINE_AVAILABLE = True
 except ImportError:
     RULE_ENGINE_AVAILABLE = False
@@ -92,20 +92,20 @@ class KnowledgeGraph:
         # 推理引擎初始化
         self.reasoning_engines = {}
         self.reasoning_config = config.get("reasoning_config", {})
-        
+
         # 延迟导入推理引擎以避免循环导入
         try:
             from models.memory.memory_manager import (
-                MemorySystem,
                 CognitiveReasoningIntegrator,
                 SymbolicReasoningEngine,
-                NeuralReasoningNetwork
+                NeuralReasoningNetwork,
             )
+
             REASONING_ENGINES_AVAILABLE = True
         except ImportError as e:
             REASONING_ENGINES_AVAILABLE = False
             self.logger.warning(f"推理引擎导入失败: {e}, 使用内置推理")
-        
+
         if REASONING_ENGINES_AVAILABLE:
             try:
                 # 初始化认知推理集成器
@@ -113,39 +113,45 @@ class KnowledgeGraph:
                     # 使用传入的memory_system实例，如果为None则认知推理功能受限
                     memory_system = self.memory_system
                     if memory_system is None:
-                        self.logger.info("memory_system为None，认知推理功能将受限（测试环境中为预期行为）")
-                    
+                        self.logger.info(
+                            "memory_system为None，认知推理功能将受限（测试环境中为预期行为）"
+                        )
+
                     self.reasoning_engines["cognitive"] = CognitiveReasoningIntegrator(
                         memory_system,  # 传入有效的 memory_system 实例或 None
-                        self.reasoning_config.get("cognitive_config", {})
+                        self.reasoning_config.get("cognitive_config", {}),
                     )
-                    
+
                     if memory_system is not None:
                         self.logger.info("认知推理集成器初始化成功（已连接记忆系统）")
                     else:
-                        self.logger.info("认知推理集成器初始化（memory_system=None，部分功能受限，测试环境中为预期行为）")
-                
+                        self.logger.info(
+                            "认知推理集成器初始化（memory_system=None，部分功能受限，测试环境中为预期行为）"
+                        )
+
                 # 初始化符号推理引擎
                 if self.reasoning_config.get("enable_symbolic_reasoning", True):
                     self.reasoning_engines["symbolic"] = SymbolicReasoningEngine(
                         self.reasoning_config.get("symbolic_config", {})
                     )
                     self.logger.info("符号推理引擎初始化成功")
-                
+
                 # 初始化神经推理网络
                 if self.reasoning_config.get("enable_neural_reasoning", False):
                     self.reasoning_engines["neural"] = NeuralReasoningNetwork(
                         self.reasoning_config.get("neural_config", {})
                     )
                     self.logger.info("神经推理网络初始化成功")
-                    
+
             except Exception as e:
                 self.logger.error(f"推理引擎初始化失败: {e}")
                 self.reasoning_engines = {}
-        
+
         # 规则引擎初始化
         self.rule_engine = None
-        if RULE_ENGINE_AVAILABLE and self.reasoning_config.get("enable_rule_engine", True):
+        if RULE_ENGINE_AVAILABLE and self.reasoning_config.get(
+            "enable_rule_engine", True
+        ):
             try:
                 self.rule_engine = ReasoningRuleEngine(
                     self.reasoning_config.get("rule_engine_config", {})
@@ -153,11 +159,11 @@ class KnowledgeGraph:
                 self.logger.info("推理规则引擎初始化成功")
             except Exception as e:
                 self.logger.warning(f"推理规则引擎初始化失败: {e}")
-        
+
         # 推理缓存
         self.reasoning_cache = {}
         self.cache_max_size = config.get("reasoning_cache_size", 1000)
-        
+
         # 推理统计
         self.reasoning_stats = {
             "total_inferences": 0,
@@ -333,8 +339,11 @@ class KnowledgeGraph:
         return None  # 返回None
 
     def get_neighbors(
-        self, node_id: str, relation_type: Optional[str] = None, direction: str = "both",
-        max_distance: int = 1
+        self,
+        node_id: str,
+        relation_type: Optional[str] = None,
+        direction: str = "both",
+        max_distance: int = 1,
     ) -> List[Dict[str, Any]]:
         """获取邻居节点
 
@@ -349,12 +358,14 @@ class KnowledgeGraph:
         """
         if not self.graph.has_node(node_id):
             return []  # 返回空列表
-        
+
         if max_distance == 1:
             return self._get_direct_neighbors(node_id, relation_type, direction)
         else:
-            return self._get_extended_neighbors(node_id, relation_type, direction, max_distance)
-    
+            return self._get_extended_neighbors(
+                node_id, relation_type, direction, max_distance
+            )
+
     def _get_direct_neighbors(
         self, node_id: str, relation_type: Optional[str], direction: str
     ) -> List[Dict[str, Any]]:
@@ -376,7 +387,7 @@ class KnowledgeGraph:
                                     "relation": edge_data.get("type"),
                                     "weight": edge_data.get("weight"),
                                     "direction": "outgoing",
-                                    "distance": 1
+                                    "distance": 1,
                                 }
                             )
 
@@ -395,40 +406,48 @@ class KnowledgeGraph:
                                     "relation": edge_data.get("type"),
                                     "weight": edge_data.get("weight"),
                                     "direction": "incoming",
-                                    "distance": 1
+                                    "distance": 1,
                                 }
                             )
 
         return neighbors
-    
+
     def _get_extended_neighbors(
-        self, node_id: str, relation_type: Optional[str], direction: str, max_distance: int
+        self,
+        node_id: str,
+        relation_type: Optional[str],
+        direction: str,
+        max_distance: int,
     ) -> List[Dict[str, Any]]:
         """获取扩展邻居节点（最大距离可达max_distance）"""
         neighbors = []
         visited = set([node_id])
         queue = [(node_id, 0, None, None)]  # (节点ID, 距离, 关系类型, 方向)
-        
+
         while queue:
             current_id, distance, rel_type, rel_direction = queue.pop(0)
-            
+
             if distance > 0 and distance <= max_distance:
                 current_node = self.get_node(current_id)
                 if current_node:
                     # 确保节点数据中包含ID字段
                     current_node_with_id = current_node.copy()
                     current_node_with_id["id"] = current_id
-                    neighbors.append({
-                        "node": current_node_with_id,
-                        "relation": rel_type,
-                        "weight": 1.0 / (distance + 1),  # 距离越远权重越低
-                        "direction": rel_direction,
-                        "distance": distance
-                    })
-            
+                    neighbors.append(
+                        {
+                            "node": current_node_with_id,
+                            "relation": rel_type,
+                            "weight": 1.0 / (distance + 1),  # 距离越远权重越低
+                            "direction": rel_direction,
+                            "distance": distance,
+                        }
+                    )
+
             if distance < max_distance:
                 # 获取当前节点的直接邻居
-                direct_neighbors = self._get_direct_neighbors(current_id, relation_type, "both")
+                direct_neighbors = self._get_direct_neighbors(
+                    current_id, relation_type, "both"
+                )
                 for neighbor_info in direct_neighbors:
                     neighbor_id = neighbor_info["node"]["id"]
                     if neighbor_id not in visited:
@@ -439,14 +458,16 @@ class KnowledgeGraph:
                         else:
                             # 对于间接邻居，方向可能是混合的
                             actual_direction = "mixed"
-                        
-                        queue.append((
-                            neighbor_id,
-                            distance + 1,
-                            neighbor_info["relation"],
-                            actual_direction
-                        ))
-        
+
+                        queue.append(
+                            (
+                                neighbor_id,
+                                distance + 1,
+                                neighbor_info["relation"],
+                                actual_direction,
+                            )
+                        )
+
         return neighbors
 
     def find_paths(
@@ -488,12 +509,16 @@ class KnowledgeGraph:
         return filtered_paths
 
     def infer(
-        self, premises: List[Dict[str, Any]], inference_type: str = "logical",
-        max_results: int = 100, confidence_threshold: float = 0.3,
-        use_cache: bool = True, reasoning_engine: Optional[str] = None
+        self,
+        premises: List[Dict[str, Any]],
+        inference_type: str = "logical",
+        max_results: int = 100,
+        confidence_threshold: float = 0.3,
+        use_cache: bool = True,
+        reasoning_engine: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """知识推理 - 增强版推理引擎
-        
+
         参数:
             premises: 前提知识列表
             inference_type: 推理类型 (logical, causal, hierarchical, relational,
@@ -503,29 +528,31 @@ class KnowledgeGraph:
             confidence_threshold: 置信度阈值
             use_cache: 是否使用推理缓存
             reasoning_engine: 指定推理引擎 (cognitive, symbolic, neural, hybrid)
-            
+
         返回:
             推理结果列表
         """
         start_time = time.time()
-        
+
         # 生成缓存键
         cache_key = None
         if use_cache:
-            cache_key = self._generate_reasoning_cache_key(premises, inference_type, reasoning_engine)
+            cache_key = self._generate_reasoning_cache_key(
+                premises, inference_type, reasoning_engine
+            )
             if cache_key in self.reasoning_cache:
                 self.reasoning_stats["cache_hits"] += 1
                 self.logger.info(f"推理缓存命中: {cache_key}")
                 return self.reasoning_cache[cache_key][:max_results]
             else:
                 self.reasoning_stats["cache_misses"] += 1
-        
+
         results = []
-        
+
         try:
             # 更新推理统计
             self.reasoning_stats["total_inferences"] += 1
-            
+
             # 如果指定了推理引擎，使用指定引擎
             if reasoning_engine and reasoning_engine in self.reasoning_engines:
                 engine = self.reasoning_engines[reasoning_engine]
@@ -540,49 +567,49 @@ class KnowledgeGraph:
             else:
                 # 使用内部推理引擎
                 results = self._internal_inference(premises, inference_type)
-            
+
             # 过滤和排序结果
             filtered_results = []
             for result in results:
                 if result.get("confidence", 0.0) >= confidence_threshold:
                     filtered_results.append(result)
-            
+
             # 按置信度排序
             filtered_results.sort(key=lambda x: x.get("confidence", 0.0), reverse=True)
             final_results = filtered_results[:max_results]
-            
+
             # 更新统计
             self.reasoning_stats["successful_inferences"] += 1
             self.reasoning_stats["average_reasoning_time"] = (
-                self.reasoning_stats["average_reasoning_time"] * 
-                (self.reasoning_stats["successful_inferences"] - 1) +
-                (time.time() - start_time)
+                self.reasoning_stats["average_reasoning_time"]
+                * (self.reasoning_stats["successful_inferences"] - 1)
+                + (time.time() - start_time)
             ) / self.reasoning_stats["successful_inferences"]
-            
+
             # 缓存结果
             if use_cache and cache_key:
                 self._add_to_reasoning_cache(cache_key, final_results)
-            
+
             self.logger.info(
                 f"推理完成: 类型={inference_type}, "
                 f"前提数量={len(premises)}, "
                 f"结果数量={len(final_results)}, "
-                f"耗时={time.time()-start_time:.3f}s"
+                f"耗时={time.time() - start_time:.3f}s"
             )
-            
+
             return final_results
-            
+
         except Exception as e:
             self.reasoning_stats["failed_inferences"] += 1
             self.logger.error(f"推理失败: {e}")
             return []  # 返回空列表
-    
+
     def _internal_inference(
         self, premises: List[Dict[str, Any]], inference_type: str
     ) -> List[Dict[str, Any]]:
         """内部推理引擎 - 处理各种推理类型"""
         results = []
-        
+
         # 基本推理类型
         if inference_type == "logical":
             results = self._logical_inference(premises)
@@ -611,7 +638,7 @@ class KnowledgeGraph:
         else:
             self.logger.warning(f"未知推理类型: {inference_type}, 使用默认逻辑推理")
             results = self._logical_inference(premises)
-        
+
         return results
 
     def query(
@@ -911,16 +938,18 @@ class KnowledgeGraph:
 
         return results
 
-    def _deductive_inference(self, premises: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _deductive_inference(
+        self, premises: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """演绎推理 - 从一般到特殊"""
         results = []
-        
+
         for premise in premises:
             if premise.get("type") == "rule":
                 rule_content = premise.get("content", {})
                 general_premise = rule_content.get("general")
                 specific_condition = rule_content.get("condition")
-                
+
                 if general_premise and specific_condition:
                     # 应用规则进行演绎推理
                     inferred_result = {
@@ -928,12 +957,12 @@ class KnowledgeGraph:
                         "content": {
                             "general_rule": general_premise,
                             "specific_case": specific_condition,
-                            "conclusion": f"{specific_condition} 遵循 {general_premise}"
+                            "conclusion": f"{specific_condition} 遵循 {general_premise}",
                         },
-                        "confidence": 0.85
+                        "confidence": 0.85,
                     }
                     results.append(inferred_result)
-            
+
             elif premise.get("type") == "fact" and len(premises) >= 2:
                 # 从多个事实中演绎推理
                 for other_premise in premises:
@@ -945,18 +974,22 @@ class KnowledgeGraph:
                                 "content": {
                                     "fact": premise.get("content"),
                                     "rule": rule_content.get("general"),
-                                    "conclusion": rule_content.get("conclusion", "未知结论")
+                                    "conclusion": rule_content.get(
+                                        "conclusion", "未知结论"
+                                    ),
                                 },
-                                "confidence": 0.9
+                                "confidence": 0.9,
                             }
                             results.append(inferred_result)
-        
+
         return results
-    
-    def _inductive_inference(self, premises: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def _inductive_inference(
+        self, premises: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """归纳推理 - 从特殊到一般"""
         results = []
-        
+
         if len(premises) >= 3:  # 需要足够的前提进行归纳
             # 检查前提中的共同模式
             premise_patterns = []
@@ -964,80 +997,93 @@ class KnowledgeGraph:
                 if premise.get("type") in ["fact", "observation"]:
                     content = premise.get("content", "")
                     premise_patterns.append(content)
-            
+
             # 简单模式提取：寻找共同特征
             if premise_patterns:
                 # 提取关键词（简单实现）
                 common_words = set()
                 first_pattern_words = set(str(premise_patterns[0]).lower().split())
-                
+
                 for pattern in premise_patterns[1:]:
                     pattern_words = set(str(pattern).lower().split())
                     common_words.update(first_pattern_words.intersection(pattern_words))
-                
+
                 if common_words:
                     general_pattern = " ".join(sorted(list(common_words)[:5]))
-                    
+
                     inferred_result = {
                         "type": "inductive_generalization",
                         "content": {
                             "specific_cases": premise_patterns[:3],  # 显示前3个例子
                             "general_pattern": general_pattern,
-                            "confidence_level": min(0.7, len(premises) * 0.1)  # 前提越多，置信度越高
+                            "confidence_level": min(
+                                0.7, len(premises) * 0.1
+                            ),  # 前提越多，置信度越高
                         },
-                        "confidence": min(0.8, 0.5 + len(premises) * 0.05)
+                        "confidence": min(0.8, 0.5 + len(premises) * 0.05),
                     }
                     results.append(inferred_result)
-        
+
         return results
-    
-    def _abductive_inference(self, premises: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def _abductive_inference(
+        self, premises: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """溯因推理 - 寻找最佳解释"""
         results = []
-        
+
         observations = [p for p in premises if p.get("type") in ["observation", "fact"]]
-        
+
         if observations:
             for observation in observations:
                 obs_content = observation.get("content", "")
                 obs_node_id = observation.get("id")
-                
+
                 if obs_node_id and self.graph.has_node(obs_node_id):
                     # 查找可能的原因
                     possible_causes = []
-                    
+
                     # 查找因果关系的来源
                     incoming_relations = self.get_neighbors(
                         obs_node_id, RelationType.CAUSES.value, direction="in"
                     )
-                    
+
                     for cause_info in incoming_relations:
                         cause_node = cause_info["node"]
-                        possible_causes.append({
-                            "cause": cause_node["label"],
-                            "confidence": cause_info["weight"] * 0.8,
-                            "relation_strength": cause_info["weight"]
-                        })
-                    
+                        possible_causes.append(
+                            {
+                                "cause": cause_node["label"],
+                                "confidence": cause_info["weight"] * 0.8,
+                                "relation_strength": cause_info["weight"],
+                            }
+                        )
+
                     # 如果没有直接原因，查找间接原因
                     if not possible_causes:
                         # 查找相关概念
                         related_concepts = self.get_neighbors(
-                            obs_node_id, relation_type=None, direction="both", max_distance=2
+                            obs_node_id,
+                            relation_type=None,
+                            direction="both",
+                            max_distance=2,
                         )
                         for rel_info in related_concepts[:5]:  # 取前5个相关概念
                             related_node = rel_info["node"]
                             if related_node["id"] != obs_node_id:
-                                possible_causes.append({
-                                    "cause": related_node["label"],
-                                    "confidence": rel_info["weight"] * 0.6,
-                                    "relation_strength": rel_info["weight"]
-                                })
-                    
+                                possible_causes.append(
+                                    {
+                                        "cause": related_node["label"],
+                                        "confidence": rel_info["weight"] * 0.6,
+                                        "relation_strength": rel_info["weight"],
+                                    }
+                                )
+
                     if possible_causes:
                         # 选择最佳解释（置信度最高的）
-                        best_explanation = max(possible_causes, key=lambda x: x["confidence"])
-                        
+                        best_explanation = max(
+                            possible_causes, key=lambda x: x["confidence"]
+                        )
+
                         inferred_result = {
                             "type": "abductive_explanation",
                             "content": {
@@ -1045,35 +1091,45 @@ class KnowledgeGraph:
                                 "best_explanation": best_explanation["cause"],
                                 "confidence": best_explanation["confidence"],
                                 "alternative_explanations": [
-                                    c["cause"] for c in possible_causes[:3] if c != best_explanation
-                                ]
+                                    c["cause"]
+                                    for c in possible_causes[:3]
+                                    if c != best_explanation
+                                ],
                             },
-                            "confidence": best_explanation["confidence"]
+                            "confidence": best_explanation["confidence"],
                         }
                         results.append(inferred_result)
-        
+
         return results
-    
-    def _analogical_inference(self, premises: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def _analogical_inference(
+        self, premises: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """类比推理 - 基于相似性进行推理"""
         results = []
-        
+
         if len(premises) >= 2:
             source_premise = premises[0]
             target_premise = premises[1] if len(premises) > 1 else None
-            
-            if source_premise.get("type") == "case" and target_premise and target_premise.get("type") == "case":
+
+            if (
+                source_premise.get("type") == "case"
+                and target_premise
+                and target_premise.get("type") == "case"
+            ):
                 source_content = source_premise.get("content", {})
                 target_content = target_premise.get("content", {})
-                
+
                 # 计算相似性（简单实现）
                 similarity_score = 0.0
                 source_features = set(str(source_content).lower().split())
                 target_features = set(str(target_content).lower().split())
-                
+
                 if source_features and target_features:
-                    similarity_score = len(source_features.intersection(target_features)) / len(source_features.union(target_features))
-                
+                    similarity_score = len(
+                        source_features.intersection(target_features)
+                    ) / len(source_features.union(target_features))
+
                 if similarity_score > 0.3:  # 相似度阈值
                     # 推断类比关系
                     inferred_result = {
@@ -1082,69 +1138,91 @@ class KnowledgeGraph:
                             "source_case": source_content,
                             "target_case": target_content,
                             "similarity_score": similarity_score,
-                            "inferred_transfer": f"从{source_content}到{target_content}的类比推理"
+                            "inferred_transfer": f"从{source_content}到{target_content}的类比推理",
                         },
-                        "confidence": similarity_score * 0.8
+                        "confidence": similarity_score * 0.8,
                     }
                     results.append(inferred_result)
-        
+
         return results
-    
-    def _temporal_inference(self, premises: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def _temporal_inference(
+        self, premises: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """时序推理 - 基于时间关系的推理"""
         results = []
-        
-        temporal_premises = [p for p in premises if p.get("type") in ["event", "action"]]
-        
+
+        temporal_premises = [
+            p for p in premises if p.get("type") in ["event", "action"]
+        ]
+
         if len(temporal_premises) >= 2:
             # 按时间排序（如果有时间信息）
-            sorted_events = sorted(temporal_premises, 
-                                 key=lambda x: x.get("timestamp", 0))
-            
+            sorted_events = sorted(
+                temporal_premises, key=lambda x: x.get("timestamp", 0)
+            )
+
             # 推断时间关系
             for i in range(len(sorted_events) - 1):
                 event1 = sorted_events[i]
                 event2 = sorted_events[i + 1]
-                
+
                 # 检查是否存在时间关系
                 time_relation = None
                 event1_id = event1.get("id")
                 event2_id = event2.get("id")
-                
-                if event1_id and event2_id and self.graph.has_node(event1_id) and self.graph.has_node(event2_id):
+
+                if (
+                    event1_id
+                    and event2_id
+                    and self.graph.has_node(event1_id)
+                    and self.graph.has_node(event2_id)
+                ):
                     # 检查是否有PRECEDES关系
-                    paths = self.find_paths(event1_id, event2_id, max_length=2, 
-                                          relation_types=[RelationType.PRECEDES.value])
-                    
+                    paths = self.find_paths(
+                        event1_id,
+                        event2_id,
+                        max_length=2,
+                        relation_types=[RelationType.PRECEDES.value],
+                    )
+
                     if paths:
                         time_relation = "precedes"
                     else:
                         # 检查反向关系
-                        reverse_paths = self.find_paths(event2_id, event1_id, max_length=2,
-                                                      relation_types=[RelationType.PRECEDES.value])
+                        reverse_paths = self.find_paths(
+                            event2_id,
+                            event1_id,
+                            max_length=2,
+                            relation_types=[RelationType.PRECEDES.value],
+                        )
                         if reverse_paths:
                             time_relation = "follows"
-                
+
                 inferred_result = {
                     "type": "temporal_relation",
                     "content": {
                         "event1": event1.get("label", ""),
                         "event2": event2.get("label", ""),
                         "temporal_relation": time_relation or "concurrent",
-                        "order": i + 1
+                        "order": i + 1,
                     },
-                    "confidence": 0.7 if time_relation else 0.5
+                    "confidence": 0.7 if time_relation else 0.5,
                 }
                 results.append(inferred_result)
-        
+
         return results
-    
-    def _spatial_inference(self, premises: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def _spatial_inference(
+        self, premises: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """空间推理 - 基于空间关系的推理"""
         results = []
-        
-        spatial_premises = [p for p in premises if p.get("type") in ["entity", "location"]]
-        
+
+        spatial_premises = [
+            p for p in premises if p.get("type") in ["entity", "location"]
+        ]
+
         for premise in spatial_premises:
             premise_id = premise.get("id")
             if premise_id and self.graph.has_node(premise_id):
@@ -1152,11 +1230,11 @@ class KnowledgeGraph:
                 spatial_relations = self.get_neighbors(
                     premise_id, RelationType.LOCATED_IN.value, direction="both"
                 )
-                
+
                 for rel_info in spatial_relations:
                     related_node = rel_info["node"]
                     relation_type = rel_info["relation"]
-                    
+
                     # 推断空间关系
                     inferred_result = {
                         "type": "spatial_relation",
@@ -1164,87 +1242,100 @@ class KnowledgeGraph:
                             "entity1": premise.get("label", ""),
                             "entity2": related_node["label"],
                             "spatial_relation": relation_type,
-                            "direction": rel_info["direction"]
+                            "direction": rel_info["direction"],
                         },
-                        "confidence": rel_info.get("weight", 0.5)
+                        "confidence": rel_info.get("weight", 0.5),
                     }
                     results.append(inferred_result)
-        
+
         return results
-    
-    def _probabilistic_inference(self, premises: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def _probabilistic_inference(
+        self, premises: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """概率推理 - 基于不确定性的推理"""
         results = []
-        
+
         if premises:
             # 计算前提的总体置信度
             total_confidence = sum(p.get("confidence", 0.5) for p in premises)
-            avg_confidence = total_confidence / len(premises) if len(premises) > 0 else 0.5
-            
+            avg_confidence = (
+                total_confidence / len(premises) if len(premises) > 0 else 0.5
+            )
+
             # 基于平均置信度生成概率结论
             for premise in premises[:3]:  # 处理前3个前提
                 premise_content = premise.get("content", "")
                 premise_confidence = premise.get("confidence", 0.5)
-                
+
                 # 应用贝叶斯风格的推理（完整）
-                posterior_probability = min(0.95, avg_confidence * premise_confidence * 1.2)
-                
+                posterior_probability = min(
+                    0.95, avg_confidence * premise_confidence * 1.2
+                )
+
                 inferred_result = {
                     "type": "probabilistic_conclusion",
                     "content": {
                         "premise": premise_content,
                         "prior_probability": premise_confidence,
                         "posterior_probability": posterior_probability,
-                        "confidence_gain": posterior_probability - premise_confidence
+                        "confidence_gain": posterior_probability - premise_confidence,
                     },
-                    "confidence": posterior_probability
+                    "confidence": posterior_probability,
                 }
                 results.append(inferred_result)
-        
+
         return results
-    
-    def _default_reasoning(self, premises: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def _default_reasoning(
+        self, premises: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """默认推理 - 在信息不完全时的推理"""
         results = []
-        
+
         for premise in premises:
             premise_type = premise.get("type", "unknown")
             premise_content = premise.get("content", "")
-            
+
             # 基于前提类型应用默认规则
             default_conclusions = {
                 "concept": f"{premise_content}具有典型属性",
                 "event": f"{premise_content}可能具有典型原因和结果",
                 "action": f"{premise_content}通常有特定目的",
                 "rule": f"{premise_content}在正常情况下适用",
-                "fact": f"{premise_content}通常是真实的"
+                "fact": f"{premise_content}通常是真实的",
             }
-            
-            default_conclusion = default_conclusions.get(premise_type, f"{premise_content}具有一般性质")
-            
+
+            default_conclusion = default_conclusions.get(
+                premise_type, f"{premise_content}具有一般性质"
+            )
+
             inferred_result = {
                 "type": "default_conclusion",
                 "content": {
                     "premise": premise_content,
                     "default_conclusion": default_conclusion,
-                    "assumption": "在缺乏相反证据时假设为真"
+                    "assumption": "在缺乏相反证据时假设为真",
                 },
-                "confidence": 0.6  # 默认推理的置信度较低
+                "confidence": 0.6,  # 默认推理的置信度较低
             }
             results.append(inferred_result)
-        
+
         return results
-    
+
     def _generate_reasoning_cache_key(
-        self, premises: List[Dict[str, Any]], inference_type: str, reasoning_engine: Optional[str]
+        self,
+        premises: List[Dict[str, Any]],
+        inference_type: str,
+        reasoning_engine: Optional[str],
     ) -> str:
         """生成推理缓存键
-        
+
         参数:
             premises: 前提知识列表
             inference_type: 推理类型
             reasoning_engine: 推理引擎名称
-            
+
         返回:
             缓存键字符串
         """
@@ -1254,27 +1345,30 @@ class KnowledgeGraph:
             premise_type = premise.get("type", "unknown")
             premise_id = premise.get("id", "")
             premise_content_hash = hash(str(premise.get("content", ""))) % 10000
-            
+
             premise_keys.append(f"{premise_type}:{premise_id}:{premise_content_hash}")
-        
+
         # 排序以确保相同前提集合生成相同键
         premise_keys.sort()
-        
+
         # 构建缓存键
         engine_key = reasoning_engine or "internal"
         premise_key = "_".join(premise_keys[:10])  # 最多使用10个前提
         cache_key = f"{engine_key}:{inference_type}:{premise_key}"
-        
+
         # 限制长度
         if len(cache_key) > 200:
             import hashlib
+
             cache_key = hashlib.md5(cache_key.encode()).hexdigest()
-        
+
         return cache_key
-    
-    def _add_to_reasoning_cache(self, cache_key: str, results: List[Dict[str, Any]]) -> None:
+
+    def _add_to_reasoning_cache(
+        self, cache_key: str, results: List[Dict[str, Any]]
+    ) -> None:
         """添加结果到推理缓存
-        
+
         参数:
             cache_key: 缓存键
             results: 推理结果列表
@@ -1285,16 +1379,18 @@ class KnowledgeGraph:
             oldest_key = next(iter(self.reasoning_cache))
             del self.reasoning_cache[oldest_key]
             self.logger.debug(f"推理缓存已满，移除旧缓存项: {oldest_key}")
-        
+
         # 添加新缓存项
         self.reasoning_cache[cache_key] = results
-        self.logger.debug(f"推理结果已缓存: {cache_key}, 缓存大小: {len(self.reasoning_cache)}")
-    
+        self.logger.debug(
+            f"推理结果已缓存: {cache_key}, 缓存大小: {len(self.reasoning_cache)}"
+        )
+
     def clear_reasoning_cache(self) -> None:
         """清空推理缓存"""
         self.reasoning_cache.clear()
         self.logger.info("推理缓存已清空")
-    
+
     def get_reasoning_stats(self) -> Dict[str, Any]:
         """获取推理统计信息"""
         return self.reasoning_stats.copy()
@@ -1338,7 +1434,9 @@ class KnowledgeGraph:
                     related.append({"node": node_data, "distance": distance})
 
             if distance < max_distance:
-                neighbors = self.get_neighbors(current_id, relation_type=None, direction="both")
+                neighbors = self.get_neighbors(
+                    current_id, relation_type=None, direction="both"
+                )
                 for neighbor_info in neighbors:
                     neighbor_id = neighbor_info["node"]["id"]
                     if neighbor_id not in visited:
@@ -1358,7 +1456,9 @@ class KnowledgeGraph:
         neighbor_sets = []
         for node_id in node_ids:
             if self.graph.has_node(node_id):
-                neighbors = set(self.get_neighbors(node_id, relation_type=None, direction="both"))
+                neighbors = set(
+                    self.get_neighbors(node_id, relation_type=None, direction="both")
+                )
                 neighbor_ids = {info["node"]["id"] for info in neighbors}
                 neighbor_sets.append(neighbor_ids)
 

@@ -80,7 +80,7 @@ const TrainingPage: React.FC = () => {
     description: '',
   });
   
-  const [activeTab, setActiveTab] = useState<'jobs' | 'new' | 'config' | 'monitor'>('jobs');
+  const [activeTab, setActiveTab] = useState<'jobs' | 'new' | 'config' | 'monitor' | 'laplacian'>('jobs');
   const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [isLoading, setIsLoading] = useState({
     jobs: true,
@@ -109,6 +109,28 @@ const TrainingPage: React.FC = () => {
   const [monitoringInterval, setMonitoringInterval] = useState<number>(5000); // 默认5秒
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [selectedTimeRange, setSelectedTimeRange] = useState<'1h' | '6h' | '12h' | '24h'>('1h');
+  
+  // 拉普拉斯增强系统状态
+  const [laplacianStatus, setLaplacianStatus] = useState<{
+    available: boolean;
+    initialized: boolean;
+    enhancement_mode: string;
+    enabled_components: string[];
+    regularization_lambda: number;
+    adaptive_lambda: boolean;
+  } | null>(null);
+  const [laplacianConfig, setLaplacianConfig] = useState<{
+    enhancement_mode: string;
+    enabled_components: string[];
+    regularization_lambda: number;
+    adaptive_lambda: boolean;
+  }>({
+    enhancement_mode: 'graph_laplacian',
+    enabled_components: ['regularization', 'feature_extraction'],
+    regularization_lambda: 0.01,
+    adaptive_lambda: true,
+  });
+  const [isLoadingLaplacian, setIsLoadingLaplacian] = useState(false);
   
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -302,6 +324,94 @@ const TrainingPage: React.FC = () => {
 
 
 
+  // 加载拉普拉斯增强系统状态
+  const loadLaplacianStatus = async () => {
+    try {
+      setIsLoadingLaplacian(true);
+      const response = await trainingApi.getLaplacianStatus();
+      if (response.success && response.data) {
+        setLaplacianStatus(response.data as any);
+        // 如果系统已配置，更新本地配置状态
+        if (response.data.initialized && response.data.available) {
+          setLaplacianConfig({
+            enhancement_mode: response.data.enhancement_mode || 'graph_laplacian',
+            enabled_components: response.data.enabled_components || ['regularization', 'feature_extraction'],
+            regularization_lambda: response.data.regularization_lambda || 0.01,
+            adaptive_lambda: response.data.adaptive_lambda || true,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('加载拉普拉斯增强系统状态失败:', error);
+      toast.error('加载拉普拉斯系统状态失败');
+    } finally {
+      setIsLoadingLaplacian(false);
+    }
+  };
+
+  // 保存拉普拉斯配置
+  const saveLaplacianConfig = async () => {
+    try {
+      setIsLoadingLaplacian(true);
+      const response = await trainingApi.configureLaplacianSystem(laplacianConfig);
+      if (response.success && response.data) {
+        toast.success('拉普拉斯配置已保存');
+        // 重新加载状态
+        loadLaplacianStatus();
+      } else {
+        toast.error('保存配置失败');
+      }
+    } catch (error) {
+      console.error('保存拉普拉斯配置失败:', error);
+      toast.error('保存配置失败');
+    } finally {
+      setIsLoadingLaplacian(false);
+    }
+  };
+
+  // 启用/禁用拉普拉斯增强系统
+  const toggleLaplacianSystem = async (enable: boolean) => {
+    try {
+      setIsLoadingLaplacian(true);
+      const response = await trainingApi.enableLaplacianSystem(enable);
+      if (response.success && response.data) {
+        toast.success(`拉普拉斯增强系统已${enable ? '启用' : '禁用'}`);
+        // 重新加载状态
+        loadLaplacianStatus();
+      } else {
+        toast.error(`${enable ? '启用' : '禁用'}系统失败`);
+      }
+    } catch (error) {
+      console.error(`${enable ? '启用' : '禁用'}拉普拉斯系统失败:`, error);
+      toast.error(`${enable ? '启用' : '禁用'}系统失败`);
+    } finally {
+      setIsLoadingLaplacian(false);
+    }
+  };
+
+  // 应用拉普拉斯增强到训练任务
+  const applyLaplacianEnhancement = async (jobId: string) => {
+    try {
+      setIsLoadingLaplacian(true);
+      const response = await trainingApi.applyLaplacianEnhancement(jobId, {
+        enhancement_mode: laplacianConfig.enhancement_mode,
+        regularization_lambda: laplacianConfig.regularization_lambda,
+      });
+      if (response.success && response.data) {
+        toast.success('拉普拉斯增强已应用到训练任务');
+        // 刷新训练任务列表
+        loadJobs();
+      } else {
+        toast.error('应用增强失败');
+      }
+    } catch (error) {
+      console.error('应用拉普拉斯增强失败:', error);
+      toast.error('应用增强失败');
+    } finally {
+      setIsLoadingLaplacian(false);
+    }
+  };
+
   // 清除警报
   const clearAlert = (alertId: string) => {
     setMonitoringData(prev => ({
@@ -330,6 +440,7 @@ const TrainingPage: React.FC = () => {
     loadDatasets();
     loadModelTypes();
     loadMonitoringData();
+    loadLaplacianStatus();
 
     // 设置轮询更新
     pollIntervalRef.current = setInterval(() => {
@@ -804,6 +915,20 @@ const TrainingPage: React.FC = () => {
             <div className="flex items-center">
               <BarChart3 className="w-4 h-4 mr-2" />
               训练监控
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('laplacian')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'laplacian'
+                ? 'border-gray-700 text-gray-700 dark:text-gray-700'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <div className="flex items-center">
+              <Settings className="w-4 h-4 mr-2" />
+              拉普拉斯增强
             </div>
           </button>
         </nav>
@@ -1643,6 +1768,258 @@ const TrainingPage: React.FC = () => {
                         </div>
                       </div>
                     ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 拉普拉斯增强系统 */}
+      {activeTab === 'laplacian' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="font-semibold text-gray-900 dark:text-white">拉普拉斯增强系统</h2>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-semibold text-gray-900 dark:text-white">拉普拉斯增强系统</h2>
+                <button
+                  onClick={loadLaplacianStatus}
+                  className="inline-flex items-center px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+                  disabled={isLoadingLaplacian}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingLaplacian ? 'animate-spin' : ''}`} />
+                  刷新状态
+                </button>
+              </div>
+              
+              {isLoadingLaplacian ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-gray-700 mx-auto" />
+                  <p className="mt-2 text-gray-600 dark:text-gray-400">加载拉普拉斯系统状态中...</p>
+                </div>
+              ) : laplacianStatus ? (
+                <div className="space-y-6">
+                  {/* 状态卡片 */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className={`p-4 rounded-lg ${laplacianStatus.available ? 'bg-gradient-to-r from-gray-700 to-gray-600 dark:from-gray-700/30 dark:to-gray-600/30' : 'bg-gradient-to-r from-gray-800 to-gray-500 dark:from-gray-800/30 dark:to-gray-500/30'}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-700 dark:text-gray-700">系统可用性</p>
+                          <p className="text-2xl font-semibold text-gray-700 dark:text-gray-300">
+                            {laplacianStatus.available ? '可用' : '不可用'}
+                          </p>
+                        </div>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${laplacianStatus.available ? 'bg-gray-700 dark:bg-gray-700/50' : 'bg-gray-800 dark:bg-gray-800/50'}`}>
+                          {laplacianStatus.available ? (
+                            <CheckCircle className="w-6 h-6 text-gray-700 dark:text-gray-700" />
+                          ) : (
+                            <XCircle className="w-6 h-6 text-gray-800 dark:text-gray-800" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className={`p-4 rounded-lg ${laplacianStatus.initialized ? 'bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-600/30 dark:to-gray-500/30' : 'bg-gradient-to-r from-gray-800 to-gray-500 dark:from-gray-800/30 dark:to-gray-500/30'}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-600">初始化状态</p>
+                          <p className="text-2xl font-semibold text-gray-600 dark:text-gray-300">
+                            {laplacianStatus.initialized ? '已初始化' : '未初始化'}
+                          </p>
+                        </div>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${laplacianStatus.initialized ? 'bg-gray-600 dark:bg-gray-600/50' : 'bg-gray-800 dark:bg-gray-800/50'}`}>
+                          {laplacianStatus.initialized ? (
+                            <CheckCircle className="w-6 h-6 text-gray-600 dark:text-gray-600" />
+                          ) : (
+                            <Settings className="w-6 h-6 text-gray-800 dark:text-gray-800" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg bg-gradient-to-r from-gray-600 to-gray-500 dark:from-gray-600/30 dark:to-gray-500/30">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-600">增强模式</p>
+                          <p className="text-2xl font-semibold text-gray-600 dark:text-gray-300">
+                            {laplacianStatus.enhancement_mode || '未配置'}
+                          </p>
+                        </div>
+                        <div className="w-12 h-12 rounded-full bg-gray-600 dark:bg-gray-600/50 flex items-center justify-center">
+                          <Settings className="w-6 h-6 text-gray-600 dark:text-gray-600" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 配置面板 */}
+                  <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6">
+                    <h3 className="font-medium text-gray-900 dark:text-white mb-4">配置参数</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          增强模式
+                        </label>
+                        <select
+                          value={laplacianConfig.enhancement_mode}
+                          onChange={(e) => setLaplacianConfig(prev => ({ ...prev, enhancement_mode: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-700"
+                        >
+                          <option value="graph_laplacian">图拉普拉斯</option>
+                          <option value="manifold_regularization">流形正则化</option>
+                          <option value="spectral_clustering">谱聚类增强</option>
+                          <option value="multi_scale">多尺度分析</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          启用组件
+                        </label>
+                        <div className="space-y-2">
+                          {['regularization', 'feature_extraction', 'graph_based', 'spectral_analysis'].map(component => (
+                            <div key={component} className="flex items-center">
+                              <input
+                                type="checkbox"
+                                id={`component-${component}`}
+                                checked={laplacianConfig.enabled_components.includes(component)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setLaplacianConfig(prev => ({
+                                      ...prev,
+                                      enabled_components: [...prev.enabled_components, component]
+                                    }));
+                                  } else {
+                                    setLaplacianConfig(prev => ({
+                                      ...prev,
+                                      enabled_components: prev.enabled_components.filter(c => c !== component)
+                                    }));
+                                  }
+                                }}
+                                className="h-4 w-4 text-gray-700 rounded focus:ring-gray-700"
+                              />
+                              <label htmlFor={`component-${component}`} className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                {component === 'regularization' ? '拉普拉斯正则化' :
+                                 component === 'feature_extraction' ? '特征提取增强' :
+                                 component === 'graph_based' ? '图结构学习' :
+                                 '谱分析优化'}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          正则化强度 (λ)
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="0.1"
+                          step="0.001"
+                          value={laplacianConfig.regularization_lambda}
+                          onChange={(e) => setLaplacianConfig(prev => ({ ...prev, regularization_lambda: parseFloat(e.target.value) }))}
+                          className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          <span>0</span>
+                          <span>当前: {laplacianConfig.regularization_lambda.toFixed(3)}</span>
+                          <span>0.1</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="adaptive_lambda"
+                          checked={laplacianConfig.adaptive_lambda}
+                          onChange={(e) => setLaplacianConfig(prev => ({ ...prev, adaptive_lambda: e.target.checked }))}
+                          className="h-4 w-4 text-gray-700 rounded focus:ring-gray-700"
+                        />
+                        <label htmlFor="adaptive_lambda" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                          自适应正则化强度
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6 flex space-x-4">
+                      <button
+                        onClick={saveLaplacianConfig}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-gray-700 to-gray-600 rounded-lg hover:from-gray-700 hover:to-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-700"
+                        disabled={isLoadingLaplacian}
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        保存配置
+                      </button>
+                      
+                      <button
+                        onClick={() => toggleLaplacianSystem(!laplacianStatus?.available)}
+                        className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg ${laplacianStatus?.available ? 'text-gray-800 bg-gray-500 dark:bg-gray-800/30 dark:text-gray-500 hover:bg-gray-500 dark:hover:bg-gray-500/50' : 'text-gray-700 bg-gray-600 dark:bg-gray-700/30 dark:text-gray-600 hover:bg-gray-600 dark:hover:bg-gray-600/50'}`}
+                        disabled={isLoadingLaplacian}
+                      >
+                        {laplacianStatus?.available ? (
+                          <>
+                            <XCircle className="w-4 h-4 mr-2" />
+                            禁用系统
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            启用系统
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* 应用到训练任务 */}
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                    <h3 className="font-medium text-gray-900 dark:text-white mb-4">应用到训练任务</h3>
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        选择要应用拉普拉斯增强的训练任务：
+                      </p>
+                      <div className="space-y-3">
+                        {jobs.filter(job => job.status === 'running' || job.status === 'pending').map(job => (
+                          <div key={job.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">{job.name}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {job.modelType} • {job.status === 'running' ? '运行中' : '等待中'}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => applyLaplacianEnhancement(job.id)}
+                              className="inline-flex items-center px-3 py-1 text-sm font-medium text-gray-700 bg-gray-700 dark:bg-gray-700/30 dark:text-gray-700 rounded-md hover:bg-gray-700 dark:hover:bg-gray-700/50"
+                              disabled={isLoadingLaplacian}
+                            >
+                              <Zap className="w-4 h-4 mr-2" />
+                              应用增强
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Settings className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                  <h3 className="font-medium text-gray-900 dark:text-white">拉普拉斯增强系统未初始化</h3>
+                  <p className="mt-1 text-gray-600 dark:text-gray-400">
+                    系统可能未启动或配置，请检查后端服务状态。
+                  </p>
+                  <button
+                    onClick={() => toggleLaplacianSystem(true)}
+                    className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-gray-700 to-gray-600 rounded-lg hover:from-gray-700 hover:to-gray-600"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    初始化系统
+                  </button>
                 </div>
               )}
             </div>

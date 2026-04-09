@@ -3,9 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Dict, Any, Optional
+
 
 class MotorControlModule(nn.Module):
     """电机控制模块 - 处理电机控制和运动规划
@@ -73,7 +72,7 @@ class MotorControlModule(nn.Module):
         返回:
             控制信号和运动规划结果
         """
-        batch_size = target_state.size(0)
+        target_state.size(0)
 
         # 如果未提供当前状态，使用零状态
         if current_state is None:
@@ -114,4 +113,3 @@ class MotorControlModule(nn.Module):
 
 
 # 计算机操作模块
-

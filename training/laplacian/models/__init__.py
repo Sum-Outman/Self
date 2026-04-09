@@ -14,27 +14,29 @@ warnings.warn(
     "from training.laplacian.models.pinn import LaplacianEnhancedPINN\n"
     "from training.laplacian.models.cnn import LaplacianEnhancedCNN",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
 
 # 尝试导入各个模型组件
 try:
     from .pinn import LaplacianEnhancedPINN
     from .cnn import LaplacianEnhancedCNN
-    
+
     __all__ = [
-        'LaplacianEnhancedPINN',
-        'LaplacianEnhancedCNN',
+        "LaplacianEnhancedPINN",
+        "LaplacianEnhancedCNN",
     ]
-    
+
 except ImportError:
     # 模块尚未完全迁移
     __all__ = []
-    
+
     class LaplacianEnhancedPINN:
         """实现类 - 将在模块迁移完成后实现"""
+
         pass  # 已实现
-    
+
     class LaplacianEnhancedCNN:
         """实现类 - 将在模块迁移完成后实现"""
+
         pass  # 已实现

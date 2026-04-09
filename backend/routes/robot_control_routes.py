@@ -4,13 +4,11 @@
 基于统一的RobotService重构
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
-from typing import Dict, Any, List, Optional
+from fastapi import APIRouter, HTTPException, status, Query, Body
+from typing import Dict, Any, List
 from datetime import datetime, timezone
 import logging
 
-from backend.dependencies import get_db, get_current_user
-from backend.db_models.user import User
 from backend.services.robot_service import get_robot_service
 
 router = APIRouter(prefix="/api/robot/control", tags=["机器人控制"])
@@ -24,7 +22,7 @@ async def get_robot_control_status():
     try:
         control_service = get_robot_service()
         service_info = control_service.get_service_info()
-        
+
         return {
             "success": True,
             "status": "running",
@@ -35,7 +33,7 @@ async def get_robot_control_status():
         logger.error(f"获取机器人控制状态失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取机器人控制状态失败: {str(e)}"
+            detail=f"获取机器人控制状态失败: {str(e)}",
         )
 
 
@@ -45,7 +43,7 @@ async def get_robot_full_state():
     try:
         control_service = get_robot_service()
         robot_state = control_service.get_robot_state()
-        
+
         return {
             "success": True,
             "state": robot_state,
@@ -55,7 +53,7 @@ async def get_robot_full_state():
         logger.error(f"获取机器人状态失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取机器人状态失败: {str(e)}"
+            detail=f"获取机器人状态失败: {str(e)}",
         )
 
 
@@ -65,7 +63,7 @@ async def get_robot_joints():
     try:
         control_service = get_robot_service()
         joint_states = control_service.get_joint_states()
-        
+
         return {
             "success": True,
             "joints": joint_states,
@@ -75,7 +73,7 @@ async def get_robot_joints():
         logger.error(f"获取关节状态失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取关节状态失败: {str(e)}"
+            detail=f"获取关节状态失败: {str(e)}",
         )
 
 
@@ -85,7 +83,7 @@ async def get_robot_sensors():
     try:
         control_service = get_robot_service()
         sensor_data = control_service.get_sensor_data()
-        
+
         return {
             "success": True,
             "sensors": sensor_data,
@@ -95,7 +93,7 @@ async def get_robot_sensors():
         logger.error(f"获取传感器数据失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取传感器数据失败: {str(e)}"
+            detail=f"获取传感器数据失败: {str(e)}",
         )
 
 
@@ -105,7 +103,7 @@ async def get_robot_system_status():
     try:
         control_service = get_robot_service()
         system_status = control_service.get_system_status()
-        
+
         return {
             "success": True,
             "system": system_status,
@@ -115,19 +113,21 @@ async def get_robot_system_status():
         logger.error(f"获取系统状态失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取系统状态失败: {str(e)}"
+            detail=f"获取系统状态失败: {str(e)}",
         )
 
 
 @router.post("/mode", summary="设置控制模式")
 async def set_control_mode(
-    mode: str = Query(..., description="控制模式: position, velocity, torque, trajectory")
+    mode: str = Query(
+        ..., description="控制模式: position, velocity, torque, trajectory"
+    )
 ):
     """设置机器人控制模式"""
     try:
         control_service = get_robot_service()
         result = control_service.set_control_mode(mode)
-        
+
         if result.get("success", False):
             return {
                 "success": True,
@@ -137,7 +137,7 @@ async def set_control_mode(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result.get("error", "设置控制模式失败")
+                detail=result.get("error", "设置控制模式失败"),
             )
     except HTTPException:
         raise
@@ -145,7 +145,7 @@ async def set_control_mode(
         logger.error(f"设置控制模式失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"设置控制模式失败: {str(e)}"
+            detail=f"设置控制模式失败: {str(e)}",
         )
 
 
@@ -157,7 +157,7 @@ async def set_joint_positions(
     try:
         control_service = get_robot_service()
         result = control_service.set_joint_positions(positions)
-        
+
         if result.get("success", False):
             return {
                 "success": True,
@@ -167,7 +167,7 @@ async def set_joint_positions(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result.get("error", "设置关节位置失败")
+                detail=result.get("error", "设置关节位置失败"),
             )
     except HTTPException:
         raise
@@ -175,7 +175,7 @@ async def set_joint_positions(
         logger.error(f"设置关节位置失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"设置关节位置失败: {str(e)}"
+            detail=f"设置关节位置失败: {str(e)}",
         )
 
 
@@ -187,7 +187,7 @@ async def set_joint_velocities(
     try:
         control_service = get_robot_service()
         result = control_service.set_joint_velocities(velocities)
-        
+
         if result.get("success", False):
             return {
                 "success": True,
@@ -197,7 +197,7 @@ async def set_joint_velocities(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result.get("error", "设置关节速度失败")
+                detail=result.get("error", "设置关节速度失败"),
             )
     except HTTPException:
         raise
@@ -205,7 +205,7 @@ async def set_joint_velocities(
         logger.error(f"设置关节速度失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"设置关节速度失败: {str(e)}"
+            detail=f"设置关节速度失败: {str(e)}",
         )
 
 
@@ -217,7 +217,7 @@ async def add_trajectory(
     try:
         control_service = get_robot_service()
         result = control_service.add_trajectory(trajectory)
-        
+
         if result.get("success", False):
             return {
                 "success": True,
@@ -227,7 +227,7 @@ async def add_trajectory(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result.get("error", "添加轨迹失败")
+                detail=result.get("error", "添加轨迹失败"),
             )
     except HTTPException:
         raise
@@ -235,7 +235,7 @@ async def add_trajectory(
         logger.error(f"添加轨迹失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"添加轨迹失败: {str(e)}"
+            detail=f"添加轨迹失败: {str(e)}",
         )
 
 
@@ -245,7 +245,7 @@ async def clear_trajectories():
     try:
         control_service = get_robot_service()
         result = control_service.clear_trajectories()
-        
+
         return {
             "success": True,
             "result": result,
@@ -255,7 +255,7 @@ async def clear_trajectories():
         logger.error(f"清除轨迹失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"清除轨迹失败: {str(e)}"
+            detail=f"清除轨迹失败: {str(e)}",
         )
 
 
@@ -265,14 +265,14 @@ async def get_trajectory_queue():
     try:
         control_service = get_robot_service()
         service_info = control_service.get_service_info()
-        
+
         queue_info = {
             "queue_size": service_info.get("trajectory_queue_size", 0),
             "has_trajectory": service_info.get("trajectory_queue_size", 0) > 0,
             "control_mode": service_info.get("control_mode", "unknown"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         return {
             "success": True,
             "queue": queue_info,
@@ -282,7 +282,7 @@ async def get_trajectory_queue():
         logger.error(f"获取轨迹队列状态失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取轨迹队列状态失败: {str(e)}"
+            detail=f"获取轨迹队列状态失败: {str(e)}",
         )
 
 
@@ -291,18 +291,18 @@ async def emergency_stop():
     """执行机器人紧急停止"""
     try:
         control_service = get_robot_service()
-        
+
         # 停止所有运动
         result_clear = control_service.clear_trajectories()
-        
+
         # 设置关节速度为0（紧急停止）
         joint_count = 28  # 默认关节数量
         zero_velocities = [0.0] * joint_count
         result_velocities = control_service.set_joint_velocities(zero_velocities)
-        
+
         # 切换到位置控制模式
         result_mode = control_service.set_control_mode("position")
-        
+
         return {
             "success": True,
             "actions": {
@@ -317,7 +317,7 @@ async def emergency_stop():
         logger.error(f"紧急停止失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"紧急停止失败: {str(e)}"
+            detail=f"紧急停止失败: {str(e)}",
         )
 
 
@@ -326,15 +326,15 @@ async def reset_robot():
     """重置机器人状态到初始位置"""
     try:
         control_service = get_robot_service()
-        
+
         # 清除所有轨迹
         control_service.clear_trajectories()
-        
+
         # 设置所有关节位置为0
         joint_count = 28  # 默认关节数量
         zero_positions = [0.0] * joint_count
         result = control_service.set_joint_positions(zero_positions)
-        
+
         return {
             "success": result.get("success", False),
             "result": result,
@@ -345,19 +345,18 @@ async def reset_robot():
         logger.error(f"重置机器人状态失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"重置机器人状态失败: {str(e)}"
+            detail=f"重置机器人状态失败: {str(e)}",
         )
 
-
     # ========== 力控制API端点 ==========
-    
+
     @router.get("/force/status", summary="获取力控制系统状态")
     async def get_force_control_status():
         """获取力控制系统状态"""
         try:
             control_service = get_robot_service()
             status = control_service.get_force_control_status()
-            
+
             return {
                 "success": status.get("success", False),
                 "force_control": status.get("force_control", {}),
@@ -368,18 +367,20 @@ async def reset_robot():
             logger.error(f"获取力控制系统状态失败: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"获取力控制系统状态失败: {str(e)}"
+                detail=f"获取力控制系统状态失败: {str(e)}",
             )
-    
+
     @router.post("/force/start", summary="启动力控制系统")
     async def start_force_control(
-        control_type: str = Query("impedance", description="控制类型: impedance, admittance, hybrid")
+        control_type: str = Query(
+            "impedance", description="控制类型: impedance, admittance, hybrid"
+        )
     ):
         """启动力控制系统"""
         try:
             control_service = get_robot_service()
             result = control_service.start_force_control(control_type)
-            
+
             if result.get("success", False):
                 return {
                     "success": True,
@@ -391,7 +392,7 @@ async def reset_robot():
             else:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=result.get("error", "启动力控制系统失败")
+                    detail=result.get("error", "启动力控制系统失败"),
                 )
         except HTTPException:
             raise
@@ -399,16 +400,16 @@ async def reset_robot():
             logger.error(f"启动力控制系统失败: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"启动力控制系统失败: {str(e)}"
+                detail=f"启动力控制系统失败: {str(e)}",
             )
-    
+
     @router.post("/force/stop", summary="停止力控制系统")
     async def stop_force_control():
         """停止力控制系统"""
         try:
             control_service = get_robot_service()
             result = control_service.stop_force_control()
-            
+
             if result.get("success", False):
                 return {
                     "success": True,
@@ -419,7 +420,7 @@ async def reset_robot():
             else:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=result.get("error", "停止力控制系统失败")
+                    detail=result.get("error", "停止力控制系统失败"),
                 )
         except HTTPException:
             raise
@@ -427,9 +428,9 @@ async def reset_robot():
             logger.error(f"停止力控制系统失败: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"停止力控制系统失败: {str(e)}"
+                detail=f"停止力控制系统失败: {str(e)}",
             )
-    
+
     @router.post("/force/params", summary="设置力控制参数")
     async def set_force_control_params(
         params: Dict[str, Any] = Body(..., description="力控制参数")
@@ -438,7 +439,7 @@ async def reset_robot():
         try:
             control_service = get_robot_service()
             result = control_service.set_force_control_params(params)
-            
+
             if result.get("success", False):
                 return {
                     "success": True,
@@ -449,7 +450,7 @@ async def reset_robot():
             else:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=result.get("error", "设置力控制参数失败")
+                    detail=result.get("error", "设置力控制参数失败"),
                 )
         except HTTPException:
             raise
@@ -457,9 +458,9 @@ async def reset_robot():
             logger.error(f"设置力控制参数失败: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"设置力控制参数失败: {str(e)}"
+                detail=f"设置力控制参数失败: {str(e)}",
             )
-    
+
     @router.get("/force/data", summary="获取力控制数据")
     async def get_force_control_data(
         limit: int = Query(100, description="返回数据条数限制")
@@ -468,7 +469,7 @@ async def reset_robot():
         try:
             control_service = get_robot_service()
             result = control_service.get_force_control_data(limit)
-            
+
             if result.get("success", False):
                 return {
                     "success": True,
@@ -479,7 +480,7 @@ async def reset_robot():
             else:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=result.get("error", "获取力控制数据失败")
+                    detail=result.get("error", "获取力控制数据失败"),
                 )
         except HTTPException:
             raise
@@ -487,25 +488,25 @@ async def reset_robot():
             logger.error(f"获取力控制数据失败: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"获取力控制数据失败: {str(e)}"
+                detail=f"获取力控制数据失败: {str(e)}",
             )
 
     # ========== 测试端点 ==========
-    
+
     @router.get("/test", summary="测试机器人控制API")
     async def test_robot_control_api():
         """测试机器人控制API是否正常工作"""
         try:
             control_service = get_robot_service()
-            
+
             # 测试基本功能
             service_info = control_service.get_service_info()
             robot_state = control_service.get_robot_state()
             joint_states = control_service.get_joint_states()
-            
+
             # 测试力控制系统
             force_control_status = control_service.get_force_control_status()
-            
+
             test_results = {
                 "service_initialized": service_info.get("initialized", False),
                 "control_mode": service_info.get("control_mode", "unknown"),
@@ -517,33 +518,41 @@ async def reset_robot():
                 "force_control_available": force_control_status.get("available", False),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
-            
+
             all_tests_passed = (
-                test_results["service_initialized"] and
-                test_results["robot_state_available"] and
-                test_results["joint_states_available"]
+                test_results["service_initialized"]
+                and test_results["robot_state_available"]
+                and test_results["joint_states_available"]
             )
-            
+
             recommendations = []
             if not test_results["hardware_connected"]:
                 recommendations.append("机器人未连接硬件，使用模拟模式")
                 recommendations.append("如需硬件控制，请连接真实机器人或启动仿真环境")
-            
+
             if test_results["simulation_mode"]:
                 recommendations.append("当前为仿真模式，功能有限")
-                recommendations.append("安装PyBullet以获得完整物理仿真: pip install pybullet")
-            
+                recommendations.append(
+                    "安装PyBullet以获得完整物理仿真: pip install pybullet"
+                )
+
             if not test_results["force_control_available"]:
-                recommendations.append("力控制系统不可用，请检查force_control.py是否正确实现")
-            
+                recommendations.append(
+                    "力控制系统不可用，请检查force_control.py是否正确实现"
+                )
+
             return {
                 "success": all_tests_passed,
                 "test_results": test_results,
-                "message": "机器人控制API测试完成" if all_tests_passed else "机器人控制API测试失败",
+                "message": (
+                    "机器人控制API测试完成"
+                    if all_tests_passed
+                    else "机器人控制API测试失败"
+                ),
                 "recommendations": recommendations,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
-            
+
         except Exception as e:
             logger.error(f"测试机器人控制API失败: {e}")
             return {

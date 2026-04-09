@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
+
 
 class TasteSensorModule(nn.Module):
     """味觉传感器模块 - 专门处理味觉传感器数据
@@ -145,4 +145,3 @@ class TasteSensorModule(nn.Module):
 
 
 # 数量认知模块
-

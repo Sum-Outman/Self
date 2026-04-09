@@ -4,7 +4,7 @@ API密钥相关数据模型
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, List
 
 
 class APIKeyCreate(BaseModel):
@@ -29,7 +29,7 @@ class APIKeyResponse(BaseModel):
 class APIKeyListResponse(BaseModel):
     """API密钥列表响应"""
 
-    keys: list[APIKeyResponse]
+    keys: List[APIKeyResponse]
 
 
 class APIKeyCreateResponse(BaseModel):

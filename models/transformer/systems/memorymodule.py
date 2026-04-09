@@ -4,7 +4,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
+
 
 class MemoryModule(nn.Module):
     """记忆管理模块 - 实现长期和短期记忆功能
@@ -101,70 +102,87 @@ class MemoryModule(nn.Module):
         )
 
         # 记忆槽使用情况跟踪
-        self.register_buffer('memory_access_count', torch.zeros(self.memory_slots))
-        self.register_buffer('memory_last_accessed', torch.zeros(self.memory_slots))
-        self.register_buffer('memory_creation_time', torch.zeros(self.memory_slots))
-        
+        self.register_buffer("memory_access_count", torch.zeros(self.memory_slots))
+        self.register_buffer("memory_last_accessed", torch.zeros(self.memory_slots))
+        self.register_buffer("memory_creation_time", torch.zeros(self.memory_slots))
+
         # 遗忘阈值 - 低于此阈值的记忆会被遗忘
         self.forget_threshold = 0.1
 
     def apply_forgetting(self, current_step: int = 0) -> Dict[str, Any]:
         """应用遗忘机制
-        
+
         参数:
             current_step: 当前训练步骤（用于时间衰减计算）
-            
+
         返回:
             遗忘统计信息
         """
         # 计算每个记忆槽的遗忘概率
         # 基于：1) 记忆重要性 2) 访问频率 3) 时间衰减
-        
+
         with torch.no_grad():
             # 计算记忆重要性（使用重要性网络）
             memory_importance = self.importance_network(self.memory_matrix)
-            
+
             # 计算时间衰减（距离上次访问的时间）
             time_since_last_access = current_step - self.memory_last_accessed
             # 归一化时间间隔（假设最大时间间隔为10000步）
             normalized_time = time_since_last_access.float() / 10000.0
-            normalized_time = normalized_time.clamp(0, 1).unsqueeze(1)  # [memory_slots, 1]
-            
+            normalized_time = normalized_time.clamp(0, 1).unsqueeze(
+                1
+            )  # [memory_slots, 1]
+
             # 计算时间衰减因子
-            temporal_decay = self.temporal_decay_network(normalized_time)  # [memory_slots, 1]
-            
+            temporal_decay = self.temporal_decay_network(
+                normalized_time
+            )  # [memory_slots, 1]
+
             # 计算访问频率衰减（不常访问的记忆更容易被遗忘）
-            access_count_normalized = self.memory_access_count / (self.memory_access_count.max() + 1e-8)
-            access_frequency_factor = 1.0 - access_count_normalized.unsqueeze(1)  # 访问越少，越容易被遗忘
-            
+            access_count_normalized = self.memory_access_count / (
+                self.memory_access_count.max() + 1e-8
+            )
+            access_frequency_factor = 1.0 - access_count_normalized.unsqueeze(
+                1
+            )  # 访问越少，越容易被遗忘
+
             # 计算综合遗忘概率
             # 遗忘概率 = (1 - 重要性) * 时间衰减 * 访问频率因子
-            forget_prob = (1.0 - memory_importance) * temporal_decay * access_frequency_factor
-            
+            forget_prob = (
+                (1.0 - memory_importance) * temporal_decay * access_frequency_factor
+            )
+
             # 确定哪些记忆槽需要被遗忘（遗忘概率超过阈值）
             forget_mask = forget_prob > self.forget_threshold
-            
+
             # 统计信息
             num_to_forget = forget_mask.sum().item()
             total_slots = self.memory_slots
-            
+
             # 如果需要遗忘的记忆超过一定比例，重置记忆槽
             if num_to_forget > total_slots * 0.3:  # 超过30%需要遗忘
                 # 重置最不重要的记忆槽
-                sorted_indices = torch.argsort(memory_importance.squeeze(), descending=False)
+                sorted_indices = torch.argsort(
+                    memory_importance.squeeze(), descending=False
+                )
                 num_to_reset = int(total_slots * 0.2)  # 重置20%最不重要的记忆
                 reset_indices = sorted_indices[:num_to_reset]
-                
+
                 # 重置记忆槽为随机值
-                self.memory_matrix.data[reset_indices] = torch.randn(
-                    num_to_reset, self.config.hidden_size, device=self.memory_matrix.device
-                ) * 0.01
-                
+                self.memory_matrix.data[reset_indices] = (
+                    torch.randn(
+                        num_to_reset,
+                        self.config.hidden_size,
+                        device=self.memory_matrix.device,
+                    )
+                    * 0.01
+                )
+
                 # 重置统计信息
                 self.memory_access_count[reset_indices] = 0
                 self.memory_last_accessed[reset_indices] = current_step
                 self.memory_creation_time[reset_indices] = current_step
-                
+
                 return {
                     "forget_applied": True,
                     "num_reset": num_to_reset,
@@ -172,13 +190,13 @@ class MemoryModule(nn.Module):
                     "forget_prob_std": forget_prob.std().item(),
                     "memory_importance_mean": memory_importance.mean().item(),
                     "memory_importance_std": memory_importance.std().item(),
-                    "forget_type": "批量重置"
+                    "forget_type": "批量重置",
                 }
             elif num_to_forget > 0:
                 # 部分遗忘：减弱被遗忘记忆槽的强度
                 forget_strength = 0.5  # 遗忘强度（0-1）
-                self.memory_matrix.data[forget_mask.squeeze()] *= (1.0 - forget_strength)
-                
+                self.memory_matrix.data[forget_mask.squeeze()] *= 1.0 - forget_strength
+
                 return {
                     "forget_applied": True,
                     "num_forgotten": num_to_forget,
@@ -186,7 +204,7 @@ class MemoryModule(nn.Module):
                     "forget_prob_std": forget_prob.std().item(),
                     "memory_importance_mean": memory_importance.mean().item(),
                     "memory_importance_std": memory_importance.std().item(),
-                    "forget_type": "部分衰减"
+                    "forget_type": "部分衰减",
                 }
             else:
                 return {
@@ -196,12 +214,12 @@ class MemoryModule(nn.Module):
                     "forget_prob_std": forget_prob.std().item(),
                     "memory_importance_mean": memory_importance.mean().item(),
                     "memory_importance_std": memory_importance.std().item(),
-                    "forget_type": "无需遗忘"
+                    "forget_type": "无需遗忘",
                 }
 
     def update_memory_statistics(self, top_indices: torch.Tensor, current_step: int):
         """更新记忆统计信息
-        
+
         参数:
             top_indices: 最近访问的记忆槽索引 [batch_size]
             current_step: 当前训练步骤
@@ -210,14 +228,17 @@ class MemoryModule(nn.Module):
         for idx in top_indices.cpu().numpy():
             self.memory_access_count[idx] += 1
             self.memory_last_accessed[idx] = current_step
-            
+
             # 如果是新创建的记忆槽，记录创建时间
             if self.memory_creation_time[idx] == 0:
                 self.memory_creation_time[idx] = current_step
 
     def forward(
-        self, hidden_states: torch.Tensor, query: Optional[torch.Tensor] = None,
-        current_step: Optional[int] = None, apply_forgetting: bool = False
+        self,
+        hidden_states: torch.Tensor,
+        query: Optional[torch.Tensor] = None,
+        current_step: Optional[int] = None,
+        apply_forgetting: bool = False,
     ) -> Dict[str, Any]:
         """前向传播 - 包含遗忘机制的完整记忆系统
 
@@ -231,7 +252,7 @@ class MemoryModule(nn.Module):
             记忆输出字典（包含遗忘统计信息）
         """
         batch_size, seq_len, hidden_dim = hidden_states.shape
-        
+
         # 默认当前步骤
         if current_step is None:
             current_step = 0
@@ -315,7 +336,7 @@ class MemoryModule(nn.Module):
         if apply_forgetting and current_step > 0:
             # 应用遗忘机制
             forget_stats = self.apply_forgetting(current_step)
-        
+
         # 更新记忆统计信息
         if current_step > 0:
             self.update_memory_statistics(top_indices, current_step)
@@ -334,21 +355,26 @@ class MemoryModule(nn.Module):
             "top_memory_indices": top_indices,
             "current_step": current_step,
         }
-        
+
         # 添加遗忘统计信息
         if forget_stats is not None:
             result["forget_stats"] = forget_stats
-        
+
         # 添加记忆系统状态信息
         result["memory_system_stats"] = {
             "memory_slots_used": (self.memory_access_count > 0).sum().item(),
             "memory_access_mean": self.memory_access_count.mean().item(),
             "memory_access_std": self.memory_access_count.std().item(),
-            "memory_age_mean": (current_step - self.memory_creation_time).mean().item() if current_step > 0 else 0,
-            "memory_age_std": (current_step - self.memory_creation_time).std().item() if current_step > 0 else 0,
+            "memory_age_mean": (
+                (current_step - self.memory_creation_time).mean().item()
+                if current_step > 0
+                else 0
+            ),
+            "memory_age_std": (
+                (current_step - self.memory_creation_time).std().item()
+                if current_step > 0
+                else 0
+            ),
         }
-        
+
         return result
-
-
-

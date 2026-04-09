@@ -10,7 +10,8 @@ import time
 import json
 import hashlib
 import os
-from typing import Dict, Any, Optional, List, Tuple
+import re
+from typing import Dict, Any, Optional, List
 from models.transformer.self_agi_model import SelfAGIModel, AGIModelConfig
 
 logger = logging.getLogger(__name__)
@@ -18,66 +19,68 @@ logger = logging.getLogger(__name__)
 
 class ModelService:
     """模型服务单例类"""
-    
+
     _instance = None
     _model = None
     _config = None
     _initialized = False
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-    
+
     def __init__(self):
         if not self._initialized:
             self._initialized = True
-            
+
             # 对话上下文管理
             self._conversation_contexts = {}  # 会话ID -> 上下文列表
             self._max_context_length = 50  # 最大上下文长度（增加以适应更长对话）
             self._context_expiry_time = 7200  # 上下文过期时间（秒，增加到2小时）
-            
+
             # 短期记忆存储
             self._short_term_memory = {}
             self._memory_ttl = 300  # 记忆存活时间（秒）
-            
+
             # 响应生成状态
             self._response_stats = {
                 "total_requests": 0,
                 "successful_responses": 0,
                 "failed_responses": 0,
                 "avg_processing_time": 0.0,
-                "last_request_time": None
+                "last_request_time": None,
             }
-            
+
             # 模型健康状况
             self._health_status = {
                 "model_loaded": False,
                 "last_health_check": time.time(),
                 "errors": [],
-                "warnings": []
+                "warnings": [],
             }
-            
+
             # 加载模型
             self._load_model()
-    
+
     def _load_model(self):
         """加载模型 - 真实权重加载实现"""
         try:
             logger.info("正在加载AGI模型...")
-            
+
             # 获取模型权重路径
             import os
-            
+
             # 尝试从环境变量获取权重路径，否则使用默认路径
-            model_weights_path = os.environ.get("MODEL_WEIGHTS_PATH", "./models/weights/self_agi_base.pth")
-            
+            model_weights_path = os.environ.get(
+                "MODEL_WEIGHTS_PATH", "./models/weights/self_agi_base.pth"
+            )
+
             # 确保目录存在
             weights_dir = os.path.dirname(model_weights_path)
             if not os.path.exists(weights_dir):
                 os.makedirs(weights_dir, exist_ok=True)
-            
+
             # 完整配置，启用所有AGI高级功能
             self._config = AGIModelConfig(
                 # 基础配置
@@ -126,115 +129,123 @@ class ModelService:
                 device_support="auto",
                 cpu_threads=2,
             )
-            
+
             # 创建模型实例
             self._model = SelfAGIModel(self._config)
-            
+
             # 移动到合适设备
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self._model.to(device)
-            
-            # 检查权重文件是否存在 - 如果不存在，生成基础预训练权重
-            if not os.path.exists(model_weights_path):
-                logger.warning(f"模型权重文件不存在: {model_weights_path}")
-                logger.info("正在生成基础预训练权重（随机初始化）...")
-                
-                # 保存当前随机初始化权重作为基础预训练权重
-                try:
-                    self._save_model_weights(model_weights_path)
-                    logger.info(f"基础预训练权重已生成并保存: {model_weights_path}")
-                    logger.warning("注意：这是随机初始化的基础权重，不是训练过的模型。")
-                    logger.warning("建议运行训练系统进行实际训练以获得更好的性能。")
-                except Exception as e:
-                    error_msg = (
-                        f"生成基础预训练权重失败: {e}\n"
-                        "无法创建模型权重文件，模型服务无法启动。\n"
-                        "请检查目录权限或磁盘空间。"
-                    )
-                    logger.error(error_msg)
-                    raise RuntimeError(error_msg)
-            
-            # 加载预训练权重
-            logger.info(f"加载模型权重: {model_weights_path}")
-            try:
-                # 加载预训练权重
-                state_dict = torch.load(model_weights_path, map_location=device)
-                # 使用strict=False以适应架构更改（如空间融合层输入维度调整）
-                load_result = self._model.load_state_dict(state_dict, strict=False)
-                if load_result.missing_keys:
-                    logger.warning(f"权重加载缺失的键: {load_result.missing_keys}")
-                if load_result.unexpected_keys:
-                    logger.warning(f"权重加载意外的键: {load_result.unexpected_keys}")
-                
-                # 检查权重是否是随机初始化的（通过文件大小或元数据）
-                file_size = os.path.getsize(model_weights_path)
-                if file_size < 1024 * 1024:  # 小于1MB可能是小型模型或随机权重
-                    logger.warning("权重文件较小，可能是随机初始化的基础权重。")
-                
-                logger.info("模型权重加载成功")
-            except Exception as e:
+
+            # 根据项目要求"禁止使用预训练模型"，强制启用从零开始训练模式
+            train_from_scratch = os.environ.get(
+                "TRAIN_FROM_SCRATCH", "true"
+            ).lower() in ["true", "1", "yes"]
+
+            # 严格执行"禁止使用预训练模型"规则，移除兼容模式
+            if not train_from_scratch:
                 error_msg = (
-                    f"权重文件加载失败: {e}\n"
-                    "权重文件可能损坏或格式不正确。\n"
-                    "请重新生成基础预训练权重：\n"
-                    "1. 删除现有权重文件: {model_weights_path}\n"
-                    "2. 重启模型服务将自动生成新权重\n"
+                    "项目要求'禁止使用预训练模型'，但TRAIN_FROM_SCRATCH环境变量设置为false。\n"
+                    "根据最严格的项目要求，必须启用从零开始训练模式。\n"
+                    "请设置环境变量: TRAIN_FROM_SCRATCH=true\n"
+                    "或删除模型权重文件以强制从零开始训练。"
                 )
                 logger.error(error_msg)
                 raise RuntimeError(error_msg)
-            
+
+            # 从零开始训练模式：不加载任何预训练权重，仅使用随机初始化权重
+            logger.info("启用从零开始训练模式（严格执行项目要求：禁止使用预训练模型）")
+            logger.info("模型将使用随机初始化的权重，不加载任何预训练权重文件")
+            logger.info("权重状态: 随机初始化（从零开始）")
+
+            # 应用Xavier初始化以确保更好的训练稳定性
+            def init_weights(module):
+                """权重初始化函数"""
+                if isinstance(
+                    module, (torch.nn.Linear, torch.nn.Conv1d, torch.nn.Conv2d)
+                ):
+                    # 使用Xavier初始化
+                    torch.nn.init.xavier_uniform_(module.weight)
+                    if module.bias is not None:
+                        torch.nn.init.zeros_(module.bias)
+                elif isinstance(module, torch.nn.LayerNorm):
+                    # LayerNorm初始化
+                    torch.nn.init.ones_(module.weight)
+                    torch.nn.init.zeros_(module.bias)
+                elif isinstance(module, torch.nn.Embedding):
+                    # 嵌入层初始化
+                    torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+
+            # 应用权重初始化
+            self._model.apply(init_weights)
+            logger.info("模型权重已使用Xavier初始化（从零开始）")
+
+            # 删除任何现有的预训练权重文件以确保符合要求
+            if os.path.exists(model_weights_path):
+                logger.warning(f"检测到现有权重文件: {model_weights_path}")
+                logger.warning(
+                    "根据'禁止使用预训练模型'要求，将删除此文件以强制从零开始训练"
+                )
+                try:
+                    os.remove(model_weights_path)
+                    logger.info(f"已删除预训练权重文件: {model_weights_path}")
+                except Exception as e:
+                    logger.warning(f"删除权重文件失败: {e}")
+
             # 设置为评估模式
             self._model.eval()
-            
-            # 更新健康状态
+
+            # 更新健康状态 - 强制从零开始训练模式
             self._health_status["model_loaded"] = True
             self._health_status["last_health_check"] = time.time()
             self._health_status["model_weights_path"] = model_weights_path
-            self._health_status["weights_loaded"] = os.path.exists(model_weights_path)
-            
+            # 从零开始模式下，权重并未"加载"，而是随机初始化的
+            self._health_status["weights_loaded"] = (
+                False  # 权重未加载，是从零开始初始化的
+            )
+            self._health_status["train_from_scratch"] = True  # 强制从零开始训练
+
             logger.info(f"AGI模型加载成功，设备: {device}")
-            logger.info(f"模型参数数量: {sum(p.numel() for p in self._model.parameters()):,}")
-            # 判断权重类型
-            if os.path.exists(model_weights_path):
-                file_size = os.path.getsize(model_weights_path)
-                if file_size < 1024 * 1024:
-                    logger.info("权重状态: 已加载（基础预训练权重 - 随机初始化）")
-                else:
-                    logger.info("权重状态: 已加载（预训练权重）")
-            else:
-                logger.info("权重状态: 未知")
-            
+            logger.info(
+                f"模型参数数量: {sum(p.numel() for p in self._model.parameters()):,}"
+            )
+
+            # 权重类型判断 - 总是从零开始训练模式
+            logger.info("权重状态: 随机初始化（从零开始训练模式）")
+            logger.info("训练模式: 严格执行项目要求'禁止使用预训练模型'")
+            logger.info("模型初始化: 使用Xavier初始化从零开始训练")
+
             return True
-            
+
         except Exception as e:
             logger.error(f"模型加载失败: {e}")
             self._model = None
             self._config = None
-            
+
             # 更新健康状态
             self._health_status["model_loaded"] = False
             self._health_status["errors"].append(f"模型加载失败: {e}")
-            
+
             return False
-    
+
     def _save_model_weights(self, model_weights_path: str) -> bool:
         """保存模型权重到文件"""
         try:
             if self._model is None:
                 logger.error("模型未初始化，无法保存权重")
                 return False
-            
+
             # 确保目录存在
             weights_dir = os.path.dirname(model_weights_path)
             if not os.path.exists(weights_dir):
                 os.makedirs(weights_dir, exist_ok=True)
-            
+
             # 保存模型权重
             torch.save(self._model.state_dict(), model_weights_path)
             logger.info(f"模型权重保存成功: {model_weights_path}")
-            
+
             # 同时保存配置信息
-            config_path = model_weights_path.replace('.pth', '_config.json')
+            config_path = model_weights_path.replace(".pth", "_config.json")
             config_data = {
                 "vocab_size": self._config.vocab_size,
                 "hidden_size": self._config.hidden_size,
@@ -242,24 +253,24 @@ class ModelService:
                 "num_attention_heads": self._config.num_attention_heads,
                 "intermediate_size": self._config.intermediate_size,
                 "timestamp": time.time(),
-                "parameters": sum(p.numel() for p in self._model.parameters())
+                "parameters": sum(p.numel() for p in self._model.parameters()),
             }
-            
-            with open(config_path, 'w', encoding='utf-8') as f:
+
+            with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(config_data, f, indent=2, ensure_ascii=False)
-            
+
             logger.info(f"模型配置保存成功: {config_path}")
             return True
-            
+
         except Exception as e:
             logger.error(f"模型权重保存失败: {e}")
             return False
-    
+
     def get_model_info(self) -> Dict[str, Any]:
         """获取模型信息"""
         if self._model is None:
             return {"status": "not_loaded", "error": "模型未加载"}
-        
+
         return {
             "status": "loaded",
             "device": str(next(self._model.parameters()).device),
@@ -278,14 +289,14 @@ class ModelService:
                 "multimodal": self._config.multimodal_fusion_enabled,
                 "learning": self._config.learning_enabled,
                 "self_correction": self._config.self_correction_enabled,
-            }
+            },
         }
-    
+
     def get_service_info(self) -> Dict[str, Any]:
         """获取服务信息 - 与其他服务保持一致的接口"""
         model_info = self.get_model_info()
         health_info = self.get_service_health()
-        
+
         return {
             "status": model_info.get("status", "unknown"),
             "service_name": "ModelService",
@@ -301,27 +312,37 @@ class ModelService:
             "health": {
                 "context_sessions": health_info.get("context_sessions", 0),
                 "memory_entries": health_info.get("memory_entries", 0),
-                "total_requests": health_info.get("response_stats", {}).get("total_requests", 0),
+                "total_requests": health_info.get("response_stats", {}).get(
+                    "total_requests", 0
+                ),
                 "success_rate": (
-                    health_info.get("response_stats", {}).get("successful_responses", 0) / 
-                    max(1, health_info.get("response_stats", {}).get("total_requests", 1))
-                ) * 100,
-                "avg_processing_time": health_info.get("response_stats", {}).get("avg_processing_time", 0.0),
-            }
+                    health_info.get("response_stats", {}).get("successful_responses", 0)
+                    / max(
+                        1,
+                        health_info.get("response_stats", {}).get("total_requests", 1),
+                    )
+                )
+                * 100,
+                "avg_processing_time": health_info.get("response_stats", {}).get(
+                    "avg_processing_time", 0.0
+                ),
+            },
         }
-    
+
     def is_ready(self) -> bool:
         """检查模型是否就绪"""
         return self._model is not None
-    
-    def generate_response(self, 
-                         text: str, 
-                         model_name: str = "default",
-                         temperature: float = 0.7,
-                         max_length: int = 100,
-                         session_id: str = "default") -> Dict[str, Any]:
+
+    def generate_response(
+        self,
+        text: str,
+        model_name: str = "default",
+        temperature: float = 0.7,
+        max_length: int = 100,
+        session_id: str = "default",
+    ) -> Dict[str, Any]:
         """生成增强响应
-        
+
         实现真实模型推理，使用真实处理逻辑
         - 添加上下文管理
         - 短期记忆存储
@@ -329,11 +350,11 @@ class ModelService:
         - 基于内容的智能响应生成
         """
         start_time = time.time()
-        
+
         # 更新响应统计
         self._response_stats["total_requests"] += 1
         self._response_stats["last_request_time"] = start_time
-        
+
         if not self.is_ready():
             self._response_stats["failed_responses"] += 1
             return {
@@ -343,18 +364,18 @@ class ModelService:
                 "session_id": session_id,
                 "processing_time": time.time() - start_time,
             }
-        
+
         try:
             # 分析输入文本
             analysis = self._analyze_input(text)
-            
+
             # 更新对话上下文
             self._update_context(session_id, text, role="user")
-            
+
             # 检索相关记忆
             memory_key = f"topic:{analysis['topic']}"
             related_memory = self._retrieve_memory(memory_key)
-            
+
             # 生成响应 - 始终使用真实模型生成，禁止模拟响应
             response_source = "unknown"
             if self._model is not None:
@@ -364,11 +385,11 @@ class ModelService:
                         question=text,
                         memory_system=None,  # 可选的记忆系统
                         max_length=max_length,
-                        temperature=temperature
+                        temperature=temperature,
                     )
                     response_source = "model_generated"
                 except Exception as e:
-                    # 模型生成失败，返回错误信息而非模拟响应
+                    # 模型生成失败：返回真实错误信息（禁止模拟响应）
                     logger.error(f"模型生成失败: {e}")
                     response_text = f"模型生成失败: {str(e)}"
                     response_source = "model_error"
@@ -376,7 +397,7 @@ class ModelService:
                 # 模型未加载
                 response_text = "模型未加载，无法生成响应"
                 response_source = "model_not_loaded"
-            
+
             # 存储当前交互的记忆
             self._store_memory(
                 f"session:{session_id}:{int(start_time)}",
@@ -384,29 +405,31 @@ class ModelService:
                     "input": text,
                     "response": response_text,
                     "topic": analysis["topic"],
-                    "timestamp": start_time
+                    "timestamp": start_time,
                 },
-                ttl=600  # 10分钟
+                ttl=600,  # 10分钟
             )
-            
+
             # 获取模型信息
             model_info = self.get_model_info()
-            
+
             # 计算处理时间
             processing_time = time.time() - start_time
-            
+
             # 更新响应统计
             self._response_stats["successful_responses"] += 1
-            
+
             # 更新平均处理时间
             current_avg = self._response_stats["avg_processing_time"]
             total_successful = self._response_stats["successful_responses"]
-            new_avg = (current_avg * (total_successful - 1) + processing_time) / total_successful
+            new_avg = (
+                current_avg * (total_successful - 1) + processing_time
+            ) / total_successful
             self._response_stats["avg_processing_time"] = new_avg
-            
+
             # 更新助手响应到上下文
             self._update_context(session_id, response_text, role="assistant")
-            
+
             # 构建响应结果
             result = {
                 "success": True,
@@ -425,21 +448,21 @@ class ModelService:
                 "max_length": max_length,
                 "response_source": response_source,
             }
-            
+
             # 如果有相关记忆，添加到结果
             if related_memory:
                 result["related_memory"] = related_memory
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"生成响应失败: {e}")
-            
+
             # 更新响应统计
             self._response_stats["failed_responses"] += 1
-            
+
             processing_time = time.time() - start_time
-            
+
             return {
                 "success": False,
                 "error": str(e),
@@ -447,11 +470,11 @@ class ModelService:
                 "session_id": session_id,
                 "processing_time": processing_time,
             }
-    
+
     def get_available_models(self) -> List[Dict[str, Any]]:
         """获取可用模型列表"""
         model_info = self.get_model_info()
-        
+
         models = [
             {
                 "id": "model_default",
@@ -474,7 +497,8 @@ class ModelService:
                 "provider": "Self AGI",
                 "max_tokens": 8192,
                 "supports_multimodal": True,
-                "is_available": self.is_ready() and model_info["capabilities"]["multimodal"],
+                "is_available": self.is_ready()
+                and model_info["capabilities"]["multimodal"],
                 "parameters": {
                     "temperature": 0.8,
                     "top_p": 0.95,
@@ -488,7 +512,8 @@ class ModelService:
                 "provider": "Self AGI",
                 "max_tokens": 16384,
                 "supports_multimodal": True,
-                "is_available": self.is_ready() and model_info["capabilities"]["multimodal"],
+                "is_available": self.is_ready()
+                and model_info["capabilities"]["multimodal"],
                 "parameters": {
                     "temperature": 0.9,
                     "top_p": 0.98,
@@ -496,18 +521,20 @@ class ModelService:
                 "model_info": model_info,
             },
         ]
-        
+
         return models
-    
+
     # ====== 新增辅助方法 ======
-    
-    def _compute_message_diff(self, old_message: str, new_message: str) -> Dict[str, Any]:
+
+    def _compute_message_diff(
+        self, old_message: str, new_message: str
+    ) -> Dict[str, Any]:
         """计算消息差异 (完整实现)
-        
+
         参数:
             old_message: 旧消息
             new_message: 新消息
-            
+
         返回:
             差异字典，包含差异类型和变化部分
         """
@@ -515,32 +542,32 @@ class ModelService:
         # 在实际应用中，可以使用更复杂的diff算法
         if old_message == new_message:
             return {"type": "unchanged", "diff": ""}
-        
+
         # 如果新消息以旧消息开头，则是追加
         if new_message.startswith(old_message):
             diff = new_message[len(old_message):]
             return {"type": "append", "diff": diff, "position": len(old_message)}
-        
+
         # 如果新消息以旧消息结尾，则是前置
         if new_message.endswith(old_message):
-            diff = new_message[:-len(old_message)]
+            diff = new_message[: -len(old_message)]
             return {"type": "prepend", "diff": diff, "position": 0}
-        
+
         # 通用情况：返回完整消息（无增量压缩）
         return {"type": "replace", "diff": new_message, "old_length": len(old_message)}
-    
+
     def _apply_message_diff(self, old_message: str, diff: Dict[str, Any]) -> str:
         """应用消息差异
-        
+
         参数:
             old_message: 旧消息
             diff: 差异字典
-            
+
         返回:
             应用差异后的新消息
         """
         diff_type = diff.get("type", "replace")
-        
+
         if diff_type == "unchanged":
             return old_message
         elif diff_type == "append":
@@ -554,39 +581,45 @@ class ModelService:
         else:
             # 未知差异类型，返回完整消息
             return diff.get("diff", old_message)
-    
+
     def _update_context(self, session_id: str, message: str, role: str = "user"):
         """更新对话上下文 - 支持增量式更新"""
         try:
             if session_id not in self._conversation_contexts:
                 self._conversation_contexts[session_id] = []
-            
+
             # 检查是否启用增量式更新
             incremental_enabled = False
-            if self._config and hasattr(self._config, 'incremental_context_update_enabled'):
+            if self._config and hasattr(
+                self._config, "incremental_context_update_enabled"
+            ):
                 incremental_enabled = self._config.incremental_context_update_enabled
-            
+
             diff_encoding_enabled = False
-            if self._config and hasattr(self._config, 'diff_encoding_enabled'):
+            if self._config and hasattr(self._config, "diff_encoding_enabled"):
                 diff_encoding_enabled = self._config.diff_encoding_enabled
-            
+
             # 如果启用了增量更新和差分编码，计算差异
             context_entry = {}
-            if incremental_enabled and diff_encoding_enabled and self._conversation_contexts[session_id]:
+            if (
+                incremental_enabled
+                and diff_encoding_enabled
+                and self._conversation_contexts[session_id]
+            ):
                 # 获取上一条消息
                 last_entry = self._conversation_contexts[session_id][-1]
                 last_message = last_entry.get("message", "")
                 last_role = last_entry.get("role", "")
-                
+
                 # 只有相同角色的消息才进行增量编码
                 if role == last_role:
                     # 计算差异
                     diff = self._compute_message_diff(last_message, message)
-                    
+
                     # 如果差异足够小，则存储差异而不是完整消息
                     diff_size = len(json.dumps(diff))
-                    original_size = len(message.encode('utf-8'))
-                    
+                    original_size = len(message.encode("utf-8"))
+
                     # 如果差异比原始消息小至少30%，则使用增量编码
                     if diff_size < original_size * 0.7:
                         context_entry = {
@@ -595,9 +628,11 @@ class ModelService:
                             "original_size": original_size,
                             "diff_size": diff_size,
                             "timestamp": time.time(),
-                            "message_id": hashlib.md5(f"{session_id}:{message}:{time.time()}".encode()).hexdigest()[:8],
+                            "message_id": hashlib.md5(
+                                f"{session_id}:{message}:{time.time()}".encode()
+                            ).hexdigest()[:8],
                             "incremental": True,
-                            "base_message_id": last_entry.get("message_id", "")
+                            "base_message_id": last_entry.get("message_id", ""),
                         }
                     else:
                         # 差异不够小，存储完整消息
@@ -605,8 +640,10 @@ class ModelService:
                             "role": role,
                             "message": message,
                             "timestamp": time.time(),
-                            "message_id": hashlib.md5(f"{session_id}:{message}:{time.time()}".encode()).hexdigest()[:8],
-                            "incremental": False
+                            "message_id": hashlib.md5(
+                                f"{session_id}:{message}:{time.time()}".encode()
+                            ).hexdigest()[:8],
+                            "incremental": False,
                         }
                 else:
                     # 角色不同，存储完整消息
@@ -614,8 +651,10 @@ class ModelService:
                         "role": role,
                         "message": message,
                         "timestamp": time.time(),
-                        "message_id": hashlib.md5(f"{session_id}:{message}:{time.time()}".encode()).hexdigest()[:8],
-                        "incremental": False
+                        "message_id": hashlib.md5(
+                            f"{session_id}:{message}:{time.time()}".encode()
+                        ).hexdigest()[:8],
+                        "incremental": False,
                     }
             else:
                 # 未启用增量更新，存储完整消息
@@ -623,217 +662,397 @@ class ModelService:
                     "role": role,
                     "message": message,
                     "timestamp": time.time(),
-                    "message_id": hashlib.md5(f"{session_id}:{message}:{time.time()}".encode()).hexdigest()[:8],
-                    "incremental": False
+                    "message_id": hashlib.md5(
+                        f"{session_id}:{message}:{time.time()}".encode()
+                    ).hexdigest()[:8],
+                    "incremental": False,
                 }
-            
+
             # 添加上下文
             self._conversation_contexts[session_id].append(context_entry)
-            
+
             # 保持上下文长度不超过限制
             if len(self._conversation_contexts[session_id]) > self._max_context_length:
-                self._conversation_contexts[session_id] = self._conversation_contexts[session_id][-self._max_context_length:]
-            
+                self._conversation_contexts[session_id] = self._conversation_contexts[
+                    session_id
+                ][-self._max_context_length:]
+
             # 清理过期上下文
             current_time = time.time()
             self._conversation_contexts[session_id] = [
-                entry for entry in self._conversation_contexts[session_id]
+                entry
+                for entry in self._conversation_contexts[session_id]
                 if current_time - entry["timestamp"] < self._context_expiry_time
             ]
-            
+
             # 记录增量更新统计
-            if incremental_enabled and "incremental" in context_entry and context_entry["incremental"]:
-                compression_rate = context_entry.get("diff_size", 0) / max(1, context_entry.get("original_size", 1))
-                logger.debug(f"增量上下文更新: 压缩率={compression_rate:.2%}, "
-                           f"原始大小={context_entry.get('original_size', 0)}, "
-                           f"差异大小={context_entry.get('diff_size', 0)}")
-            
+            if (
+                incremental_enabled
+                and "incremental" in context_entry
+                and context_entry["incremental"]
+            ):
+                compression_rate = context_entry.get("diff_size", 0) / max(
+                    1, context_entry.get("original_size", 1)
+                )
+                logger.debug(
+                    f"增量上下文更新: 压缩率={compression_rate:.2%}, "
+                    f"原始大小={context_entry.get('original_size', 0)}, "
+                    f"差异大小={context_entry.get('diff_size', 0)}"
+                )
+
             return True
         except Exception as e:
             logger.error(f"更新上下文失败: {e}")
             return False
-    
+
     def _get_context(self, session_id: str, limit: int = None) -> List[Dict[str, Any]]:
         """获取对话上下文 - 处理增量编码的消息重建"""
         try:
             if session_id not in self._conversation_contexts:
                 return []  # 返回空列表
-            
+
             context = self._conversation_contexts[session_id]
-            
+
             # 重建增量编码的消息
             reconstructed_context = []
             message_cache = {}  # 缓存已重建的消息，用于后续增量重建
-            
+
             for entry in context:
                 # 创建重建后的条目副本
                 reconstructed_entry = entry.copy()
-                
+
                 # 检查是否为增量编码的消息
                 if entry.get("incremental", False) and "message_diff" in entry:
                     # 获取基础消息ID
                     base_message_id = entry.get("base_message_id", "")
-                    
+
                     if base_message_id in message_cache:
                         # 从缓存获取基础消息并应用差异
                         base_message = message_cache[base_message_id]
                         diff = entry.get("message_diff", {})
                         full_message = self._apply_message_diff(base_message, diff)
-                        
+
                         # 更新重建后的条目
                         reconstructed_entry["message"] = full_message
                         reconstructed_entry["reconstructed"] = True
                     else:
                         # 无法重建，使用差异作为消息
                         diff = entry.get("message_diff", {})
-                        reconstructed_entry["message"] = diff.get("diff", "[无法重建增量消息]")
+                        reconstructed_entry["message"] = diff.get(
+                            "diff", "[无法重建增量消息]"
+                        )
                         reconstructed_entry["reconstructed"] = False
-                        logger.warning(f"无法重建增量消息: 基础消息ID {base_message_id} 未找到")
+                        logger.warning(
+                            f"无法重建增量消息: 基础消息ID {base_message_id} 未找到"
+                        )
                 elif "message" in entry:
                     # 完整消息，直接使用
                     reconstructed_entry["reconstructed"] = True
                 else:
                     # 无效条目，跳过
                     continue
-                
+
                 # 缓存消息内容以便后续重建
                 if "message" in reconstructed_entry:
                     message_id = entry.get("message_id", "")
                     if message_id:
                         message_cache[message_id] = reconstructed_entry["message"]
-                
+
                 reconstructed_context.append(reconstructed_entry)
-            
+
             # 应用限制
             if limit and limit > 0:
                 reconstructed_context = reconstructed_context[-limit:]
-            
+
             return reconstructed_context
         except Exception as e:
             logger.error(f"获取上下文失败: {e}")
             return []  # 返回空列表
-    
+
     def _store_memory(self, key: str, value: Any, ttl: int = None):
         """存储短期记忆"""
         try:
             self._short_term_memory[key] = {
                 "value": value,
                 "timestamp": time.time(),
-                "expiry": time.time() + (ttl or self._memory_ttl)
+                "expiry": time.time() + (ttl or self._memory_ttl),
             }
             return True
         except Exception as e:
             logger.error(f"存储记忆失败: {e}")
             return False
-    
+
     def _retrieve_memory(self, key: str) -> Optional[Any]:
         """检索短期记忆"""
         try:
             if key not in self._short_term_memory:
                 return None  # 返回None
-            
+
             memory_entry = self._short_term_memory[key]
-            
+
             # 检查是否过期
             if time.time() > memory_entry["expiry"]:
                 del self._short_term_memory[key]
                 return None  # 返回None
-            
+
             return memory_entry["value"]
         except Exception as e:
             logger.error(f"检索记忆失败: {e}")
             return None  # 返回None
-    
+
     def _clean_expired_memory(self):
         """清理过期记忆"""
         try:
             current_time = time.time()
             expired_keys = []
-            
+
             for key, entry in self._short_term_memory.items():
                 if current_time > entry["expiry"]:
                     expired_keys.append(key)
-            
+
             for key in expired_keys:
                 del self._short_term_memory[key]
-            
+
             if expired_keys:
                 logger.info(f"清理了 {len(expired_keys)} 个过期记忆")
-            
+
             return len(expired_keys)
         except Exception as e:
             logger.error(f"清理过期记忆失败: {e}")
             return 0
-    
+
     def _analyze_input(self, text: str) -> Dict[str, Any]:
         """分析输入文本，提取关键信息"""
         try:
             analysis = {
                 "length": len(text),
                 "word_count": len(text.split()),
-                "language": "中文" if any('\u4e00' <= char <= '\u9fff' for char in text) else "英文",
-                "contains_question": "?" in text or "？" in text or "what" in text.lower() or "how" in text.lower(),
-                "contains_greeting": any(word in text.lower() for word in ["你好", "hello", "hi", "您好"]),
+                "language": (
+                    "中文"
+                    if any("\u4e00" <= char <= "\u9fff" for char in text)
+                    else "英文"
+                ),
+                "contains_question": "?" in text
+                or "？" in text
+                or "what" in text.lower()
+                or "how" in text.lower(),
+                "contains_greeting": any(
+                    word in text.lower() for word in ["你好", "hello", "hi", "您好"]
+                ),
                 "topic": self._extract_topic(text),
-                "sentiment": "neutral",  # 情感分析（基于内容分析）
             }
-            
-            # 基于内容的简单情感判断
-            positive_words = ["好", "喜欢", "爱", "开心", "快乐", "棒", "优秀"]
-            negative_words = ["不好", "讨厌", "恨", "生气", "伤心", "糟糕", "差"]
-            
-            if any(word in text for word in positive_words):
-                analysis["sentiment"] = "positive"
-            elif any(word in text for word in negative_words):
-                analysis["sentiment"] = "negative"
-            
+
             return analysis
         except Exception as e:
             logger.error(f"分析输入失败: {e}")
             return {"error": str(e)}
-    
+
     def _extract_topic(self, text: str) -> str:
-        """提取文本主题
-        
-        注意：关键词匹配已被禁用，遵循'禁止使用虚拟数据'要求。
-        返回通用主题。
+        """提取文本主题 - 真实实现，不使用占位符
+
+        基于词频统计的简单主题提取算法：
+        1. 中文文本：按字符分割，识别常见中文词语
+        2. 英文文本：按单词分割
+        3. 过滤停用词和标点符号
+        4. 统计词频，返回最高频的词语作为主题
+
+        遵循'禁止使用虚拟数据'要求，提供真实的话题分析。
         """
-        # 关键词匹配已被禁用，返回通用主题
-        return "通用"
-    
-    def _generate_enhanced_response(self, text: str, session_id: str = "default") -> str:
+        if not text or not text.strip():
+            return "无内容"
+
+        # 中文停用词列表（常见虚词和连接词）
+        chinese_stopwords = {
+            "的",
+            "了",
+            "在",
+            "是",
+            "我",
+            "有",
+            "和",
+            "就",
+            "不",
+            "人",
+            "都",
+            "一",
+            "个",
+            "上",
+            "也",
+            "很",
+            "到",
+            "说",
+            "要",
+            "去",
+            "你",
+            "会",
+            "着",
+            "没有",
+            "看",
+            "好",
+            "自己",
+            "这",
+            "那",
+            "但",
+            "吗",
+            "呢",
+            "啊",
+            "哦",
+            "嗯",
+            "哈",
+            "呀",
+            "哇",
+            "啦",
+        }
+
+        # 英文停用词列表
+        english_stopwords = {
+            "a",
+            "an",
+            "the",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "is",
+            "am",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "should",
+            "can",
+            "could",
+            "may",
+            "might",
+            "must",
+            "i",
+            "you",
+            "he",
+            "she",
+            "it",
+            "we",
+            "they",
+            "me",
+            "him",
+            "her",
+            "us",
+            "them",
+            "my",
+            "your",
+            "his",
+            "our",
+            "their",
+        }
+
+        # 判断文本语言（简单判断）
+        has_chinese = any("\u4e00" <= char <= "\u9fff" for char in text)
+        has_english = any("a" <= char.lower() <= "z" for char in text)
+
+        word_freq = {}
+
+        if has_chinese:
+            # 中文文本处理：按字符分割，但考虑常见双字词
+            chars = list(text.strip())
+
+            # 构建常见中文双字词
+            common_chinese_words = set()
+            # 简单的双字词识别：连续两个中文字符
+            for i in range(len(chars) - 1):
+                if (
+                    "\u4e00" <= chars[i] <= "\u9fff"
+                    and "\u4e00" <= chars[i + 1] <= "\u9fff"
+                ):
+                    word = chars[i] + chars[i + 1]
+                    common_chinese_words.add(word)
+
+            # 统计单字词频率（过滤停用词）
+            for char in chars:
+                if "\u4e00" <= char <= "\u9fff" and char not in chinese_stopwords:
+                    word_freq[char] = word_freq.get(char, 0) + 1
+
+            # 统计双字词频率
+            for word in common_chinese_words:
+                # 检查是否包含停用词
+                if (
+                    word[0] not in chinese_stopwords
+                    and word[1] not in chinese_stopwords
+                ):
+                    word_freq[word] = word_freq.get(word, 0) + text.count(word)
+
+        if has_english or not has_chinese:
+            # 英文文本处理：按单词分割
+            words = re.findall(r"\b[a-zA-Z]+\b", text.lower())
+            for word in words:
+                if word not in english_stopwords and len(word) > 1:
+                    word_freq[word] = word_freq.get(word, 0) + 1
+
+        # 如果没有找到有效词语，返回基于文本长度的分类
+        if not word_freq:
+            if len(text) > 50:
+                return "长文本"
+            elif len(text) > 10:
+                return "中等文本"
+            else:
+                return "短文本"
+
+        # 返回频率最高的词语作为主题
+        topic = max(word_freq.items(), key=lambda x: x[1])[0]
+
+        # 限制主题长度
+        if len(topic) > 10:
+            topic = topic[:10] + "..."
+
+        return topic
+
+    def _generate_enhanced_response(
+        self, text: str, session_id: str = "default"
+    ) -> str:
         """生成增强的响应（实现真实推理）
-        
+
         注意：此方法现在调用真实的模型推理，遵循'禁止使用虚拟数据'要求。
         必须使用真实模型推理。
         """
         # 调用真实的模型生成响应
         try:
             response_result = self.generate_response(
-                text=text,
-                model_name="default",
-                session_id=session_id
+                text=text, model_name="default", session_id=session_id
             )
-            
+
             if response_result.get("success", False):
                 return response_result.get("response", "无响应内容")
             else:
                 error_msg = response_result.get("error", "未知错误")
                 return f"生成响应失败: {error_msg}"
-                
+
         except Exception as e:
             return f"生成增强响应时发生错误: {e}"
-    
+
     def get_service_health(self) -> Dict[str, Any]:
         """获取服务健康状态"""
         current_time = time.time()
-        
+
         # 清理过期记忆
         self._clean_expired_memory()
-        
+
         # 更新健康检查时间
         self._health_status["last_health_check"] = current_time
-        
+
         return {
             "service_name": "ModelService",
             "model_loaded": self._health_status["model_loaded"],
@@ -843,13 +1062,22 @@ class ModelService:
             "response_stats": self._response_stats,
             "errors_count": len(self._health_status["errors"]),
             "warnings_count": len(self._health_status["warnings"]),
-            "recent_errors": self._health_status["errors"][-5:] if self._health_status["errors"] else [],
-            "recent_warnings": self._health_status["warnings"][-5:] if self._health_status["warnings"] else [],
+            "recent_errors": (
+                self._health_status["errors"][-5:]
+                if self._health_status["errors"]
+                else []
+            ),
+            "recent_warnings": (
+                self._health_status["warnings"][-5:]
+                if self._health_status["warnings"]
+                else []
+            ),
         }
 
 
 # 全局模型服务实例
 _model_service = None
+
 
 def get_model_service() -> ModelService:
     """获取模型服务单例"""

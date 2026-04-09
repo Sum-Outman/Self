@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
+
 
 class HardwareInterfaceModule(nn.Module):
     """硬件接口模块 - 实现与物理硬件的通信和控制
@@ -123,9 +123,11 @@ class HardwareInterfaceModule(nn.Module):
         else:
             # 如果特征维度不足，使用线性投影（临时实现）
             # 注意：在真实系统中应使用训练好的投影层
-            projection_weight = torch.eye(command_features.size(-1), 128, device=command_features.device)
+            projection_weight = torch.eye(
+                command_features.size(-1), 128, device=command_features.device
+            )
             projected_status = torch.matmul(command_features, projection_weight)
-        
+
         hardware_status = self.status_decoder(projected_status)
 
         # 预测硬件响应
@@ -145,6 +147,3 @@ class HardwareInterfaceModule(nn.Module):
 # ============================================================================
 # DoRA (权重分解的低秩适应) 实现
 # ============================================================================
-
-
-

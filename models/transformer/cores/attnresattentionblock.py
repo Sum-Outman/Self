@@ -4,8 +4,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Optional, Callable, Tuple
+
 
 class AttnResAttentionBlock(nn.Module):
     """Attention Residuals块 - 基于Kimi 2026年3月16日论文《Attention Residuals: Dynamic Depthwise Aggregation for Large Language Models》
@@ -24,7 +24,7 @@ class AttnResAttentionBlock(nn.Module):
     参考论文：Kimi 2026年3月16日发布的最新核心论文《Attention Residuals: Dynamic Depthwise Aggregation for Large Language Models》
     """
 
-    def __init__(self, config: 'AGIModelConfig'):
+    def __init__(self, config: "AGIModelConfig"):
         super().__init__()
         self.config = config
 
@@ -190,7 +190,6 @@ class AttnResAttentionBlock(nn.Module):
             输出张量 [batch_size, seq_len, hidden_size]
         """
         # 保存原始输入用于动态聚合
-        residual_input = hidden_states
 
         # 数值稳定性检查
         if torch.isnan(hidden_states).any():
@@ -235,7 +234,8 @@ class AttnResAttentionBlock(nn.Module):
         # ============ AttnRes动态聚合 ============
         # 应用动态深度聚合代替传统的残差连接
         # 传统：hidden_states = hidden_states + attention_output
-        # AttnRes：hidden_states = α(hidden_states) * hidden_states + β(hidden_states) * attention_output
+        # AttnRes：hidden_states = α(hidden_states) * hidden_states +
+        # β(hidden_states) * attention_output
         aggregated_attention = self._apply_dynamic_aggregation(
             residual=hidden_states, attention_out=attention_output, x=hidden_states
         )
@@ -318,6 +318,3 @@ class AttnResAttentionBlock(nn.Module):
             )
 
         return hidden_states
-
-
-

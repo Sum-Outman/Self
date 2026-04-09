@@ -67,6 +67,15 @@ dev = [
     "mypy>=1.7.0",
     "flake8>=6.1.0",
     "jedi>=0.19.0",
+    "types-scipy>=1.11.0",
+    "types-pandas>=2.0.0",
+    "types-requests>=2.31.0",
+    "types-PyYAML>=6.0.0",
+    "types-redis>=5.0.0",
+    "types-aiohttp>=3.9.0",
+    "types-psutil>=5.9.0",
+    "types-pillow>=9.5.0",
+    "types-tqdm>=4.66.0",
 ]
 gpu = [
     "torch>=2.9.0",

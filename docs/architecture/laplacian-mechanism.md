@@ -76,11 +76,12 @@ The system's Laplacian mechanism includes the following core modules:
    - 多尺度拉普拉斯正则化 | Multi-scale Laplacian regularization
    - 自适应正则化参数调整 | Adaptive regularization parameter adjustment
 
-3. **拉普拉斯集成训练 | Laplacian Integration Training** (`training/laplacian_integration.py`)
-   - 扩展 TrainingConfig 支持拉普拉斯增强配置 | Extend TrainingConfig to support Laplacian-enhanced configuration
-   - 扩展 AGITrainer 支持拉普拉斯增强训练模式 | Extend AGITrainer to support Laplacian-enhanced training mode
-   - 向后兼容的集成接口 | Backward-compatible integration interface
-   - 统一配置管理和训练流程 | Unified configuration management and training workflow
+3. **拉普拉斯增强系统 | Laplacian Enhanced System** (`training/laplacian_enhanced_system.py`)
+   - 统一的拉普拉斯变换AI技术增强框架 | Unified framework for Laplacian transform AI technology enhancement
+   - 支持多种增强模式（正则化、优化、融合、PINN-CNN）| Supports multiple enhancement modes (regularization, optimization, fusion, PINN-CNN)
+   - 可配置的组件管理和灵活启用/禁用 | Configurable component management and flexible enable/disable
+   - 与训练系统无缝集成 | Seamless integration with training system
+   - **注意**：`training/laplacian_integration.py` 模块已过时，请使用拉普拉斯增强系统代替 | **Note**: The `training/laplacian_integration.py` module is deprecated, please use the Laplacian Enhanced System instead
 
 ### GraphLaplacian 类 | GraphLaplacian Class
 
@@ -377,6 +378,101 @@ The system supports GPU-accelerated computation:
 - **并行计算 | Parallel Computation**: 利用 GPU 并行计算能力 | Leverages GPU parallel computing capabilities
 - **内存管理 | Memory Management**: 优化 GPU 内存使用 | Optimizes GPU memory usage
 
+## 拉普拉斯增强系统 | Laplacian Enhanced System
+
+系统新增了完整的拉普拉斯增强系统 (`training/laplacian_enhanced_system.py`)，提供了统一的拉普拉斯变换AI技术增强框架：
+
+The system has added a complete Laplacian Enhanced System (`training/laplacian_enhanced_system.py`), providing a unified framework for Laplacian transform AI technology enhancement:
+
+### 核心特性 | Core Features
+
+1. **统一组件管理 | Unified Component Management**
+   - 集成所有拉普拉斯相关组件（正则化、优化器、融合等）| Integrates all Laplacian-related components (regularization, optimizer, fusion, etc.)
+   - 可配置的增强模式（正则化、优化、融合、PINN-CNN）| Configurable enhancement modes (regularization, optimization, fusion, PINN-CNN)
+   - 灵活的组件启用/禁用 | Flexible component enable/disable
+
+2. **拉普拉斯变换AI增强 | Laplacian Transform AI Enhancement**
+   - 频域分析和增强 | Frequency domain analysis and enhancement
+   - 图拉普拉斯正则化 | Graph Laplacian regularization
+   - 流形学习和多尺度分析 | Manifold learning and multi-scale analysis
+   - 多模态特征融合 | Multimodal feature fusion
+
+3. **PINN+CNN自动化机器学习优化 | PINN+CNN Automated Machine Learning Optimization**
+   - 自动化架构搜索（CNN骨干网络、PINN隐藏维度等）| Automated architecture search (CNN backbone, PINN hidden dimensions, etc.)
+   - 多目标优化（物理一致性、验证损失、模型大小等）| Multi-objective optimization (physics consistency, validation loss, model size, etc.)
+   - 集成贝叶斯优化、进化算法等搜索策略 | Integrated search strategies (Bayesian optimization, evolutionary algorithms, etc.)
+
+4. **与训练系统集成 | Integration with Training System**
+   - 扩展 `AGITrainer` 支持拉普拉斯增强训练 | Extended `AGITrainer` to support Laplacian-enhanced training
+   - 向后兼容的配置系统 | Backward-compatible configuration system
+   - 支持多种训练模式（预训练、微调、多模态等）| Support for multiple training modes (pretraining, fine-tuning, multimodal, etc.)
+
+### 使用示例 | Usage Example
+
+```python
+from training.laplacian_enhanced_system import (
+    LaplacianEnhancedSystem,
+    LaplacianSystemConfig,
+    LaplacianEnhancementMode,
+    LaplacianComponent,
+)
+
+# 配置拉普拉斯增强系统
+# Configure Laplacian Enhanced System
+config = LaplacianSystemConfig(
+    enhancement_mode=LaplacianEnhancementMode.REGULARIZATION,
+    enabled_components=[
+        LaplacianComponent.REGULARIZATION,
+        LaplacianComponent.OPTIMIZER,
+        LaplacianComponent.FUSION,
+    ],
+    use_gpu=True,
+    pinn_cnn_fusion_enabled=True,
+)
+
+# 创建增强系统
+# Create enhanced system
+system = LaplacianEnhancedSystem(config)
+
+# 在训练中使用增强系统
+# Use enhanced system in training
+features = torch.randn(100, 768)
+enhanced_features = system.enhance_features(features, mode="training")
+
+# 获取拉普拉斯正则化损失
+# Get Laplacian regularization loss
+reg_loss = system.compute_regularization_loss(features)
+```
+
+### PINN+CNN自动化机器学习优化示例 | PINN+CNN AutoML Optimization Example
+
+```python
+from training.pinn_cnn_automl import (
+    PINNCNNAutoMLConfig,
+    PINNCNNAutoMLOptimizer,
+    SearchAlgorithm,
+    OptimizationObjective,
+)
+
+# 配置AutoML优化器
+# Configure AutoML optimizer
+config = PINNCNNAutoMLConfig(
+    search_algorithm=SearchAlgorithm.BAYESIAN_OPTIMIZATION,
+    num_trials=100,
+    optimization_objective=OptimizationObjective.MULTI_OBJECTIVE,
+)
+
+# 创建优化器
+# Create optimizer
+optimizer = PINNCNNAutoMLOptimizer(config, train_dataset, val_dataset)
+
+# 运行自动化搜索
+# Run automated search
+best_config, best_score = optimizer.search()
+print(f"最优配置 | Best configuration: {best_config}")
+print(f"最优分数 | Best score: {best_score}")
+```
+
 ## 相关文档 | Related Documentation
 
 - [系统架构 | System Architecture](system-architecture.md) - 整体系统架构介绍 | Overall system architecture introduction
@@ -385,4 +481,4 @@ The system supports GPU-accelerated computation:
 
 ---
 
-*最后更新 | Last Updated: 2026年3月30日 | March 30, 2026*
+*最后更新 | Last Updated: 2026年4月9日 | April 9, 2026*

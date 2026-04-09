@@ -578,7 +578,7 @@ class KnowledgeValidator:
                         errors.append(
                             {
                                 "type": "vague_step",
-                                "message": f"步骤{i+1}描述不明确",
+                                "message": f"步骤{i + 1}描述不明确",
                                 "details": {"step_index": i, "step": step},
                             }
                         )

@@ -4,8 +4,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Dict, Optional, Union, Tuple
+
 
 class MixtureOfExpertsLayer(nn.Module):
     """混合专家层 - 基于MoE架构
@@ -22,7 +22,7 @@ class MixtureOfExpertsLayer(nn.Module):
     4. 可扩展性：支持大量专家
     """
 
-    def __init__(self, config: 'AGIModelConfig'):
+    def __init__(self, config: "AGIModelConfig"):
         super().__init__()
         self.config = config
         self.hidden_size = config.hidden_size
@@ -230,6 +230,3 @@ class MixtureOfExpertsLayer(nn.Module):
             return output, losses
         else:
             return output
-
-
-

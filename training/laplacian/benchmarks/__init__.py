@@ -9,6 +9,6 @@
 from .performance import LaplacianBenchmark, BenchmarkResult
 
 __all__ = [
-    'LaplacianBenchmark',
-    'BenchmarkResult',
+    "LaplacianBenchmark",
+    "BenchmarkResult",
 ]

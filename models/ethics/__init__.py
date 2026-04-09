@@ -13,8 +13,4 @@ from .safety_controller import SafetyController
 from .ethics_judge import EthicsJudge
 from .risk_analyzer import RiskAnalyzer
 
-__all__ = [
-    "SafetyController",
-    "EthicsJudge", 
-    "RiskAnalyzer"
-]
+__all__ = ["SafetyController", "EthicsJudge", "RiskAnalyzer"]

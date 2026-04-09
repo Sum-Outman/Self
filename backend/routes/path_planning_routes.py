@@ -6,11 +6,9 @@
 """
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from fastapi import APIRouter, Depends, HTTPException, status, Body
-from sqlalchemy.orm import Session
 
-from backend.dependencies import get_db
 from backend.dependencies.auth import get_current_user
 from backend.db_models.user import User
 from backend.services.path_planning_service import (
@@ -18,7 +16,6 @@ from backend.services.path_planning_service import (
     PathPlanningService,
     PathPlanningAlgorithm,
     EnvironmentType,
-    PlanningResult
 )
 
 router = APIRouter(prefix="/api/path-planning", tags=["路径规划"])
@@ -43,39 +40,30 @@ async def create_environment(
     """创建网格环境"""
     try:
         success = service.create_grid_environment(
-            env_id=env_id,
-            width=width,
-            height=height,
-            depth=depth,
-            cell_size=cell_size
+            env_id=env_id, width=width, height=height, depth=depth, cell_size=cell_size
         )
-        
+
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="环境创建失败"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="环境创建失败"
             )
-        
+
         return {
             "success": True,
             "message": "环境创建成功",
             "env_id": env_id,
-            "dimensions": {
-                "width": width,
-                "height": height,
-                "depth": depth
-            },
+            "dimensions": {"width": width, "height": height, "depth": depth},
             "cell_size": cell_size,
-            "grid_size": width * height * depth
+            "grid_size": width * height * depth,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"创建环境失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"创建环境失败: {str(e)}"
+            detail=f"创建环境失败: {str(e)}",
         )
 
 
@@ -96,15 +84,14 @@ async def add_obstacle(
             position=position,
             dimensions=dimensions,
             shape_type=shape_type,
-            name=name
+            name=name,
         )
-        
+
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="障碍物添加失败"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="障碍物添加失败"
             )
-        
+
         return {
             "success": True,
             "message": "障碍物添加成功",
@@ -112,16 +99,16 @@ async def add_obstacle(
             "position": position,
             "dimensions": dimensions,
             "shape_type": shape_type,
-            "name": name
+            "name": name,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"添加障碍物失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"添加障碍物失败: {str(e)}"
+            detail=f"添加障碍物失败: {str(e)}",
         )
 
 
@@ -130,7 +117,9 @@ async def plan_path(
     env_id: str = Body(..., description="环境ID"),
     start: List[float] = Body(..., description="起点 [x, y, z]"),
     goal: List[float] = Body(..., description="终点 [x, y, z]"),
-    algorithm: PathPlanningAlgorithm = Body(PathPlanningAlgorithm.ASTAR, description="规划算法"),
+    algorithm: PathPlanningAlgorithm = Body(
+        PathPlanningAlgorithm.ASTAR, description="规划算法"
+    ),
     max_iterations: int = Body(10000, description="最大迭代次数"),
     step_size: float = Body(1.0, description="步长（连续环境使用）"),
     service: PathPlanningService = Depends(get_planning_service),
@@ -144,20 +133,20 @@ async def plan_path(
             goal=goal,
             algorithm=algorithm,
             max_iterations=max_iterations,
-            step_size=step_size
+            step_size=step_size,
         )
-        
+
         return {
             "success": result.success,
             "planning_result": result.to_dict(),
-            "message": result.message
+            "message": result.message,
         }
-        
+
     except Exception as e:
         logger.error(f"路径规划失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"路径规划失败: {str(e)}"
+            detail=f"路径规划失败: {str(e)}",
         )
 
 
@@ -170,26 +159,21 @@ async def get_environment_info(
     """获取环境信息"""
     try:
         info = service.get_environment_info(env_id)
-        
+
         if not info["exists"]:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"环境 {env_id} 不存在"
+                status_code=status.HTTP_404_NOT_FOUND, detail=f"环境 {env_id} 不存在"
             )
-        
-        return {
-            "success": True,
-            "environment_info": info,
-            "env_id": env_id
-        }
-        
+
+        return {"success": True, "environment_info": info, "env_id": env_id}
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"获取环境信息失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取环境信息失败: {str(e)}"
+            detail=f"获取环境信息失败: {str(e)}",
         )
 
 
@@ -202,26 +186,21 @@ async def get_visualization_data(
     """获取可视化数据"""
     try:
         data = service.get_visualization_data(env_id)
-        
+
         if not data["exists"]:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"环境 {env_id} 不存在"
+                status_code=status.HTTP_404_NOT_FOUND, detail=f"环境 {env_id} 不存在"
             )
-        
-        return {
-            "success": True,
-            "visualization_data": data,
-            "env_id": env_id
-        }
-        
+
+        return {"success": True, "visualization_data": data, "env_id": env_id}
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"获取可视化数据失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取可视化数据失败: {str(e)}"
+            detail=f"获取可视化数据失败: {str(e)}",
         )
 
 
@@ -238,7 +217,7 @@ async def get_available_algorithms():
                 "time_complexity": "O(b^d)，其中b是分支因子，d是深度",
                 "space_complexity": "O(b^d)",
                 "advantages": ["保证找到最短路径", "高效"],
-                "disadvantages": ["需要启发式函数", "内存消耗大"]
+                "disadvantages": ["需要启发式函数", "内存消耗大"],
             },
             {
                 "id": PathPlanningAlgorithm.DIJKSTRA.value,
@@ -248,7 +227,7 @@ async def get_available_algorithms():
                 "time_complexity": "O((V+E) log V)",
                 "space_complexity": "O(V)",
                 "advantages": ["保证找到最短路径", "不需要启发式函数"],
-                "disadvantages": ["计算量大", "不适合大型地图"]
+                "disadvantages": ["计算量大", "不适合大型地图"],
             },
             {
                 "id": PathPlanningAlgorithm.RRT.value,
@@ -258,7 +237,7 @@ async def get_available_algorithms():
                 "time_complexity": "O(n log n)",
                 "space_complexity": "O(n)",
                 "advantages": ["高维空间有效", "动态环境适用"],
-                "disadvantages": ["不保证最优", "可能找到次优路径"]
+                "disadvantages": ["不保证最优", "可能找到次优路径"],
             },
             {
                 "id": PathPlanningAlgorithm.RRT_STAR.value,
@@ -268,7 +247,7 @@ async def get_available_algorithms():
                 "time_complexity": "O(n log n)",
                 "space_complexity": "O(n)",
                 "advantages": ["渐进最优", "高维空间有效"],
-                "disadvantages": ["计算量大", "收敛慢"]
+                "disadvantages": ["计算量大", "收敛慢"],
             },
             {
                 "id": PathPlanningAlgorithm.PRM.value,
@@ -278,21 +257,21 @@ async def get_available_algorithms():
                 "time_complexity": "O(n log n)",
                 "space_complexity": "O(n^2)",
                 "advantages": ["支持多查询", "离线预处理"],
-                "disadvantages": ["内存消耗大", "构建时间较长"]
-            }
+                "disadvantages": ["内存消耗大", "构建时间较长"],
+            },
         ]
-        
+
         return {
             "success": True,
             "algorithms": algorithms,
-            "algorithm_count": len(algorithms)
+            "algorithm_count": len(algorithms),
         }
-        
+
     except Exception as e:
         logger.error(f"获取算法列表失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取算法列表失败: {str(e)}"
+            detail=f"获取算法列表失败: {str(e)}",
         )
 
 
@@ -308,7 +287,7 @@ async def get_environment_types():
                 "dimensions": 2,
                 "typical_use_cases": ["移动机器人", "平面导航", "2D游戏"],
                 "advantages": ["计算简单", "易于实现"],
-                "disadvantages": ["分辨率限制", "不能表示3D地形"]
+                "disadvantages": ["分辨率限制", "不能表示3D地形"],
             },
             {
                 "id": EnvironmentType.GRID_3D.value,
@@ -317,7 +296,7 @@ async def get_environment_types():
                 "dimensions": 3,
                 "typical_use_cases": ["无人机", "水下机器人", "3D导航"],
                 "advantages": ["真实3D表示", "支持复杂地形"],
-                "disadvantages": ["计算量大", "内存消耗高"]
+                "disadvantages": ["计算量大", "内存消耗高"],
             },
             {
                 "id": EnvironmentType.CONTINUOUS_2D.value,
@@ -326,7 +305,7 @@ async def get_environment_types():
                 "dimensions": 2,
                 "typical_use_cases": ["机器人手臂", "精确运动控制", "连续空间规划"],
                 "advantages": ["高精度", "连续位置"],
-                "disadvantages": ["算法复杂", "计算量大"]
+                "disadvantages": ["算法复杂", "计算量大"],
             },
             {
                 "id": EnvironmentType.CONTINUOUS_3D.value,
@@ -335,7 +314,7 @@ async def get_environment_types():
                 "dimensions": 3,
                 "typical_use_cases": ["人形机器人", "复杂机械系统", "3D连续控制"],
                 "advantages": ["最高精度", "真实连续空间"],
-                "disadvantages": ["非常复杂", "计算量巨大"]
+                "disadvantages": ["非常复杂", "计算量巨大"],
             },
             {
                 "id": EnvironmentType.VOXEL.value,
@@ -344,21 +323,21 @@ async def get_environment_types():
                 "dimensions": 3,
                 "typical_use_cases": ["复杂场景", "动态障碍物", "3D重建环境"],
                 "advantages": ["精确体积表示", "支持复杂几何"],
-                "disadvantages": ["内存消耗高", "计算量大"]
-            }
+                "disadvantages": ["内存消耗高", "计算量大"],
+            },
         ]
-        
+
         return {
             "success": True,
             "environment_types": environment_types,
-            "type_count": len(environment_types)
+            "type_count": len(environment_types),
         }
-        
+
     except Exception as e:
         logger.error(f"获取环境类型列表失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取环境类型列表失败: {str(e)}"
+            detail=f"获取环境类型列表失败: {str(e)}",
         )
 
 
@@ -372,21 +351,17 @@ async def delete_environment(
     try:
         # 注意：实际的服务可能需要删除环境的实现
         # 完整处理，假设服务有删除功能
-        if hasattr(service, 'grids') and env_id in service.grids:
+        if hasattr(service, "grids") and env_id in service.grids:
             del service.grids[env_id]
-            
-        if hasattr(service, 'obstacles') and env_id in service.obstacles:
+
+        if hasattr(service, "obstacles") and env_id in service.obstacles:
             del service.obstacles[env_id]
-        
-        return {
-            "success": True,
-            "message": "环境删除成功",
-            "env_id": env_id
-        }
-        
+
+        return {"success": True, "message": "环境删除成功", "env_id": env_id}
+
     except Exception as e:
         logger.error(f"删除环境失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"删除环境失败: {str(e)}"
+            detail=f"删除环境失败: {str(e)}",
         )

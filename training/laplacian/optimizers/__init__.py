@@ -9,5 +9,5 @@
 from .laplacian_optimizer import LaplacianEnhancedOptimizer
 
 __all__ = [
-    'LaplacianEnhancedOptimizer',
+    "LaplacianEnhancedOptimizer",
 ]

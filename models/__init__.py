@@ -4,7 +4,7 @@ from .reasoning_engine import (
     LogicReasoningEngine,
     MathematicalReasoningEngine,
     CausalReasoningEngine,
-    get_global_reasoning_engine
+    get_global_reasoning_engine,
 )
 
 from .autonomous import (
@@ -12,12 +12,12 @@ from .autonomous import (
     get_decision_engine,
     DecisionType,
     EnvironmentState,
-    Decision
+    Decision,
 )
 
 __all__ = [
     "ReasoningEngine",
-    "LogicReasoningEngine", 
+    "LogicReasoningEngine",
     "MathematicalReasoningEngine",
     "CausalReasoningEngine",
     "get_global_reasoning_engine",

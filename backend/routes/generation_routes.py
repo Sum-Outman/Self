@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 import base64
-import io
 
 from backend.dependencies import get_db, get_current_user
 from backend.db_models.user import User
@@ -29,38 +28,39 @@ async def generate_image_from_text(
     try:
         if not prompt.strip():
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="生成提示不能为空"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="生成提示不能为空"
             )
-        
+
         # 获取生成服务
         generation_service = get_generation_service()
-        
+
         # 执行生成
         result = generation_service.generate_text_to_image(
-            prompt=prompt,
-            num_images=num_images,
-            image_size=image_size
+            prompt=prompt, num_images=num_images, image_size=image_size
         )
-        
+
         if not result.get("success", False):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=result.get("error", "生成服务不可用")
+                detail=result.get("error", "生成服务不可用"),
             )
-        
+
         # 构建响应
         response_images = []
         for img in result["generated_images"]:
-            response_images.append({
-                "index": img["index"],
-                "width": img["size"][1] if len(img["size"]) > 1 else img["size"][0],
-                "height": img["size"][0] if len(img["size"]) > 1 else img["size"][0],
-                "format": img["format"],
-                "base64_data": img["base64"],
-                "data_url": f"data:image/{img['format'].lower()};base64,{img['base64']}",
-            })
-        
+            response_images.append(
+                {
+                    "index": img["index"],
+                    "width": img["size"][1] if len(img["size"]) > 1 else img["size"][0],
+                    "height": (
+                        img["size"][0] if len(img["size"]) > 1 else img["size"][0]
+                    ),
+                    "format": img["format"],
+                    "base64_data": img["base64"],
+                    "data_url": f"data:image/{img['format'].lower()};base64,{img['base64']}",
+                }
+            )
+
         return {
             "success": True,
             "generation_type": "text_to_image",
@@ -74,13 +74,13 @@ async def generate_image_from_text(
             },
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"文本到图像生成失败: {str(e)}"
+            detail=f"文本到图像生成失败: {str(e)}",
         )
 
 
@@ -98,34 +98,33 @@ async def generate_text_from_image(
         # 检查文件类型
         if not image_file.content_type.startswith("image/"):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="文件必须是图像类型"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="文件必须是图像类型"
             )
-        
+
         # 读取图像
         image_content = await image_file.read()
         await image_file.seek(0)
-        
+
         # 获取生成服务
         generation_service = get_generation_service()
-        
+
         # 执行生成
         result = generation_service.generate_image_to_text(
             image_bytes=image_content,
             max_length=max_length,
             temperature=temperature,
-            top_k=top_k
+            top_k=top_k,
         )
-        
+
         if not result.get("success", False):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=result.get("error", "生成服务不可用")
+                detail=result.get("error", "生成服务不可用"),
             )
-        
+
         # 将输入图像转换为Base64用于显示
-        image_base64 = base64.b64encode(image_content).decode('utf-8')
-        
+        image_base64 = base64.b64encode(image_content).decode("utf-8")
+
         return {
             "success": True,
             "generation_type": "image_to_text",
@@ -146,20 +145,24 @@ async def generate_text_from_image(
             },
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"图像到文本生成失败: {str(e)}"
+            detail=f"图像到文本生成失败: {str(e)}",
         )
 
 
 @router.post("/cross-modal", response_model=Dict[str, Any])
 async def generate_cross_modal(
-    source_modality: str = Form(..., description="源模态类型: text, image", pattern="^(text|image)$"),
-    target_modality: str = Form(..., description="目标模态类型: text, image", pattern="^(text|image)$"),
+    source_modality: str = Form(
+        ..., description="源模态类型: text, image", pattern="^(text|image)$"
+    ),
+    target_modality: str = Form(
+        ..., description="目标模态类型: text, image", pattern="^(text|image)$"
+    ),
     source_content: str = Form(..., description="源内容：文本或Base64编码的图像"),
     generation_params: Optional[str] = Form("{}", description="生成参数JSON字符串"),
     db: Session = Depends(get_db),
@@ -168,16 +171,16 @@ async def generate_cross_modal(
     """通用跨模态生成接口"""
     try:
         import json
-        
+
         # 解析生成参数
         try:
             params_dict = json.loads(generation_params)
         except json.JSONDecodeError:
             params_dict = {}
-        
+
         # 获取生成服务
         generation_service = get_generation_service()
-        
+
         # 处理源内容
         if source_modality == "text":
             source_processed = source_content
@@ -187,28 +190,28 @@ async def generate_cross_modal(
                 # 移除可能的data:image前缀
                 if "," in source_content:
                     source_content = source_content.split(",")[1]
-                
+
                 source_processed = base64.b64decode(source_content)
             except Exception as e:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"源内容Base64解码失败: {str(e)}"
+                    detail=f"源内容Base64解码失败: {str(e)}",
                 )
-        
+
         # 执行生成
         result = generation_service.generate_cross_modal(
             source_modality=source_modality,
             source_content=source_processed,
             target_modality=target_modality,
-            generation_params=params_dict
+            generation_params=params_dict,
         )
-        
+
         if not result.get("success", False):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=result.get("error", "生成服务不可用")
+                detail=result.get("error", "生成服务不可用"),
             )
-        
+
         # 构建响应
         response_data = {
             "success": True,
@@ -216,22 +219,26 @@ async def generate_cross_modal(
             "result": result,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         return response_data
-        
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"跨模态生成失败: {str(e)}"
+            detail=f"跨模态生成失败: {str(e)}",
         )
 
 
 @router.post("/batch-generate", response_model=Dict[str, Any])
 async def batch_generate_cross_modal(
-    source_modality: str = Form(..., description="源模态类型: text, image", pattern="^(text|image)$"),
-    target_modality: str = Form(..., description="目标模态类型: text, image", pattern="^(text|image)$"),
+    source_modality: str = Form(
+        ..., description="源模态类型: text, image", pattern="^(text|image)$"
+    ),
+    target_modality: str = Form(
+        ..., description="目标模态类型: text, image", pattern="^(text|image)$"
+    ),
     source_contents: List[str] = Form(..., description="源内容列表"),
     generation_params: Optional[str] = Form("{}", description="生成参数JSON字符串"),
     db: Session = Depends(get_db),
@@ -240,19 +247,18 @@ async def batch_generate_cross_modal(
     """批量跨模态生成"""
     try:
         import json
-        
+
         if not source_contents:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="至少需要一个源内容"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="至少需要一个源内容"
             )
-        
+
         # 解析生成参数
         try:
             params_dict = json.loads(generation_params)
         except json.JSONDecodeError:
             params_dict = {}
-        
+
         # 处理源内容
         processed_contents = []
         for i, content in enumerate(source_contents):
@@ -267,30 +273,32 @@ async def batch_generate_cross_modal(
                 except Exception as e:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"源内容#{i+1} Base64解码失败: {str(e)}"
+                        detail=f"源内容#{i + 1} Base64解码失败: {str(e)}",
                     )
-        
+
         # 获取生成服务
         generation_service = get_generation_service()
-        
+
         # 执行批量生成
         result = generation_service.batch_generate(
             source_modality=source_modality,
             source_contents=processed_contents,
             target_modality=target_modality,
-            generation_params=params_dict
+            generation_params=params_dict,
         )
-        
+
         # 构建响应
         response_results = []
         for item in result["results"]:
-            response_results.append({
-                "index": item["index"],
-                "success": item["success"],
-                "result": item.get("result", {}),
-                "error": item.get("error"),
-            })
-        
+            response_results.append(
+                {
+                    "index": item["index"],
+                    "success": item["success"],
+                    "result": item.get("result", {}),
+                    "error": item.get("error"),
+                }
+            )
+
         return {
             "success": result["success"],
             "conversion": f"{source_modality}_to_{target_modality}",
@@ -303,13 +311,13 @@ async def batch_generate_cross_modal(
             "results": response_results,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"批量生成失败: {str(e)}"
+            detail=f"批量生成失败: {str(e)}",
         )
 
 
@@ -322,24 +330,40 @@ async def get_generation_capabilities(
     try:
         generation_service = get_generation_service()
         service_info = generation_service.get_service_info()
-        
+
         capabilities = {
             "text_to_image": {
                 "enabled": service_info["capabilities"]["text_to_image"],
                 "description": "根据文本提示生成图像",
-                "max_images": service_info["capabilities"]["text_to_image_params"]["max_images"],
-                "supported_sizes": service_info["capabilities"]["text_to_image_params"]["image_sizes"],
-                "model_architecture": service_info["model_architecture"]["text_to_image"],
+                "max_images": service_info["capabilities"]["text_to_image_params"][
+                    "max_images"
+                ],
+                "supported_sizes": service_info["capabilities"]["text_to_image_params"][
+                    "image_sizes"
+                ],
+                "model_architecture": service_info["model_architecture"][
+                    "text_to_image"
+                ],
             },
             "image_to_text": {
                 "enabled": service_info["capabilities"]["image_to_text"],
                 "description": "根据图像生成文本描述",
-                "max_length": service_info["capabilities"]["image_to_text_params"]["max_length"],
-                "temperature_range": service_info["capabilities"]["image_to_text_params"]["temperature_range"],
-                "top_k_range": service_info["capabilities"]["image_to_text_params"]["top_k_range"],
-                "model_architecture": service_info["model_architecture"]["image_to_text"],
+                "max_length": service_info["capabilities"]["image_to_text_params"][
+                    "max_length"
+                ],
+                "temperature_range": service_info["capabilities"][
+                    "image_to_text_params"
+                ]["temperature_range"],
+                "top_k_range": service_info["capabilities"]["image_to_text_params"][
+                    "top_k_range"
+                ],
+                "model_architecture": service_info["model_architecture"][
+                    "image_to_text"
+                ],
             },
-            "supported_modalities": service_info["capabilities"]["supported_modalities"],
+            "supported_modalities": service_info["capabilities"][
+                "supported_modalities"
+            ],
             "supported_conversions": ["text->image", "image->text"],
             "service_status": service_info["status"],
             "model_info": {
@@ -347,23 +371,25 @@ async def get_generation_capabilities(
                 "device": service_info["device"],
             },
         }
-        
+
         return {
             "success": True,
             "capabilities": capabilities,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取生成能力信息失败: {str(e)}"
+            detail=f"获取生成能力信息失败: {str(e)}",
         )
 
 
 @router.post("/creative-variations", response_model=Dict[str, Any])
 async def generate_creative_variations(
-    source_type: str = Form(..., description="源类型: text, image", pattern="^(text|image)$"),
+    source_type: str = Form(
+        ..., description="源类型: text, image", pattern="^(text|image)$"
+    ),
     source_content: str = Form(..., description="源内容"),
     num_variations: int = Form(3, description="生成变体数量", ge=1, le=10),
     variation_strength: float = Form(0.5, description="变体强度", ge=0.1, le=1.0),
@@ -374,29 +400,30 @@ async def generate_creative_variations(
     try:
         # 获取生成服务
         generation_service = get_generation_service()
-        
+
         if source_type == "text":
             # 文本变体：生成多个相关图像
             result = generation_service.generate_text_to_image(
-                prompt=source_content,
-                num_images=num_variations,
-                image_size=64
+                prompt=source_content, num_images=num_variations, image_size=64
             )
-            
+
             variations = []
             if result.get("success", False):
                 for img in result["generated_images"]:
-                    variations.append({
-                        "type": "image",
-                        "content": img["base64"],
-                        "format": img["format"],
-                        "size": img["size"],
-                    })
-            
+                    variations.append(
+                        {
+                            "type": "image",
+                            "content": img["base64"],
+                            "format": img["format"],
+                            "size": img["size"],
+                        }
+                    )
+
             return {
                 "success": result.get("success", False),
                 "source_type": "text",
-                "source_content_preview": source_content[:100] + ("..." if len(source_content) > 100 else ""),
+                "source_content_preview": source_content[:100]
+                + ("..." if len(source_content) > 100 else ""),
                 "variations": variations,
                 "num_variations": len(variations),
                 "generation_params": {
@@ -405,7 +432,7 @@ async def generate_creative_variations(
                 },
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
-            
+
         else:  # image
             # 图像变体：生成多个文本描述
             try:
@@ -415,37 +442,43 @@ async def generate_creative_variations(
             except Exception as e:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"图像Base64解码失败: {str(e)}"
+                    detail=f"图像Base64解码失败: {str(e)}",
                 )
-            
+
             # 使用不同的温度生成多个描述
             variations = []
             for i in range(num_variations):
                 # 变化温度以产生不同变体
                 temperature = 0.5 + (variation_strength * i * 0.2)
-                
+
                 result = generation_service.generate_image_to_text(
                     image_bytes=image_bytes,
                     max_length=50,
                     temperature=temperature,
-                    top_k=50
+                    top_k=50,
                 )
-                
+
                 if result.get("success", False):
-                    variations.append({
-                        "type": "text",
-                        "content": result["generated_text"],
-                        "temperature": temperature,
-                        "index": i,
-                    })
-            
+                    variations.append(
+                        {
+                            "type": "text",
+                            "content": result["generated_text"],
+                            "temperature": temperature,
+                            "index": i,
+                        }
+                    )
+
             # 将源图像转换为Base64用于显示
-            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-            
+            image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
             return {
                 "success": len(variations) > 0,
                 "source_type": "image",
-                "source_image_preview": image_base64[:100] + "..." if len(image_base64) > 100 else image_base64,
+                "source_image_preview": (
+                    image_base64[:100] + "..."
+                    if len(image_base64) > 100
+                    else image_base64
+                ),
                 "variations": variations,
                 "num_variations": len(variations),
                 "generation_params": {
@@ -454,11 +487,11 @@ async def generate_creative_variations(
                 },
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"创意变体生成失败: {str(e)}"
+            detail=f"创意变体生成失败: {str(e)}",
         )

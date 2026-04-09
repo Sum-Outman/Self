@@ -5,12 +5,12 @@
 
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
-from datetime import datetime
 from enum import Enum
 
 
 class ErrorType(str, Enum):
     """错误类型"""
+
     ERROR = "error"
     WARNING = "warning"
     INFO = "info"
@@ -19,6 +19,7 @@ class ErrorType(str, Enum):
 
 class ErrorInfo(BaseModel):
     """错误信息"""
+
     type: ErrorType
     message: str
     stack: Optional[str] = None
@@ -33,6 +34,7 @@ class ErrorInfo(BaseModel):
 
 class PerformanceMetric(BaseModel):
     """性能指标"""
+
     name: str
     value: float
     unit: str
@@ -42,6 +44,7 @@ class PerformanceMetric(BaseModel):
 
 class ErrorReportRequest(BaseModel):
     """错误报告请求"""
+
     errors: List[ErrorInfo]
     performance_metrics: List[PerformanceMetric] = []
     timestamp: str
@@ -50,6 +53,7 @@ class ErrorReportRequest(BaseModel):
 
 class ErrorReportResponse(BaseModel):
     """错误报告响应"""
+
     success: bool
     message: str
     timestamp: str
@@ -58,6 +62,7 @@ class ErrorReportResponse(BaseModel):
 
 class PerformanceMetricsRequest(BaseModel):
     """性能指标报告请求"""
+
     metrics: List[PerformanceMetric]
     timestamp: str
     session_id: str
@@ -65,6 +70,7 @@ class PerformanceMetricsRequest(BaseModel):
 
 class PerformanceMetricsResponse(BaseModel):
     """性能指标报告响应"""
+
     success: bool
     message: str
     timestamp: str
@@ -73,6 +79,7 @@ class PerformanceMetricsResponse(BaseModel):
 
 class AlertSeverity(str, Enum):
     """告警严重程度"""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -81,6 +88,7 @@ class AlertSeverity(str, Enum):
 
 class AlertType(str, Enum):
     """告警类型"""
+
     SYSTEM = "system"
     API = "api"
     PERFORMANCE = "performance"
@@ -91,6 +99,7 @@ class AlertType(str, Enum):
 
 class AlertRequest(BaseModel):
     """告警请求"""
+
     alert_type: AlertType
     severity: AlertSeverity
     message: str
@@ -101,6 +110,7 @@ class AlertRequest(BaseModel):
 
 class AlertResponse(BaseModel):
     """告警响应"""
+
     success: bool
     message: str
     timestamp: str
@@ -109,6 +119,7 @@ class AlertResponse(BaseModel):
 
 class SystemMetricsResponse(BaseModel):
     """系统指标响应"""
+
     success: bool
     timestamp: str
     metrics: Dict[str, Any]
@@ -117,6 +128,7 @@ class SystemMetricsResponse(BaseModel):
 
 class AlertStatus(str, Enum):
     """告警状态"""
+
     ACTIVE = "active"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
@@ -125,6 +137,7 @@ class AlertStatus(str, Enum):
 
 class Alert(BaseModel):
     """告警信息"""
+
     id: str
     alert_type: AlertType
     severity: AlertSeverity
@@ -141,6 +154,7 @@ class Alert(BaseModel):
 
 class MonitoringConfig(BaseModel):
     """监控配置"""
+
     enabled: bool = True
     sample_rate: float = Field(ge=0.0, le=1.0, default=1.0)
     alert_thresholds: Dict[str, float] = {
@@ -155,6 +169,7 @@ class MonitoringConfig(BaseModel):
 
 class HealthCheckResponse(BaseModel):
     """健康检查响应"""
+
     status: str
     timestamp: str
     service: str

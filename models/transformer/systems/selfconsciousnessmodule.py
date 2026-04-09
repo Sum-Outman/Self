@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
+
 
 class SelfConsciousnessModule(nn.Module):
     """自我意识模块 - 实现自主意识和自我认知"""
@@ -114,6 +114,3 @@ class SelfConsciousnessModule(nn.Module):
             "reflection": reflection,
             "self_awareness_score": torch.sigmoid(self_repr.mean(dim=-1, keepdim=True)),
         }
-
-
-

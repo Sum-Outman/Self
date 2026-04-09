@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, List, Optional
+
 
 class EquipmentOperationLearningModule(nn.Module):
     """设备操作学习模块 - 学习操作各种实体机械设备
@@ -165,7 +165,7 @@ class EquipmentOperationLearningModule(nn.Module):
             "learning_confidence": 0.0,
         }
 
-        batch_size = operation_intent.shape[0]
+        operation_intent.shape[0]
         learning_features = []
 
         # 1. 说明书学习（如果提供说明书）
@@ -363,4 +363,3 @@ class EquipmentOperationLearningModule(nn.Module):
 
 
 # 视觉模仿学习模块
-

@@ -1,10 +1,8 @@
 # DoRAManager - 从self_agi_model.py拆分
 """DoRAManager模块"""
 
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import logging
+
 
 class DoRAManager:
     """DoRA管理器 - 管理模型中的DoRA适配器
@@ -88,4 +86,3 @@ class DoRAManager:
 
 
 # 传感器模块
-

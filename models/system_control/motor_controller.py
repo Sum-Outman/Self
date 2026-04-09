@@ -18,15 +18,20 @@ from dataclasses import dataclass, field
 
 # 导入真实硬件接口 - 严格模式，禁止虚拟实现
 try:
-    from .real_hardware.motor_controller import RealMotorController, ControlInterface, MotorType as RealMotorType
+    from .real_hardware.motor_controller import (
+        RealMotorController,
+        ControlInterface,
+        MotorType as RealMotorType,
+    )
     from .real_hardware.base_interface import HardwareType, ConnectionStatus
+
     REAL_HARDWARE_AVAILABLE = True
     HAS_REAL_HARDWARE_IMPORT = True
 except ImportError as e:
     # 真实硬件接口导入失败，尝试仿真接口
     try:
-        from hardware.simulation import PyBulletSimulation
-        from hardware.robot_controller import HardwareInterface
+        pass
+
         REAL_HARDWARE_AVAILABLE = False
         HAS_SIMULATION_IMPORT = True
         RealMotorController = None  # 使用仿真替代
@@ -852,20 +857,30 @@ class MotorController:
         try:
             # 获取硬件接口（真实或仿真）
             hardware_interface = None
-            
+
             # 检查是否已有硬件接口
             if motor_id in self.real_motor_interfaces:
                 hardware_interface = self.real_motor_interfaces[motor_id]
             else:
                 # 创建新的硬件接口（会尝试真实硬件，然后仿真）
                 hardware_interface = self._create_real_motor_interface(motor_id, config)
-                if hardware_interface is not None and hasattr(hardware_interface, 'is_connected') and hardware_interface.is_connected():
+                if (
+                    hardware_interface is not None
+                    and hasattr(hardware_interface, "is_connected")
+                    and hardware_interface.is_connected()
+                ):
                     self.real_motor_interfaces[motor_id] = hardware_interface
-            
+
             # 如果有可用的硬件接口，使用它执行命令
-            if hardware_interface is not None and hasattr(hardware_interface, 'is_connected') and hardware_interface.is_connected():
-                return self._execute_with_real_hardware(motor_id, command, state, config, hardware_interface)
-            
+            if (
+                hardware_interface is not None
+                and hasattr(hardware_interface, "is_connected")
+                and hardware_interface.is_connected()
+            ):
+                return self._execute_with_real_hardware(
+                    motor_id, command, state, config, hardware_interface
+                )
+
             # 如果硬件接口创建失败，抛出异常（根据项目要求禁止虚拟实现）
             raise RuntimeError(f"无法创建或连接硬件接口: {motor_id}")
 
@@ -919,14 +934,14 @@ class MotorController:
 
             # 首先尝试从真实硬件接口获取状态
             real_interface = None
-            if REAL_HARDWARE_AVAILABLE and hasattr(self, 'real_motor_interfaces'):
+            if REAL_HARDWARE_AVAILABLE and hasattr(self, "real_motor_interfaces"):
                 try:
                     if motor_id in self.real_motor_interfaces:
                         real_interface = self.real_motor_interfaces[motor_id]
-                        
+
                 except Exception as e:
                     self.logger.warning(f"无法访问真实硬件接口 {motor_id}: {e}")
-            
+
             # 如果有可用的真实硬件接口，从硬件读取状态
             if real_interface is not None and real_interface.is_connected():
                 try:
@@ -934,7 +949,7 @@ class MotorController:
                     # 注意：这里假设真实硬件接口有get_state或类似方法
                     # 实际实现中需要根据真实硬件接口的API进行调整
                     hardware_state = real_interface.get_state()
-                    
+
                     if hardware_state:
                         # 更新位置、速度等状态
                         state.position = hardware_state.get("position", state.position)
@@ -942,8 +957,10 @@ class MotorController:
                         state.current = hardware_state.get("current", state.current)
                         state.voltage = hardware_state.get("voltage", state.voltage)
                         state.torque = hardware_state.get("torque", state.torque)
-                        state.temperature = hardware_state.get("temperature", state.temperature)
-                        
+                        state.temperature = hardware_state.get(
+                            "temperature", state.temperature
+                        )
+
                         # 更新硬件状态
                         hardware_status = hardware_state.get("status", "unknown")
                         if hardware_status == "running":
@@ -952,17 +969,19 @@ class MotorController:
                             state.status = MotorStatus.STOPPED
                         elif hardware_status == "error":
                             state.status = MotorStatus.ERROR
-                            
+
                         # 标记为真实硬件状态
                         state.metadata["hardware_source"] = "real_hardware"
-                        
+
                         # 检查安全状态
-                        self._check_motor_safety(motor_id, state, self.motor_configs[motor_id])
+                        self._check_motor_safety(
+                            motor_id, state, self.motor_configs[motor_id]
+                        )
                         return
-                        
+
                 except Exception as e:
                     self.logger.warning(f"从真实硬件读取状态失败 {motor_id}: {e}")
-            
+
             # 如果没有真实硬件接口或读取失败，根据用户要求"系统可以在没有硬件条件下单独运行AGI所有功能"
             # 记录警告并返回，而不是抛出异常
             self.logger.warning(
@@ -1131,11 +1150,11 @@ class MotorController:
 
     def _create_real_motor_interface(self, motor_id: str, config: MotorConfig) -> Any:
         """创建真实电机接口
-        
+
         参数:
             motor_id: 电机ID
             config: 电机配置
-            
+
         返回:
             真实电机接口实例或仿真接口实例
         """
@@ -1144,7 +1163,7 @@ class MotorController:
             try:
                 # 从配置中提取真实硬件参数
                 metadata = config.metadata or {}
-                
+
                 # 确定电机类型映射
                 motor_type_mapping = {
                     MotorType.DC: RealMotorType.DC,
@@ -1154,53 +1173,67 @@ class MotorController:
                     MotorType.LINEAR: RealMotorType.LINEAR,
                     MotorType.CUSTOM: RealMotorType.UNKNOWN,
                 }
-                
+
                 real_motor_type = motor_type_mapping.get(config.motor_type)
                 if real_motor_type is None:
-                    self.logger.warning(f"不支持的真实电机类型映射: {config.motor_type}，使用UNKNOWN")
+                    self.logger.warning(
+                        f"不支持的真实电机类型映射: {config.motor_type}，使用UNKNOWN"
+                    )
                     real_motor_type = RealMotorType.UNKNOWN
-                
+
                 # 从元数据中获取接口配置，默认为串口接口
                 interface_type_str = metadata.get("interface_type", "serial")
                 try:
                     interface_type = ControlInterface(interface_type_str)
                 except ValueError:
-                    self.logger.warning(f"不支持的接口类型: {interface_type_str}，使用SERIAL")
+                    self.logger.warning(
+                        f"不支持的接口类型: {interface_type_str}，使用SERIAL"
+                    )
                     interface_type = ControlInterface.SERIAL
-                
+
                 # 构建接口配置
                 interface_config = metadata.get("interface_config", {})
-                
+
                 # 添加电机特定配置
-                interface_config.update({
-                    "max_speed": config.max_velocity,
-                    "max_torque": config.max_torque,
-                    "position_resolution": getattr(config, 'position_resolution', 0.01),
-                    "control_frequency": self.config.get("control_frequency", 100.0),
-                })
-                
+                interface_config.update(
+                    {
+                        "max_speed": config.max_velocity,
+                        "max_torque": config.max_torque,
+                        "position_resolution": getattr(
+                            config, "position_resolution", 0.01
+                        ),
+                        "control_frequency": self.config.get(
+                            "control_frequency", 100.0
+                        ),
+                    }
+                )
+
                 # 如果是串口接口，添加串口特定配置
                 if interface_type == ControlInterface.SERIAL:
-                    interface_config.update({
-                        "port": metadata.get("port", "COM1"),
-                        "baudrate": metadata.get("baudrate", 9600),
-                        "bytesize": metadata.get("bytesize", 8),
-                        "parity": metadata.get("parity", "N"),
-                        "stopbits": metadata.get("stopbits", 1),
-                        "timeout": metadata.get("timeout", 1.0),
-                    })
-                
+                    interface_config.update(
+                        {
+                            "port": metadata.get("port", "COM1"),
+                            "baudrate": metadata.get("baudrate", 9600),
+                            "bytesize": metadata.get("bytesize", 8),
+                            "parity": metadata.get("parity", "N"),
+                            "stopbits": metadata.get("stopbits", 1),
+                            "timeout": metadata.get("timeout", 1.0),
+                        }
+                    )
+
                 # 创建真实电机控制器
                 real_interface = RealMotorController(
                     motor_id=motor_id,
                     motor_type=real_motor_type,
                     control_interface=interface_type,
-                    interface_config=interface_config
+                    interface_config=interface_config,
                 )
-                
+
                 # 尝试连接
                 if real_interface.connect():
-                    self.logger.info(f"真实电机控制器创建并连接成功: {motor_id} ({interface_type.value})")
+                    self.logger.info(
+                        f"真实电机控制器创建并连接成功: {motor_id} ({interface_type.value})"
+                    )
                     return real_interface
                 else:
                     self.logger.warning(f"真实电机控制器连接失败: {motor_id}")
@@ -1208,15 +1241,16 @@ class MotorController:
             except Exception as e:
                 self.logger.error(f"创建真实电机控制器失败 {motor_id}: {e}")
                 # 真实硬件失败，继续尝试仿真
-        
+
         # 真实硬件不可用或失败，尝试仿真接口
         self.logger.warning(f"真实硬件接口不可用或失败，尝试仿真接口: {motor_id}")
         try:
             from hardware.simulation import PyBulletSimulation
+
             # 创建仿真接口
             sim_config = {
                 "gui_enabled": False,
-                "physics_timestep": 1.0/240.0,
+                "physics_timestep": 1.0 / 240.0,
                 "realtime_simulation": False,
             }
             sim_interface = PyBulletSimulation(**sim_config)
@@ -1234,19 +1268,24 @@ class MotorController:
                 "2. 仿真：pip install pybullet\n"
                 f"错误：{e}"
             ) from e
-            
-    def _execute_with_real_hardware(self, motor_id: str, command: MotionCommand, 
-                                   state: MotorState, config: MotorConfig, 
-                                   real_interface: Any) -> bool:
+
+    def _execute_with_real_hardware(
+        self,
+        motor_id: str,
+        command: MotionCommand,
+        state: MotorState,
+        config: MotorConfig,
+        real_interface: Any,
+    ) -> bool:
         """使用真实硬件接口执行命令
-        
+
         参数:
             motor_id: 电机ID
             command: 运动命令
             state: 电机状态
             config: 电机配置
             real_interface: 真实硬件接口
-            
+
         返回:
             命令是否完成
         """
@@ -1258,18 +1297,18 @@ class MotorController:
                     success = real_interface.move_to_position(
                         position=command.target_position,
                         speed=config.max_velocity * command.speed_factor,
-                        blocking=command.blocking
+                        blocking=command.blocking,
                     )
-                    
+
                     if success:
                         # 更新状态
                         state.status = MotorStatus.RUNNING
                         state.target_position = command.target_position
-                        
+
                         # 如果非阻塞模式，立即返回完成
                         if not command.blocking:
                             return True
-                            
+
                         # 阻塞模式下等待完成
                         # 完整处理：假设硬件接口会处理阻塞等待
                         # 实际实现中可能需要轮询硬件状态
@@ -1279,20 +1318,19 @@ class MotorController:
                         state.error_code = 2001
                         state.error_message = "真实硬件接口移动失败"
                         return False
-                        
+
             elif config.control_mode == MotorControlMode.VELOCITY:
                 if command.target_velocity is not None:
                     # 使用真实硬件接口设置目标速度
                     success = real_interface.set_velocity(
-                        velocity=command.target_velocity,
-                        duration=command.duration
+                        velocity=command.target_velocity, duration=command.duration
                     )
-                    
+
                     if success:
                         # 更新状态
                         state.status = MotorStatus.RUNNING
                         state.target_velocity = command.target_velocity
-                        
+
                         # 检查持续时间
                         if command.duration > 0:
                             command.duration -= 1.0 / self.config["control_frequency"]
@@ -1308,10 +1346,10 @@ class MotorController:
                         state.error_code = 2002
                         state.error_message = "真实硬件接口速度设置失败"
                         return False
-                        
+
             # 默认返回False（继续执行）
             return False
-            
+
         except Exception as e:
             self.logger.error(f"使用真实硬件执行命令失败 {motor_id}: {e}")
             state.status = MotorStatus.ERROR

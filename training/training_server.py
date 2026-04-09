@@ -1,11 +1,12 @@
 # 训练API服务器
+from training.trainer import AGITrainer, TrainingConfig, TrainingDataset
+from models.transformer.config import ModelConfig
+from models.transformer.self_agi_model import SelfAGIModel
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 import uvicorn
-import json
-import asyncio
 from datetime import datetime
 import logging
 import os
@@ -19,9 +20,6 @@ load_dotenv()
 # 添加项目路径
 sys.path.append(str(Path(__file__).parent.parent))
 
-from models.transformer.self_agi_model import SelfAGIModel
-from models.transformer.config import ModelConfig
-from training.trainer import AGITrainer, TrainingConfig, TrainingDataset
 
 # 设置日志
 logging.basicConfig(
@@ -140,7 +138,7 @@ class TrainingResultResponse(BaseModel):
 def verify_api_key(credentials: HTTPAuthorizationCredentials = Security(security)):
     """验证API密钥"""
     token = credentials.credentials
-    
+
     # 支持两种验证方式：
     # 1. 直接使用API密钥值（向后兼容）
     # 2. 使用API密钥名称，然后查找对应的值
@@ -237,18 +235,18 @@ class TrainingManager:
         try:
             if self.current_trainer is None:
                 raise RuntimeError("训练器未初始化")
-            
+
             logger.info("开始真实训练（禁止使用模拟数据）")
-            
+
             # 在后台线程中运行训练，避免阻塞事件循环
             import asyncio
             import threading
             import time
-            
+
             # 训练完成标志
             training_completed = False
             training_error = None
-            
+
             def run_training():
                 """在后台线程中运行训练"""
                 nonlocal training_completed, training_error
@@ -259,31 +257,37 @@ class TrainingManager:
                 except Exception as e:
                     training_error = e
                     logger.error(f"训练失败: {e}")
-            
+
             # 启动训练线程
             training_thread = threading.Thread(target=run_training, daemon=True)
             training_thread.start()
-            
+
             # 轮询训练进度
             start_time = time.time()
             last_log_time = start_time
-            
+
             while training_thread.is_alive():
                 # 检查训练状态
                 if self.training_status != "running":
                     logger.warning("训练被暂停或取消")
                     break
-                
+
                 # 获取训练器状态
                 try:
                     trainer_status = self.current_trainer.get_training_status()
                     # 更新进度
                     if "progress" in trainer_status:
                         self.training_progress = trainer_status["progress"]
-                    elif "current_epoch" in trainer_status and "total_epochs" in trainer_status:
+                    elif (
+                        "current_epoch" in trainer_status
+                        and "total_epochs" in trainer_status
+                    ):
                         if trainer_status["total_epochs"] > 0:
-                            self.training_progress = trainer_status["current_epoch"] / trainer_status["total_epochs"]
-                    
+                            self.training_progress = (
+                                trainer_status["current_epoch"]
+                                / trainer_status["total_epochs"]
+                            )
+
                     # 定期记录日志
                     current_time = time.time()
                     if current_time - last_log_time > 5.0:  # 每5秒记录一次
@@ -294,41 +298,45 @@ class TrainingManager:
                         last_log_time = current_time
                 except Exception as e:
                     logger.warning(f"获取训练状态失败: {e}")
-                
+
                 # 短暂休眠
                 await asyncio.sleep(1.0)
-            
+
             # 训练完成
             if training_error:
                 raise training_error
-            
+
             if training_completed:
                 self.training_status = "completed"
                 self.training_progress = 1.0
-                
+
                 # 获取最终结果
                 try:
                     trainer_status = self.current_trainer.get_training_status()
                     final_loss = trainer_status.get("current_loss", 0.0)
-                    checkpoint_path = trainer_status.get("checkpoint_path", "checkpoints/model_best.pt")
+                    checkpoint_path = trainer_status.get(
+                        "checkpoint_path", "checkpoints/model_best.pt"
+                    )
                     training_time_seconds = time.time() - start_time
-                    training_time_str = f"{int(training_time_seconds // 60)}分{int(training_time_seconds % 60)}秒"
+                    training_time_str = f"{int(training_time_seconds //                                                60)}分{int(training_time_seconds %                                                          60)}秒"
                 except Exception as e:
                     logger.error(f"获取训练结果失败: {e}")
                     final_loss = 0.0
                     checkpoint_path = "checkpoints/model_best.pt"
                     training_time_str = "未知"
-                
+
                 self.training_results = {
                     "final_loss": final_loss,
                     "checkpoint_path": checkpoint_path,
                     "training_time": training_time_str,
                 }
-                
-                logger.info(f"训练任务完成，最终损失: {final_loss:.4f}, 时间: {training_time_str}")
+
+                logger.info(
+                    f"训练任务完成，最终损失: {final_loss:.4f}, 时间: {training_time_str}"
+                )
             else:
                 logger.warning("训练未完成")
-        
+
         except Exception as e:
             self.training_status = "error"
             logger.error(f"训练任务失败: {e}")
@@ -555,19 +563,24 @@ async def get_training_results():
     """获取训练结果"""
     if training_manager.training_status != "completed":
         raise HTTPException(status_code=400, detail="训练未完成")
-    
+
     if not training_manager.training_results:
         raise HTTPException(status_code=404, detail="训练结果不存在")
-    
+
     # 验证必要字段
-    required_fields = ["checkpoint_path", "final_loss", "training_time", "model_size", "accuracy"]
+    required_fields = [
+        "checkpoint_path",
+        "final_loss",
+        "training_time",
+        "model_size",
+        "accuracy",
+    ]
     for field in required_fields:
         if field not in training_manager.training_results:
             raise HTTPException(
-                status_code=500, 
-                detail=f"训练结果缺少必要字段: {field}"
+                status_code=500, detail=f"训练结果缺少必要字段: {field}"
             )
-    
+
     return TrainingResultResponse(
         success=True,
         message="训练完成",

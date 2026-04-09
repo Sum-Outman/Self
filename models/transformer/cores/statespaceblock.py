@@ -4,8 +4,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Optional
+
 
 class StateSpaceBlock(nn.Module):
     """状态空间模型块 - 基于Mamba和RetNet架构
@@ -22,7 +22,7 @@ class StateSpaceBlock(nn.Module):
     4. 长程依赖：处理超长序列
     """
 
-    def __init__(self, config: 'AGIModelConfig'):
+    def __init__(self, config: "AGIModelConfig"):
         super().__init__()
         self.config = config
         self.hidden_size = config.hidden_size
@@ -279,6 +279,3 @@ class StateSpaceBlock(nn.Module):
         x = self.layer_norm(x)
 
         return x
-
-
-

@@ -3,9 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Optional
+
 
 class EfficientAttentionBlock(nn.Module):
     """高效注意力块 - 支持多种高效注意力机制
@@ -23,7 +22,7 @@ class EfficientAttentionBlock(nn.Module):
     4. 内存优化：减少内存占用
     """
 
-    def __init__(self, config: 'AGIModelConfig'):
+    def __init__(self, config: "AGIModelConfig"):
         super().__init__()
         self.config = config
         self.hidden_size = config.hidden_size
@@ -81,8 +80,8 @@ class EfficientAttentionBlock(nn.Module):
 
         logger.info(
             f"初始化高效注意力块: 类型={self.attention_type}, "
-            f"滑动窗口大小={self.sliding_window_size if self.attention_type == 'local' else 'N/A'}, "
-            f"FlashAttention-2启用={self.flash_attention2_enabled}, 可用={self.flash_attn_available}"
+            f"滑动窗口大小={                 self.sliding_window_size if self.attention_type == 'local' else 'N/A'}, "
+            f"FlashAttention-2启用={                 self.flash_attention2_enabled}, 可用={                 self.flash_attn_available}"
         )
 
     def forward(
@@ -252,6 +251,3 @@ class EfficientAttentionBlock(nn.Module):
         output = self.layer_norm(output)
 
         return output
-
-
-

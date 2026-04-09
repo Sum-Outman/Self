@@ -12,6 +12,6 @@ from .config import (
 )
 
 __all__ = [
-    'LaplacianEnhancedTrainingConfig',
-    'UnifiedLaplacianConfig',
+    "LaplacianEnhancedTrainingConfig",
+    "UnifiedLaplacianConfig",
 ]

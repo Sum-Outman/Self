@@ -19,10 +19,10 @@ from .regularization import (
 )
 
 __all__ = [
-    'LaplacianType',
-    'NormalizationType', 
-    'LaplacianConfig',
-    'LaplacianBase',
-    'RegularizationConfig',
-    'LaplacianRegularization',
+    "LaplacianType",
+    "NormalizationType",
+    "LaplacianConfig",
+    "LaplacianBase",
+    "RegularizationConfig",
+    "LaplacianRegularization",
 ]

@@ -4,18 +4,23 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, List, Optional
 import logging
 
 # 导入Transformer块
 from models.transformer.cores.transformerblock import TransformerBlock
+
 # 导入配置
 from models.transformer.config import AGIModelConfig
+
 # 导入认知科学算法
-from models.transformer.modules.cognitivesciencealgorithms import CognitiveScienceAlgorithms
+from models.transformer.modules.cognitivesciencealgorithms import (
+    CognitiveScienceAlgorithms,
+)
 
 # 日志记录器
 logger = logging.getLogger(__name__)
+
 
 class ReasoningModule(nn.Module):
     """推理模块 - 真实推理引擎实现
@@ -172,7 +177,9 @@ class ReasoningModule(nn.Module):
         self.spatial_topology = nn.Sequential(
             nn.Linear(config.hidden_size, config.hidden_size // 2),
             nn.GELU(),
-            nn.Linear(config.hidden_size // 2, config.hidden_size // 2),  # 修改为384以匹配2304总和
+            nn.Linear(
+                config.hidden_size // 2, config.hidden_size // 2
+            ),  # 修改为384以匹配2304总和
             nn.LayerNorm(config.hidden_size // 2, eps=config.layer_norm_eps),
         )
 
@@ -192,7 +199,7 @@ class ReasoningModule(nn.Module):
                 output_dim=config.hidden_size // 2,
                 num_layers=2,
                 conv_type="spatial",  # 改为spatial避免拉普拉斯矩阵需求
-                use_gpu=getattr(config, 'use_gpu', False),
+                use_gpu=getattr(config, "use_gpu", False),
             )
             self.gnn_model = GraphNeuralNetwork(gnn_config)
             self.gnn_enabled = True
@@ -375,7 +382,8 @@ class ReasoningModule(nn.Module):
                 ),
                 "spatial": nn.Sequential(
                     nn.Linear(
-                        config.hidden_size * 3 + config.hidden_size // 4,  # 适应所有组件：768*3 + 192 = 2496
+                        config.hidden_size * 3
+                        + config.hidden_size // 4,  # 适应所有组件：768*3 + 192 = 2496
                         config.hidden_size * 2,
                     ),
                     nn.GELU(),
@@ -719,10 +727,10 @@ class ReasoningModule(nn.Module):
         # 真实推理引擎可用性检查
         if self.real_reasoning_available:
             logger.debug(
-                f"真实推理引擎可用，但forward方法使用神经网络推理。使用reason_with_real_engine进行文本推理。"
+                "真实推理引擎可用，但forward方法使用神经网络推理。使用reason_with_real_engine进行文本推理。"
             )
         else:
-            logger.debug(f"真实推理引擎不可用，使用神经网络推理")
+            logger.debug("真实推理引擎不可用，使用神经网络推理")
 
         # 1. 上下文整合
         if context is not None:
@@ -827,13 +835,15 @@ class ReasoningModule(nn.Module):
                 # 将序列视为图，每个token是节点
                 # 创建邻接矩阵（完全连接）
                 num_nodes = batch_size * seq_len
-                
+
                 # 创建全连接的邻接矩阵（对角线为0）
                 # 使用稀疏矩阵以提高效率
-                adjacency_matrix = torch.ones(num_nodes, num_nodes, device=reasoning_features.device)
+                adjacency_matrix = torch.ones(
+                    num_nodes, num_nodes, device=reasoning_features.device
+                )
                 # 将对角线设置为0（节点不连接到自身）
                 adjacency_matrix.fill_diagonal_(0)
-                
+
                 # 为了简单起见，使用GNN处理展平的特征
                 # 完整处理
                 gnn_input = reasoning_features.reshape(batch_size * seq_len, hidden_dim)
@@ -862,10 +872,14 @@ class ReasoningModule(nn.Module):
         else:
             # 创建零张量以保持维度一致
             batch_size, seq_len, _ = spatial_relation.shape
-            zero_gnn = torch.zeros(batch_size, seq_len, gnn_expected_dim, 
-                                  device=spatial_relation.device, dtype=spatial_relation.dtype)
+            zero_gnn = torch.zeros(
+                batch_size,
+                seq_len,
+                gnn_expected_dim,
+                device=spatial_relation.device,
+                dtype=spatial_relation.dtype,
+            )
             fusion_components.append(zero_gnn)
-        
 
         spatial_fusion_input = torch.cat(fusion_components, dim=-1)
         spatial_output = self.domain_fusion["spatial"](spatial_fusion_input)
@@ -1117,7 +1131,7 @@ class ReasoningModule(nn.Module):
             else:
                 # 尝试调整维度：投影到期望维度
                 logger.warning(
-                    f"维度不匹配: fused_reasoning={fused_reasoning.shape}, symbolic_concat={symbolic_concat.shape}, 总和={total_input_dim}, 期望={expected_dim}"
+                    f"维度不匹配: fused_reasoning={                         fused_reasoning.shape}, symbolic_concat={                         symbolic_concat.shape}, 总和={total_input_dim}, 期望={expected_dim}"
                 )
                 logger.warning(f"尝试维度调整: 通过线性层投影到{expected_dim}")
                 if (
@@ -1536,6 +1550,3 @@ class ReasoningModule(nn.Module):
 
         # 返回详细的损失字典
         return losses
-
-
-

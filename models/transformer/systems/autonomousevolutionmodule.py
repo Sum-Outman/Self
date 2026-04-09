@@ -3,9 +3,9 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
 import logging
+
 
 class AutonomousEvolutionModule(nn.Module):
     """真实的自主演化模块 - 支持在线学习和架构演化"""
@@ -283,13 +283,13 @@ class AutonomousEvolutionModule(nn.Module):
                                 add_success = self._add_transformer_layer(model)
                                 if add_success:
                                     result["actual_modifications"].append(
-                                        f"added_transformer_layer_{i+1}"
+                                        f"added_transformer_layer_{i + 1}"
                                     )
 
                             new_layer_count = len(model.transformer_layers)
                             if new_layer_count > old_layer_count:
                                 result["changes"].append(
-                                    f"添加了 {new_layer_count - old_layer_count} 个Transformer层"
+                                    f"添加了 {                                         new_layer_count - old_layer_count} 个Transformer层"
                                 )
                                 result["mutation_applied"] = True
 
@@ -454,6 +454,3 @@ class AutonomousEvolutionModule(nn.Module):
                 record["mutation_type"] for record in self.evolution_history[-20:]
             ],
         }
-
-
-

@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, Optional
+
 
 class SpeechModule(nn.Module):
     """语音模块 - 处理语音识别和合成"""
@@ -62,6 +62,3 @@ class SpeechModule(nn.Module):
             "text_to_audio": text_to_audio,
             "audio_embeddings": audio_inputs,
         }
-
-
-

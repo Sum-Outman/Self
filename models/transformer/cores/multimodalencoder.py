@@ -3,8 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
+from typing import Dict, Any, List, Optional, Union
+
 
 class MultiModalEncoder(nn.Module):
     """多模态编码器 - 增强版，支持跨模态对齐和概念统一
@@ -18,7 +18,7 @@ class MultiModalEncoder(nn.Module):
     基于最新多模态学习研究，支持苹果例子中的多模态认知
     """
 
-    def __init__(self, config: 'AGIModelConfig'):
+    def __init__(self, config: "AGIModelConfig"):
         super().__init__()
         self.config = config
 
@@ -181,15 +181,19 @@ class MultiModalEncoder(nn.Module):
         if self.config.multimodal_enabled and len(encoded_features) > 1:
             # 1. 跨模态注意力对齐
             all_features = torch.cat(encoded_features, dim=1)  # 拼接所有模态特征
-            
+
             # 创建注意力掩码（假设所有位置都有效）
             batch_size, seq_len, _ = all_features.shape
             # 创建key_padding_mask：False表示有效位置，True表示需要mask的位置
-            key_padding_mask = torch.zeros(batch_size, seq_len, dtype=torch.bool, device=all_features.device)
-            
+            key_padding_mask = torch.zeros(
+                batch_size, seq_len, dtype=torch.bool, device=all_features.device
+            )
+
             aligned_features, attention_weights = self.cross_modal_attention(
-                all_features, all_features, all_features,
-                key_padding_mask=key_padding_mask
+                all_features,
+                all_features,
+                all_features,
+                key_padding_mask=key_padding_mask,
             )
             alignment_info["cross_modal_attention_weights"] = attention_weights
 
@@ -292,6 +296,3 @@ class MultiModalEncoder(nn.Module):
             return alignment_info
         else:
             return combined
-
-
-

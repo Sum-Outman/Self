@@ -10,50 +10,50 @@ API响应数据模型
 """
 
 from pydantic import BaseModel, Field
+from pydantic.generics import GenericModel
 from typing import Optional, Any, TypeVar, Generic
 from enum import Enum
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class ResponseStatus(str, Enum):
     """响应状态枚举"""
+
     SUCCESS = "success"
     ERROR = "error"
 
 
-class ApiResponse(BaseModel, Generic[T]):
+class ApiResponse(BaseModel):
     """通用API响应模型
-    
+
     对应前端TypeScript接口：
     interface ApiResponse<T = any> {
       success: boolean;
       data?: T;
       message?: string;
       error?: string;
-      code?: number;
-    }
-    """
-    
+      code?: number;}"""
+
     # 状态标识 (兼容前端success字段)
     success: bool = Field(..., description="请求是否成功")
-    
+
     # 数据负载 (成功时返回)
-    data: Optional[T] = Field(None, description="响应数据")
-    
+    data: Optional[Any] = Field(None, description="响应数据")
+
     # 信息字段
     message: Optional[str] = Field(None, description="成功或错误信息")
     error: Optional[str] = Field(None, description="错误详情")
-    
+
     # 状态码
     code: Optional[int] = Field(None, description="HTTP状态码或自定义错误码")
-    
+
     # 时间戳
     timestamp: Optional[str] = Field(None, description="响应时间戳")
-    
+
     # 请求追踪
     request_id: Optional[str] = Field(None, description="请求ID，用于追踪")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -62,17 +62,17 @@ class ApiResponse(BaseModel, Generic[T]):
                 "message": "操作成功",
                 "code": 200,
                 "timestamp": "2026-03-14T04:15:30Z",
-                "request_id": "req_123456789"
+                "request_id": "req_123456789",
             }
         }
 
 
-class ErrorResponse(ApiResponse[Any]):
+class ErrorResponse(ApiResponse):
     """错误响应模型
-    
+
     用于统一错误响应格式，确保前端可以一致地处理错误
     """
-    
+
     @classmethod
     def create(
         cls,
@@ -82,10 +82,10 @@ class ErrorResponse(ApiResponse[Any]):
         code: int = 500,
         data: Any = None,
         request_id: Optional[str] = None,
-        timestamp: Optional[str] = None
-    ) -> 'ErrorResponse':
+        timestamp: Optional[str] = None,
+    ) -> "ErrorResponse":
         """创建错误响应
-        
+
         参数:
             success: 是否成功 (始终为False)
             message: 用户友好的错误信息
@@ -94,14 +94,15 @@ class ErrorResponse(ApiResponse[Any]):
             data: 可选的额外错误数据
             request_id: 请求ID
             timestamp: 时间戳（ISO格式），如未提供则使用当前时间
-            
+
         返回:
             ErrorResponse实例
         """
         if timestamp is None:
             from datetime import datetime, timezone
+
             timestamp = datetime.now(timezone.utc).isoformat()
-        
+
         return cls(
             success=success,
             data=data,
@@ -109,68 +110,69 @@ class ErrorResponse(ApiResponse[Any]):
             error=error,
             code=code,
             request_id=request_id,
-            timestamp=timestamp
+            timestamp=timestamp,
         )
-    
+
     @classmethod
     def from_exception(
         cls,
         exc: Exception,
         message: Optional[str] = None,
         code: int = 500,
-        request_id: Optional[str] = None
-    ) -> 'ErrorResponse':
+        request_id: Optional[str] = None,
+    ) -> "ErrorResponse":
         """从异常创建错误响应
-        
+
         参数:
             exc: 异常对象
             message: 用户友好的错误信息 (如果为空，使用异常消息)
             code: HTTP状态码
             request_id: 请求ID
-            
+
         返回:
             ErrorResponse实例
         """
         error_detail = str(exc) if str(exc) else "未知错误"
         user_message = message or error_detail
-        
+
         return cls.create(
             success=False,
             message=user_message,
             error=error_detail,
             code=code,
-            request_id=request_id
+            request_id=request_id,
         )
 
 
-class SuccessResponse(ApiResponse[T]):
+class SuccessResponse(ApiResponse):
     """成功响应模型"""
-    
+
     @classmethod
     def create(
         cls,
-        data: T,
+        data: Any,
         message: str = "操作成功",
         code: int = 200,
         request_id: Optional[str] = None,
-        timestamp: Optional[str] = None
-    ) -> 'SuccessResponse[T]':
+        timestamp: Optional[str] = None,
+    ) -> "SuccessResponse":
         """创建成功响应
-        
+
         参数:
             data: 响应数据
             message: 成功信息
             code: HTTP状态码
             request_id: 请求ID
             timestamp: 时间戳（ISO格式），如未提供则使用当前时间
-            
+
         返回:
             SuccessResponse实例
         """
         if timestamp is None:
             from datetime import datetime, timezone
+
             timestamp = datetime.now(timezone.utc).isoformat()
-        
+
         return cls(
             success=True,
             data=data,
@@ -178,23 +180,21 @@ class SuccessResponse(ApiResponse[T]):
             error=None,
             code=code,
             request_id=request_id,
-            timestamp=timestamp
+            timestamp=timestamp,
         )
 
 
-class PaginatedResponse(ApiResponse[dict]):
+class PaginatedResponse(ApiResponse):
     """分页响应模型
-    
+
     对应前端TypeScript接口：
     interface PaginatedResponse<T> {
       items: T[];
       total: number;
       page: number;
       size: number;
-      pages: number;
-    }
-    """
-    
+      pages: number;}"""
+
     @classmethod
     def create(
         cls,
@@ -205,10 +205,10 @@ class PaginatedResponse(ApiResponse[dict]):
         message: str = "查询成功",
         code: int = 200,
         request_id: Optional[str] = None,
-        timestamp: Optional[str] = None
-    ) -> 'PaginatedResponse':
+        timestamp: Optional[str] = None,
+    ) -> "PaginatedResponse":
         """创建分页响应
-        
+
         参数:
             items: 当前页数据列表
             total: 总数据量
@@ -218,22 +218,23 @@ class PaginatedResponse(ApiResponse[dict]):
             code: HTTP状态码
             request_id: 请求ID
             timestamp: 时间戳（ISO格式），如未提供则使用当前时间
-            
+
         返回:
             PaginatedResponse实例
         """
         if timestamp is None:
             from datetime import datetime, timezone
+
             timestamp = datetime.now(timezone.utc).isoformat()
-        
+
         data = {
             "items": items,
             "total": total,
             "page": page,
             "size": size,
-            "pages": (total + size - 1) // size  # 计算总页数
+            "pages": (total + size - 1) // size,  # 计算总页数
         }
-        
+
         return cls(
             success=True,
             data=data,
@@ -241,32 +242,27 @@ class PaginatedResponse(ApiResponse[dict]):
             error=None,
             code=code,
             request_id=request_id,
-            timestamp=timestamp
+            timestamp=timestamp,
         )
 
 
 # 导出常用函数
-def success_response(data: Any = None, message: str = "操作成功", code: int = 200) -> dict:
+def success_response(
+    data: Any = None, message: str = "操作成功", code: int = 200
+) -> dict:
     """快速创建成功响应 (兼容现有代码)
-    
+
     注意: 此函数返回字典，而不是ApiResponse实例，以保持与现有代码的兼容性
     """
-    return {
-        "success": True,
-        "data": data,
-        "message": message,
-        "code": code
-    }
+    return {"success": True, "data": data, "message": message, "code": code}
 
 
-def error_response(message: str = "操作失败", error: str = "未知错误", code: int = 500) -> dict:
+def error_response(
+    message: str = "操作失败", error: str = "未知错误", code: int = 500
+) -> dict:
     """快速创建错误响应 (兼容现有代码)"""
-    return {
-        "success": False,
-        "message": message,
-        "error": error,
-        "code": code
-    }
+    return {"success": False, "message": message, "error": error, "code": code}
+
 
 # 别名定义，用于向后兼容
 StandardResponse = ApiResponse

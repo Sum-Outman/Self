@@ -3,9 +3,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Dict, Optional
+
 
 class FinanceModule(nn.Module):
     """金融专业领域能力模块 - 真实金融算法实现
@@ -128,6 +127,3 @@ class FinanceModule(nn.Module):
             output_dict["professional_finance_result"] = finance_result
 
         return output_dict
-
-
-

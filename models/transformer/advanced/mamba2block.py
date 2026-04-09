@@ -4,8 +4,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Any, List, Optional, Union, Callable, Tuple
-import logging
+from typing import Optional
+
 
 class Mamba2Block(nn.Module):
     """Mamba-2状态空间块 - 基于Mamba-2论文实现
@@ -68,7 +68,7 @@ class Mamba2Block(nn.Module):
         self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
         logger.info(
-            f"初始化Mamba2Block: 隐藏大小={config.hidden_size}, 状态维度={config.state_space_dim}, "
+            f"初始化Mamba2Block: 隐藏大小={                 config.hidden_size}, 状态维度={                 config.state_space_dim}, "
             f"Hyena卷积={config.hyena_conv_enabled}"
         )
 
@@ -141,7 +141,6 @@ class Mamba2Block(nn.Module):
         if gate.shape[-1] == hidden_size * 2:
             gate1, gate2 = torch.split(gate, hidden_size, dim=-1)
         else:
-            gate1 = gate
             gate2 = torch.ones_like(gate)
 
         # 初始化状态
@@ -171,6 +170,3 @@ class Mamba2Block(nn.Module):
         y = torch.stack(outputs, dim=1)  # [batch, seq, hidden_size]
 
         return y
-
-
-

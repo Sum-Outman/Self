@@ -3,6 +3,7 @@
 处理用户注册、登录、注销等认证相关功能
 """
 
+from backend.core.response_cache import cache_response
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
@@ -11,7 +12,6 @@ from datetime import datetime, timedelta, timezone
 import uuid
 import psutil
 import pyotp
-import base64
 import secrets
 import json
 import random
@@ -32,16 +32,18 @@ from passlib.context import CryptContext
 # 与main.py保持一致的密码哈希算法
 pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """验证密码（与main.py保持一致）"""
     sha256_hash = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
     return pwd_context.verify(sha256_hash, hashed_password)
 
+
 def get_password_hash(password: str) -> str:
     """获取密码哈希（与main.py保持一致）"""
     sha256_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
     return pwd_context.hash(sha256_hash)
-from backend.core.response_cache import cache_response
+
 
 router = APIRouter(prefix="/api/auth", tags=["认证"])
 
@@ -49,7 +51,7 @@ router = APIRouter(prefix="/api/auth", tags=["认证"])
 security = HTTPBearer()
 
 
-@router.post("/register", response_model=SuccessResponse[Dict[str, Any]])
+@router.post("/register", response_model=SuccessResponse)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """用户注册"""
     # 检查用户是否已存在
@@ -100,27 +102,29 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/login", response_model=SuccessResponse[Dict[str, Any]])
+@router.post("/login", response_model=SuccessResponse)
 async def login(login_data: UserLogin, db: Session = Depends(get_db)):
     """用户登录"""
     user = db.query(User).filter(User.username == login_data.username).first()
-    
+
     # 初始化验证结果
     result = False
-    
+
     # 调试打印
     print(f"DEBUG auth_routes.login: 用户查询结果: {user}")
     if user:
-        print(f"DEBUG auth_routes.login: 找到用户: {user.username}, 哈希: {user.hashed_password[:30]}...")
+        print(
+            f"DEBUG auth_routes.login: 找到用户: {user.username}, 哈希: {user.hashed_password[:30]}..."
+        )
         # 临时绕过demo用户验证
         if user.username == "demo" and login_data.password == "demopassword":
-            print(f"DEBUG auth_routes.login: 使用临时绕过验证")
+            print("DEBUG auth_routes.login: 使用临时绕过验证")
             result = True
         else:
             result = verify_password(login_data.password, user.hashed_password)
         print(f"DEBUG auth_routes.login: 密码验证结果: {result}")
     else:
-        print(f"DEBUG auth_routes.login: 未找到用户")
+        print("DEBUG auth_routes.login: 未找到用户")
 
     if not user or not result:
         raise HTTPException(
@@ -143,11 +147,11 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
                 "two_factor_method": user.two_factor_method,
                 "message": "需要2FA验证",
             },
-            message="需要2FA验证"
+            message="需要2FA验证",
         )
-    
+
     # 如果未启用2FA，继续正常登录流程
-    
+
     # 创建访问令牌
     access_token_expires = timedelta(minutes=Config.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -193,7 +197,7 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/logout", response_model=SuccessResponse[Dict[str, Any]])
+@router.post("/logout", response_model=SuccessResponse)
 async def logout(
     session_token: str,
     db: Session = Depends(get_db),
@@ -216,7 +220,7 @@ async def logout(
     return SuccessResponse.create(data={"message": "登出成功"}, message="登出成功")
 
 
-@router.get("/me", response_model=SuccessResponse[Dict[str, Any]])
+@router.get("/me", response_model=SuccessResponse)
 async def get_current_user_info(
     user: User = Depends(get_current_user),
 ):
@@ -236,7 +240,7 @@ async def get_current_user_info(
     )
 
 
-@router.put("/me", response_model=SuccessResponse[Dict[str, Any]])
+@router.put("/me", response_model=SuccessResponse)
 async def update_current_user(
     user_update: Dict[str, Any],
     db: Session = Depends(get_db),
@@ -272,7 +276,7 @@ async def update_current_user(
     )
 
 
-@router.delete("/me", response_model=SuccessResponse[Dict[str, Any]])
+@router.delete("/me", response_model=SuccessResponse)
 async def delete_current_user(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -300,7 +304,7 @@ async def delete_current_user(
         )
 
 
-@router.post("/change-password", response_model=SuccessResponse[Dict[str, Any]])
+@router.post("/change-password", response_model=SuccessResponse)
 async def change_password(
     old_password: str,
     new_password: str,
@@ -387,7 +391,7 @@ async def get_all_users(
         )
 
 
-@router.get("/admin/users/{user_id}", response_model=SuccessResponse[Dict[str, Any]])
+@router.get("/admin/users/{user_id}", response_model=SuccessResponse)
 async def get_user_by_id(
     user_id: int,
     db: Session = Depends(get_db),
@@ -424,7 +428,7 @@ async def get_user_by_id(
         )
 
 
-@router.put("/admin/users/{user_id}", response_model=SuccessResponse[Dict[str, Any]])
+@router.put("/admin/users/{user_id}", response_model=SuccessResponse)
 async def update_user_admin(
     user_id: int,
     user_update: AdminUserUpdate,
@@ -482,7 +486,7 @@ async def update_user_admin(
 
 @router.post(
     "/admin/users/{user_id}/toggle-active",
-    response_model=SuccessResponse[Dict[str, Any]],
+    response_model=SuccessResponse,
 )
 async def toggle_user_active(
     user_id: int,
@@ -526,7 +530,7 @@ async def toggle_user_active(
         )
 
 
-@router.delete("/admin/users/{user_id}", response_model=SuccessResponse[Dict[str, Any]])
+@router.delete("/admin/users/{user_id}", response_model=SuccessResponse)
 async def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
@@ -568,7 +572,7 @@ async def delete_user(
         )
 
 
-@router.get("/admin/dashboard-stats", response_model=SuccessResponse[Dict[str, Any]])
+@router.get("/admin/dashboard-stats", response_model=SuccessResponse)
 @cache_response(ttl=60)
 async def get_dashboard_stats(
     db: Session = Depends(get_db),
@@ -658,7 +662,7 @@ async def get_dashboard_stats(
     return SuccessResponse.create(data=stats, message="仪表板统计数据获取成功")
 
 
-@router.get("/admin/api-usage", response_model=SuccessResponse[Dict[str, Any]])
+@router.get("/admin/api-usage", response_model=SuccessResponse)
 @cache_response(ttl=300)  # 5分钟缓存
 async def get_api_usage_stats(
     period: str = "7d",  # 1d, 7d, 30d
@@ -672,7 +676,7 @@ async def get_api_usage_stats(
         from backend.db_models.agi import TrainingJob
         from backend.db_models.robot import Robot, RobotStatus
         from datetime import datetime, timedelta, timezone
-        
+
         # 根据周期计算时间范围
         now = datetime.now(timezone.utc)
         if period == "1d":
@@ -684,68 +688,94 @@ async def get_api_usage_stats(
         else:  # 默认7天
             start_time = now - timedelta(days=7)
             period_name = "最近7天"
-        
+
         # 获取活跃用户数（在时间范围内有活动的用户）
         # 完整处理：使用最后登录时间在时间范围内的用户
-        active_users = db.query(User).filter(
-            User.last_login >= start_time,
-            User.is_active.is_(True)
-        ).count()
-        
+        active_users = (
+            db.query(User)
+            .filter(User.last_login >= start_time, User.is_active.is_(True))
+            .count()
+        )
+
         # 获取活跃会话数
-        active_sessions = db.query(UserSession).filter(
-            UserSession.created_at >= start_time,
-            UserSession.expires_at > now
-        ).count()
-        
+        active_sessions = (
+            db.query(UserSession)
+            .filter(UserSession.created_at >= start_time, UserSession.expires_at > now)
+            .count()
+        )
+
         # 获取API密钥使用情况
-        active_api_keys = db.query(APIKey).filter(
-            APIKey.is_active.is_(True),
-            APIKey.last_used >= start_time
-        ).count()
-        
+        active_api_keys = (
+            db.query(APIKey)
+            .filter(APIKey.is_active.is_(True), APIKey.last_used >= start_time)
+            .count()
+        )
+
         # 获取训练任务数量
-        training_jobs = db.query(TrainingJob).filter(
-            TrainingJob.created_at >= start_time
-        ).count()
-        
+        training_jobs = (
+            db.query(TrainingJob).filter(TrainingJob.created_at >= start_time).count()
+        )
+
         # 获取机器人活动数量
-        active_robots = db.query(Robot).filter(
-            Robot.status == RobotStatus.ONLINE,
-            Robot.updated_at >= start_time
-        ).count()
-        
+        active_robots = (
+            db.query(Robot)
+            .filter(Robot.status == RobotStatus.ONLINE, Robot.updated_at >= start_time)
+            .count()
+        )
+
         # 估算API调用总数
         # 基于活跃用户、会话、训练任务和机器人的估算
         # 完整模型模型：每个活跃用户平均每天50个API调用
         # 每个训练任务平均100个API调用
         # 每个在线机器人平均每天200个API调用
         # 每个活跃会话平均每天30个API调用
-        
+
         days_in_period = (now - start_time).days or 1
         estimated_api_calls = (
-            active_users * 50 * days_in_period +
-            training_jobs * 100 +
-            active_robots * 200 * days_in_period +
-            active_sessions * 30 * days_in_period
+            active_users * 50 * days_in_period
+            + training_jobs * 100
+            + active_robots * 200 * days_in_period
+            + active_sessions * 30 * days_in_period
         )
-        
+
         # 热门端点估算（完整）
         popular_endpoints = [
-            {"endpoint": "/api/auth/login", "calls": active_users * 3, "percentage": 15},
-            {"endpoint": "/api/robot/status", "calls": active_robots * 20, "percentage": 25},
-            {"endpoint": "/api/chat/message", "calls": active_users * 10, "percentage": 20},
-            {"endpoint": "/api/training/status", "calls": training_jobs * 30, "percentage": 12},
-            {"endpoint": "/api/hardware/sensors", "calls": active_robots * 15, "percentage": 18},
+            {
+                "endpoint": "/api/auth/login",
+                "calls": active_users * 3,
+                "percentage": 15,
+            },
+            {
+                "endpoint": "/api/robot/status",
+                "calls": active_robots * 20,
+                "percentage": 25,
+            },
+            {
+                "endpoint": "/api/chat/message",
+                "calls": active_users * 10,
+                "percentage": 20,
+            },
+            {
+                "endpoint": "/api/training/status",
+                "calls": training_jobs * 30,
+                "percentage": 12,
+            },
+            {
+                "endpoint": "/api/hardware/sensors",
+                "calls": active_robots * 15,
+                "percentage": 18,
+            },
             {"endpoint": "其他", "calls": estimated_api_calls * 0.1, "percentage": 10},
         ]
-        
+
         # 计算百分比
         total_calls = sum(endpoint["calls"] for endpoint in popular_endpoints)
         for endpoint in popular_endpoints:
             if total_calls > 0:
-                endpoint["percentage"] = round((endpoint["calls"] / total_calls) * 100, 1)
-        
+                endpoint["percentage"] = round(
+                    (endpoint["calls"] / total_calls) * 100, 1
+                )
+
         # 用户活动时间分布（完整）
         # 假设活动主要分布在白天时段
         hourly_distribution = []
@@ -755,18 +785,24 @@ async def get_api_usage_stats(
                 calls = estimated_api_calls * 0.06  # 白天每小时6%
             else:
                 calls = estimated_api_calls * 0.02  # 晚上每小时2%
-            hourly_distribution.append({
-                "hour": hour,
-                "calls": int(calls),
-                "percentage": round((calls / estimated_api_calls) * 100, 1) if estimated_api_calls > 0 else 0
-            })
-        
+            hourly_distribution.append(
+                {
+                    "hour": hour,
+                    "calls": int(calls),
+                    "percentage": (
+                        round((calls / estimated_api_calls) * 100, 1)
+                        if estimated_api_calls > 0
+                        else 0
+                    ),
+                }
+            )
+
         stats = {
             "period": period_name,
             "time_range": {
                 "start": start_time.isoformat(),
                 "end": now.isoformat(),
-                "days": days_in_period
+                "days": days_in_period,
             },
             "summary": {
                 "estimated_total_calls": int(estimated_api_calls),
@@ -775,31 +811,43 @@ async def get_api_usage_stats(
                 "active_api_keys": active_api_keys,
                 "training_jobs": training_jobs,
                 "active_robots": active_robots,
-                "avg_calls_per_day": int(estimated_api_calls / days_in_period) if days_in_period > 0 else 0,
+                "avg_calls_per_day": (
+                    int(estimated_api_calls / days_in_period)
+                    if days_in_period > 0
+                    else 0
+                ),
                 "peak_hour": 14,  # 假设下午2点是高峰
-                "peak_calls": int(estimated_api_calls * 0.08)  # 高峰时段占8%
+                "peak_calls": int(estimated_api_calls * 0.08),  # 高峰时段占8%
             },
             "popular_endpoints": popular_endpoints,
             "hourly_distribution": hourly_distribution,
             "user_activity": {
-                "new_users": db.query(User).filter(User.created_at >= start_time).count(),
+                "new_users": db.query(User)
+                .filter(User.created_at >= start_time)
+                .count(),
                 "returning_users": active_users,
-                "user_growth_rate": round((active_users / max(1, db.query(User).count())) * 100, 1)
+                "user_growth_rate": round(
+                    (active_users / max(1, db.query(User).count())) * 100, 1
+                ),
             },
             "api_key_usage": {
                 "total_keys": db.query(APIKey).count(),
                 "active_keys": active_api_keys,
-                "inactive_keys": db.query(APIKey).filter(APIKey.is_active.is_(False)).count(),
-                "usage_rate": round((active_api_keys / max(1, db.query(APIKey).count())) * 100, 1)
+                "inactive_keys": db.query(APIKey)
+                .filter(APIKey.is_active.is_(False))
+                .count(),
+                "usage_rate": round(
+                    (active_api_keys / max(1, db.query(APIKey).count())) * 100, 1
+                ),
             },
-            "timestamp": now.isoformat()
+            "timestamp": now.isoformat(),
         }
-        
+
         return SuccessResponse.create(data=stats, message="API使用统计获取成功")
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取API使用统计失败: {str(e)}"
+            detail=f"获取API使用统计失败: {str(e)}",
         )
 
 
@@ -807,12 +855,15 @@ async def get_api_usage_stats(
 # 2FA双因素认证路由
 # ==============================
 
+
 def generate_totp_secret() -> str:
     """生成TOTP密钥"""
     return pyotp.random_base32()
 
 
-def generate_totp_uri(secret: str, user_email: str, issuer: str = "Self AGI System") -> str:
+def generate_totp_uri(
+    secret: str, user_email: str, issuer: str = "Self AGI System"
+) -> str:
     """生成TOTP URI，用于生成二维码"""
     return pyotp.totp.TOTP(secret).provisioning_uri(name=user_email, issuer_name=issuer)
 
@@ -828,7 +879,7 @@ def generate_backup_codes(count: int = 10) -> list:
     return [secrets.token_hex(4).upper() for _ in range(count)]
 
 
-@router.get("/2fa/status", response_model=SuccessResponse[Dict[str, Any]])
+@router.get("/2fa/status", response_model=SuccessResponse)
 async def get_2fa_status(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -841,16 +892,16 @@ async def get_2fa_status(
                 "method": user.two_factor_method,
                 "has_backup_codes": bool(user.backup_codes),
             },
-            message="获取2FA状态成功"
+            message="获取2FA状态成功",
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取2FA状态失败: {str(e)}"
+            detail=f"获取2FA状态失败: {str(e)}",
         )
 
 
-@router.post("/2fa/setup", response_model=SuccessResponse[Dict[str, Any]])
+@router.post("/2fa/setup", response_model=SuccessResponse)
 async def setup_2fa(
     method: str = "totp",  # totp or email
     db: Session = Depends(get_db),
@@ -861,73 +912,70 @@ async def setup_2fa(
         if user.two_factor_enabled:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="2FA已启用，请先禁用再重新设置"
+                detail="2FA已启用，请先禁用再重新设置",
             )
-        
+
         setup_data = {}
-        
+
         if method == "totp":
             # 生成TOTP密钥
             secret = generate_totp_secret()
             user.totp_secret = secret
-            
+
             # 生成TOTP URI用于二维码
             totp_uri = generate_totp_uri(secret, user.email)
-            
+
             # 生成备份代码
             backup_codes = generate_backup_codes()
             user.backup_codes = json.dumps(backup_codes)
-            
+
             setup_data = {
                 "method": "totp",
                 "secret": secret,
                 "totp_uri": totp_uri,
                 "backup_codes": backup_codes,
-                "message": "请使用认证应用扫描二维码，并保存备份代码"
+                "message": "请使用认证应用扫描二维码，并保存备份代码",
             }
         elif method == "email":
             # 邮箱验证码方式
             user.two_factor_method = "email"
-            
+
             # 生成并存储邮箱验证码
             code = generate_email_verification_code()
             email_code = EmailTwoFactorCode(
                 user_id=user.id,
                 code=code,
-                expires_at=datetime.now(timezone.utc) + timedelta(minutes=10)
+                expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
             )
             db.add(email_code)
-            
+
             setup_data = {
                 "method": "email",
                 "email": user.email,
                 "code": code,  # 仅用于开发测试
                 "message": "验证码已发送到邮箱，请在10分钟内验证",
-                "expires_in": 600
+                "expires_in": 600,
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的2FA方法: {method}"
+                detail=f"不支持的2FA方法: {method}",
             )
-        
+
         user.two_factor_method = method
         db.commit()
-        
-        return SuccessResponse.create(
-            data=setup_data,
-            message="2FA设置成功"
-        )
+
+        return SuccessResponse.create(data=setup_data, message="2FA设置成功")
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"设置2FA失败: {str(e)}"
+            detail=f"设置2FA失败: {str(e)}",
         )
 
 
-@router.post("/2fa/verify", response_model=SuccessResponse[Dict[str, Any]])
+@router.post("/2fa/verify", response_model=SuccessResponse)
 async def verify_2fa_setup(
     code: str,
     db: Session = Depends(get_db),
@@ -937,74 +985,77 @@ async def verify_2fa_setup(
     try:
         if user.two_factor_enabled:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="2FA已启用，无需验证"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="2FA已启用，无需验证"
             )
-        
+
         # 根据2FA方法进行验证
         if user.two_factor_method == "totp":
             if not user.totp_secret:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="未找到TOTP密钥，请先设置2FA"
+                    detail="未找到TOTP密钥，请先设置2FA",
                 )
-            
+
             # 验证TOTP代码
             if not verify_totp_code(user.totp_secret, code):
                 # 也检查备份代码
-                backup_codes = json.loads(user.backup_codes) if user.backup_codes else []
+                backup_codes = (
+                    json.loads(user.backup_codes) if user.backup_codes else []
+                )
                 if code not in backup_codes:
                     raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="验证码无效"
+                        status_code=status.HTTP_400_BAD_REQUEST, detail="验证码无效"
                     )
                 # 如果是备份代码，则从列表中移除
                 backup_codes.remove(code)
                 user.backup_codes = json.dumps(backup_codes)
         elif user.two_factor_method == "email":
             # 验证邮箱验证码
-            valid_code = db.query(EmailTwoFactorCode).filter(
-                EmailTwoFactorCode.user_id == user.id,
-                EmailTwoFactorCode.code == code,
-                EmailTwoFactorCode.expires_at > datetime.now(timezone.utc)
-            ).first()
-            
+            valid_code = (
+                db.query(EmailTwoFactorCode)
+                .filter(
+                    EmailTwoFactorCode.user_id == user.id,
+                    EmailTwoFactorCode.code == code,
+                    EmailTwoFactorCode.expires_at > datetime.now(timezone.utc),
+                )
+                .first()
+            )
+
             if not valid_code:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="验证码无效或已过期"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="验证码无效或已过期"
                 )
-            
+
             # 删除已使用的验证码
             db.delete(valid_code)
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的2FA方法: {user.two_factor_method}"
+                detail=f"不支持的2FA方法: {user.two_factor_method}",
             )
-        
+
         # 启用2FA
         user.two_factor_enabled = True
         db.commit()
-        
+
         return SuccessResponse.create(
             data={
                 "enabled": True,
                 "method": user.two_factor_method,
-                "message": "2FA验证成功并已启用"
+                "message": "2FA验证成功并已启用",
             },
-            message="2FA验证成功"
+            message="2FA验证成功",
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"验证2FA失败: {str(e)}"
+            detail=f"验证2FA失败: {str(e)}",
         )
 
 
-@router.post("/2fa/login", response_model=SuccessResponse[Dict[str, Any]])
+@router.post("/2fa/login", response_model=SuccessResponse)
 async def login_with_2fa(
     login_data: Dict[str, Any],
     db: Session = Depends(get_db),
@@ -1014,44 +1065,42 @@ async def login_with_2fa(
         username = login_data.get("username")
         password = login_data.get("password")
         two_factor_code = login_data.get("two_factor_code")
-        
+
         if not all([username, password, two_factor_code]):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="用户名、密码和2FA验证码均为必填项"
+                detail="用户名、密码和2FA验证码均为必填项",
             )
-        
+
         # 验证用户名和密码
         user = db.query(User).filter(User.username == username).first()
-        
+
         if not user or not verify_password(password, user.hashed_password):
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="用户名或密码错误"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="用户名或密码错误"
             )
-        
+
         if not user.two_factor_enabled:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="用户未启用2FA"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="用户未启用2FA"
             )
-        
+
         # 验证2FA代码
         if user.two_factor_method == "totp":
             if not user.totp_secret:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="TOTP密钥未配置"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="TOTP密钥未配置"
                 )
-            
+
             # 验证TOTP代码
             if not verify_totp_code(user.totp_secret, two_factor_code):
                 # 检查备份代码
-                backup_codes = json.loads(user.backup_codes) if user.backup_codes else []
+                backup_codes = (
+                    json.loads(user.backup_codes) if user.backup_codes else []
+                )
                 if two_factor_code not in backup_codes:
                     raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="2FA验证码无效"
+                        status_code=status.HTTP_401_UNAUTHORIZED, detail="2FA验证码无效"
                     )
                 # 如果是备份代码，则从列表中移除
                 backup_codes.remove(two_factor_code)
@@ -1060,43 +1109,47 @@ async def login_with_2fa(
         elif user.two_factor_method == "email":
             # 邮箱验证码方式
             # 查找有效的验证码
-            valid_code = db.query(EmailTwoFactorCode).filter(
-                EmailTwoFactorCode.user_id == user.id,
-                EmailTwoFactorCode.code == two_factor_code,
-                EmailTwoFactorCode.expires_at > datetime.now(timezone.utc)
-            ).first()
-            
+            valid_code = (
+                db.query(EmailTwoFactorCode)
+                .filter(
+                    EmailTwoFactorCode.user_id == user.id,
+                    EmailTwoFactorCode.code == two_factor_code,
+                    EmailTwoFactorCode.expires_at > datetime.now(timezone.utc),
+                )
+                .first()
+            )
+
             if not valid_code:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="2FA验证码无效或已过期"
+                    detail="2FA验证码无效或已过期",
                 )
-            
+
             # 删除已使用的验证码
             db.delete(valid_code)
             db.commit()
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的2FA方法: {user.two_factor_method}"
+                detail=f"不支持的2FA方法: {user.two_factor_method}",
             )
-        
+
         # 更新最后登录时间
         user.last_login = datetime.now(timezone.utc)
         db.commit()
-        
+
         # 创建访问令牌
         access_token = create_access_token(data={"sub": str(user.id)})
-        
+
         # 创建会话
         session = UserSession(
             user_id=user.id,
             session_token=secrets.token_urlsafe(32),
-            expires_at=datetime.now(timezone.utc) + timedelta(days=7)
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
         )
         db.add(session)
         db.commit()
-        
+
         return SuccessResponse.create(
             data={
                 "access_token": access_token,
@@ -1109,20 +1162,20 @@ async def login_with_2fa(
                     "full_name": user.full_name,
                     "is_admin": user.is_admin,
                     "two_factor_enabled": user.two_factor_enabled,
-                }
+                },
             },
-            message="2FA登录成功"
+            message="2FA登录成功",
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"2FA登录失败: {str(e)}"
+            detail=f"2FA登录失败: {str(e)}",
         )
 
 
-@router.post("/2fa/disable", response_model=SuccessResponse[Dict[str, Any]])
+@router.post("/2fa/disable", response_model=SuccessResponse)
 async def disable_2fa(
     code: str,
     db: Session = Depends(get_db),
@@ -1132,77 +1185,76 @@ async def disable_2fa(
     try:
         if not user.two_factor_enabled:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="2FA未启用"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="2FA未启用"
             )
-        
+
         # 验证代码
         if user.two_factor_method == "totp":
             if not user.totp_secret:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="TOTP密钥未配置"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="TOTP密钥未配置"
                 )
-            
+
             # 验证TOTP代码
             if not verify_totp_code(user.totp_secret, code):
                 # 检查备份代码
-                backup_codes = json.loads(user.backup_codes) if user.backup_codes else []
+                backup_codes = (
+                    json.loads(user.backup_codes) if user.backup_codes else []
+                )
                 if code not in backup_codes:
                     raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="验证码无效"
+                        status_code=status.HTTP_401_UNAUTHORIZED, detail="验证码无效"
                     )
                 # 如果是备份代码，则从列表中移除
                 backup_codes.remove(code)
                 user.backup_codes = json.dumps(backup_codes)
         elif user.two_factor_method == "email":
             # 邮箱验证码方式
-            valid_code = db.query(EmailTwoFactorCode).filter(
-                EmailTwoFactorCode.user_id == user.id,
-                EmailTwoFactorCode.code == code,
-                EmailTwoFactorCode.expires_at > datetime.now(timezone.utc)
-            ).first()
-            
+            valid_code = (
+                db.query(EmailTwoFactorCode)
+                .filter(
+                    EmailTwoFactorCode.user_id == user.id,
+                    EmailTwoFactorCode.code == code,
+                    EmailTwoFactorCode.expires_at > datetime.now(timezone.utc),
+                )
+                .first()
+            )
+
             if not valid_code:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="验证码无效或已过期"
+                    detail="验证码无效或已过期",
                 )
-            
+
             # 删除验证码
             db.delete(valid_code)
             # 验证码已使用并删除
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的2FA方法: {user.two_factor_method}"
+                detail=f"不支持的2FA方法: {user.two_factor_method}",
             )
-        
+
         # 禁用2FA
         user.two_factor_enabled = False
         user.two_factor_method = "email"  # 重置为默认方法
         user.totp_secret = None
         user.backup_codes = None
         db.commit()
-        
+
         return SuccessResponse.create(
-            data={
-                "enabled": False,
-                "message": "2FA已禁用"
-            },
-            message="2FA禁用成功"
+            data={"enabled": False, "message": "2FA已禁用"}, message="2FA禁用成功"
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"禁用2FA失败: {str(e)}"
+            detail=f"禁用2FA失败: {str(e)}",
         )
 
 
-@router.get("/2fa/backup-codes", response_model=SuccessResponse[Dict[str, Any]])
+@router.get("/2fa/backup-codes", response_model=SuccessResponse)
 async def get_2fa_backup_codes(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -1211,26 +1263,25 @@ async def get_2fa_backup_codes(
     try:
         if not user.two_factor_enabled:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="2FA未启用"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="2FA未启用"
             )
-        
+
         backup_codes = json.loads(user.backup_codes) if user.backup_codes else []
-        
+
         return SuccessResponse.create(
             data={
                 "backup_codes": backup_codes,
                 "remaining": len(backup_codes),
-                "message": "请妥善保存备份代码"
+                "message": "请妥善保存备份代码",
             },
-            message="获取备份代码成功"
+            message="获取备份代码成功",
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取备份代码失败: {str(e)}"
+            detail=f"获取备份代码失败: {str(e)}",
         )
 
 
@@ -1239,7 +1290,7 @@ def generate_email_verification_code() -> str:
     return str(random.randint(100000, 999999))
 
 
-@router.post("/refresh", response_model=SuccessResponse[Dict[str, Any]])
+@router.post("/refresh", response_model=SuccessResponse)
 async def refresh_token(
     refresh_data: Dict[str, Any],
     db: Session = Depends(get_db),
@@ -1249,57 +1300,53 @@ async def refresh_token(
         refresh_token_str = refresh_data.get("refresh_token")
         if not refresh_token_str:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="缺少刷新令牌"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="缺少刷新令牌"
             )
-        
+
         # 验证刷新令牌
         from backend.core.security import verify_token
+
         payload = verify_token(refresh_token_str)
-        
+
         if not payload:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="无效的刷新令牌"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的刷新令牌"
             )
-        
+
         user_id = payload.get("sub")
         token_type = payload.get("type")
-        
+
         if not user_id or token_type != "refresh":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="无效的刷新令牌类型"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的刷新令牌类型"
             )
-        
+
         # 获取用户
         user = db.query(User).filter(User.id == int(user_id)).first()
-        
+
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="用户不存在"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在"
             )
-        
+
         if not user.is_active:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="用户已被禁用"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="用户已被禁用"
             )
-        
+
         # 创建新的访问令牌
         access_token_expires = timedelta(minutes=Config.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": str(user.id)}, expires_delta=access_token_expires
         )
-        
+
         # 创建新的刷新令牌
         refresh_token_expires = timedelta(days=30)
         new_refresh_token = create_access_token(
             data={"sub": str(user.id), "type": "refresh"},
             expires_delta=refresh_token_expires,
         )
-        
+
         return SuccessResponse.create(
             data={
                 "access_token": access_token,
@@ -1313,18 +1360,18 @@ async def refresh_token(
                     "is_admin": user.is_admin,
                 },
             },
-            message="令牌刷新成功"
+            message="令牌刷新成功",
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"刷新令牌失败: {str(e)}"
+            detail=f"刷新令牌失败: {str(e)}",
         )
 
 
-@router.post("/2fa/send-email-code", response_model=SuccessResponse[Dict[str, Any]])
+@router.post("/2fa/send-email-code", response_model=SuccessResponse)
 async def send_email_verification_code(
     email: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -1340,44 +1387,44 @@ async def send_email_verification_code(
             if not target_user:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="未找到该邮箱对应的用户"
+                    detail="未找到该邮箱对应的用户",
                 )
         elif not user:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="需要认证或提供邮箱"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="需要认证或提供邮箱"
             )
-        
+
         # 生成验证码
         code = generate_email_verification_code()
-        
+
         # 创建验证码记录
         email_code = EmailTwoFactorCode(
             user_id=target_user.id,
             code=code,
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=10)  # 10分钟有效期
+            expires_at=datetime.now(timezone.utc)
+            + timedelta(minutes=10),  # 10分钟有效期
         )
-        
+
         db.add(email_code)
         db.commit()
-        
+
         # 在实际应用中，这里应该发送邮件
         # 现在模拟发送，只返回验证码（仅用于开发和测试）
         # 在生产环境中，应通过SMTP发送邮件，且不应在响应中返回验证码
-        
+
         return SuccessResponse.create(
             data={
                 "email": target_user.email,
                 "code": code,  # 仅用于开发测试，生产环境应移除
                 "message": "验证码已发送到邮箱（模拟）",
-                "expires_in": 600  # 10分钟
+                "expires_in": 600,  # 10分钟
             },
-            message="验证码发送成功"
+            message="验证码发送成功",
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"发送验证码失败: {str(e)}"
+            detail=f"发送验证码失败: {str(e)}",
         )

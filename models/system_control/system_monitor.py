@@ -233,15 +233,15 @@ class SystemMonitor:
         """
         # 计算系统运行时间（模拟）
         uptime_seconds = 3600 * 24  # 24小时
-        
+
         # 获取当前指标
         current_metrics = self.get_current_metrics()
-        
+
         # 计算CPU、内存、磁盘使用率
         cpu_usage = 0.0
         memory_usage = 0.0
         disk_usage = 0.0
-        
+
         for metric in current_metrics:
             if metric.metric_id == "cpu_usage":
                 cpu_usage = metric.value
@@ -249,11 +249,11 @@ class SystemMonitor:
                 memory_usage = metric.value
             elif metric.metric_id == "disk_usage":
                 disk_usage = metric.value
-        
+
         # 获取活跃警报数量
         active_alerts_list = self.get_active_alerts()
         active_alerts_count = len(active_alerts_list)
-        
+
         # 构建系统状态字典
         system_status = {
             "status": self.stats.get("system_status", "normal"),
@@ -269,7 +269,7 @@ class SystemMonitor:
             "total_metrics": len(current_metrics),
             "timestamp": datetime.now().isoformat(),
         }
-        
+
         return system_status
 
     def get_metric_history(
@@ -1031,21 +1031,51 @@ class SystemMonitor:
         # 初始化指标历史记录字典
         # 预定义一些常用指标的键，这样在查询时不会返回空字典
         predefined_metrics = [
-            "cpu_usage", "cpu_frequency", "cpu_cores", "cpu_load_1", "cpu_load_5", "cpu_load_15",
-            "memory_usage", "memory_available", "memory_total", "memory_swap",
-            "disk_usage_system", "disk_io_read", "disk_io_write", "disk_read_speed", "disk_write_speed",
-            "network_bytes_sent", "network_bytes_recv", "network_packets_sent", "network_packets_recv",
-            "network_errors_in", "network_errors_out", "network_drops_in", "network_drops_out",
-            "system_uptime", "system_load_1", "system_load_5", "system_load_15",
-            "process_count", "process_running", "process_sleeping", "process_zombie",
-            "temperature_cpu", "temperature_gpu", "temperature_system",
-            "response_time", "accuracy", "availability", "throughput",
-            "active_connections", "system_downtime_seconds"
+            "cpu_usage",
+            "cpu_frequency",
+            "cpu_cores",
+            "cpu_load_1",
+            "cpu_load_5",
+            "cpu_load_15",
+            "memory_usage",
+            "memory_available",
+            "memory_total",
+            "memory_swap",
+            "disk_usage_system",
+            "disk_io_read",
+            "disk_io_write",
+            "disk_read_speed",
+            "disk_write_speed",
+            "network_bytes_sent",
+            "network_bytes_recv",
+            "network_packets_sent",
+            "network_packets_recv",
+            "network_errors_in",
+            "network_errors_out",
+            "network_drops_in",
+            "network_drops_out",
+            "system_uptime",
+            "system_load_1",
+            "system_load_5",
+            "system_load_15",
+            "process_count",
+            "process_running",
+            "process_sleeping",
+            "process_zombie",
+            "temperature_cpu",
+            "temperature_gpu",
+            "temperature_system",
+            "response_time",
+            "accuracy",
+            "availability",
+            "throughput",
+            "active_connections",
+            "system_downtime_seconds",
         ]
-        
+
         for metric_id in predefined_metrics:
             self.metrics_history[metric_id] = []
-            
+
         self.logger.debug(f"初始化了 {len(predefined_metrics)} 个指标的历史记录")
 
     def __del__(self):
